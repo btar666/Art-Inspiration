@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../widgets/floating_cart_button.dart';
 import '../widgets/home_content.dart';
 import '../widgets/home_logo_header_overlay.dart';
-import '../widgets/main_bottom_nav.dart';
 
-/// الصفحة الرئيسية الكاملة مع السلة العائمة وشريط التنقل
+/// الصفحة الرئيسية
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -15,7 +16,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _navIndex = 2;
   final _scrollController = ScrollController();
   double _scrollOffset = 0;
 
@@ -46,22 +46,13 @@ class _HomePageState extends State<HomePage> {
       body: Stack(
         children: [
           HomeContent(scrollController: _scrollController),
-          HomeLogoHeaderOverlay(scrollOffset: _scrollOffset),
+          HomeLogoHeaderOverlay(
+            scrollOffset: _scrollOffset,
+            onNotificationTap: () => context.push(AppRoutes.notifications),
+          ),
           DraggableFloatingCartButton(
             itemCount: 1,
             onTap: () {},
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SafeArea(
-              top: false,
-              child: MainBottomNav(
-                currentIndex: _navIndex,
-                onTap: (index) => setState(() => _navIndex = index),
-              ),
-            ),
           ),
         ],
       ),

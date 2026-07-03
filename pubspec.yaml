@@ -55,9 +55,9 @@ flutter:
   fonts:
     - family: DINNextLTArabic
       fonts:
-        - asset: assets/font/DIN_Next_LT_Arabic_Light.ttf
+        - asset: assets/font/din_next_lt_arabic_light.ttf
           weight: 300
-        - asset: assets/font/DINNextLTArabic-Regular-2_(1).ttf
+        - asset: assets/font/din_next_lt_arabic_regular.ttf
           weight: 400
-        - asset: assets/font/alfont_com_AlFont_com_DINNextLTArabic-Bold-3.ttf
+        - asset: assets/font/din_next_lt_arabic_bold.ttf
           weight: 700
