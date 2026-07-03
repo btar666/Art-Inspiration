@@ -5,7 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../home/data/home_mock_data.dart';
 import '../../../home/data/models/product_model.dart';
-import '../../../../shared/widgets/product/product_card.dart';
+import '../../../home/presentation/widgets/home_product_card.dart';
+import '../../../home/presentation/widgets/home_product_card_metrics.dart';
 import '../../data/explore_mock_data.dart';
 import '../../data/models/explore_models.dart';
 import 'explore_brand_card.dart';
@@ -42,12 +43,12 @@ abstract final class ExploreTabSlivers {
           crossAxisCount: 2,
           mainAxisSpacing: 14.h,
           crossAxisSpacing: 14.w,
-          childAspectRatio: 0.54,
+          childAspectRatio: HomeProductCardMetrics.aspectRatio(),
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
             final product = _products[index];
-            return ProductCard(
+            return HomeProductCard(
               key: ValueKey('explore_${product.id}_$index'),
               product: product,
               onAddToCart: () {},
