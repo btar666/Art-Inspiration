@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/explore_models.dart';
 import '../widgets/explore_pinned_header.dart';
@@ -71,6 +73,7 @@ class _ExplorePageState extends State<ExplorePage> {
             headerKey: _headerKey,
             selectedTab: _selectedTab,
             onTabSelected: _onTabSelected,
+            onNotificationTap: () => context.push(AppRoutes.notifications),
           ),
         ],
       ),

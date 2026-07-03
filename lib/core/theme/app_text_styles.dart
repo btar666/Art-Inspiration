@@ -273,4 +273,73 @@ abstract final class AppTextStyles {
         fontWeight: FontWeight.w800,
         color: color ?? AppColors.homeSectionTitle,
       );
+
+  // ── Notifications ─────────────────────────────────────────
+  static TextStyle notificationGroupTitle({Color? color}) => _base.copyWith(
+        fontSize: 16.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.homeSectionTitle,
+      );
+
+  static TextStyle notificationTitle({Color? color}) => _base.copyWith(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w700,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle notificationBody({Color? color}) => _base.copyWith(
+        fontSize: 12.sp,
+        fontWeight: FontWeight.w400,
+        height: 1.5,
+        color: color ?? AppColors.textSecondary,
+      );
+
+  static TextStyle notificationTime({Color? color}) => _base.copyWith(
+        fontSize: 11.sp,
+        fontWeight: FontWeight.w500,
+        color: color ?? AppColors.textSecondary,
+      );
+
+  // ── Search ──────────────────────────────────────────────
+  static TextStyle searchCancel({Color? color}) => _base.copyWith(
+        fontSize: 15.sp,
+        fontWeight: FontWeight.w600,
+        color: color ?? AppColors.homeSectionTitle,
+      );
+
+  static TextStyle searchSectionTitle({Color? color}) => _base.copyWith(
+        fontSize: 16.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.homeSectionTitle,
+      );
+
+  static TextStyle searchHistoryItem({Color? color}) => _base.copyWith(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w500,
+        color: color ?? AppColors.textSecondary,
+      );
+
+  static TextStyle searchEmptyState({Color? color}) => _base.copyWith(
+        fontSize: 15.sp,
+        fontWeight: FontWeight.w500,
+        color: color ?? AppColors.textSecondary,
+      );
+
+  static TextStyle searchFilterLabel({Color? color}) => _base.copyWith(
+        fontSize: 13.sp,
+        fontWeight: FontWeight.w600,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle searchFilterChip({Color? color}) => _base.copyWith(
+        fontSize: 12.sp,
+        fontWeight: FontWeight.w600,
+        color: color ?? AppColors.primary,
+      );
+
+  static TextStyle searchFilterValue({Color? color}) => _base.copyWith(
+        fontSize: 13.sp,
+        fontWeight: FontWeight.w600,
+        color: color ?? AppColors.textPrimary,
+      );
 }

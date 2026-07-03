@@ -52,7 +52,9 @@ class _OrdersPageState extends State<OrdersPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const OrdersPageHeader(),
+            OrdersPageHeader(
+              onNotificationTap: () => context.push(AppRoutes.notifications),
+            ),
             OrdersSearchRow(
               onSearchTap: () => _showSearchSheet(context),
               onFilterTap: () {},

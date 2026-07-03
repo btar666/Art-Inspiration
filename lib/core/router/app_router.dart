@@ -7,10 +7,14 @@ import '../../features/auth/presentation/pages/request_success_page.dart';
 import '../../features/explore/presentation/pages/explore_page.dart';
 import '../../features/explore/presentation/pages/explore_section_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/orders/presentation/pages/order_details_page.dart';
 import '../../features/orders/presentation/pages/orders_page.dart';
 import '../../features/shell/presentation/pages/main_shell_page.dart';
+import '../../features/search/data/models/search_filter_state.dart';
+import '../../features/search/presentation/pages/search_filter_page.dart';
+import '../../features/search/presentation/pages/search_page.dart';
 import '../../features/shell/presentation/pages/placeholder_tab_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 
@@ -28,6 +32,8 @@ abstract final class AppRoutes {
   static const settings = '/settings';
   static const orderDetails = '/orders/:id';
   static const exploreSection = '/explore/sections/:sectionId';
+  static const notifications = '/notifications';
+  static const searchFilter = '/search/filter';
 
   static String orderDetailsPath(String id) => '/orders/$id';
   static String exploreSectionPath(String sectionId) =>
@@ -115,6 +121,30 @@ GoRouter createAppRouter() {
           );
         },
       ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.notifications,
+        name: 'notifications',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const NotificationsPage(),
+          transitionsBuilder: _slideTransition,
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.searchFilter,
+        name: 'search-filter',
+        pageBuilder: (context, state) {
+          final filter = state.extra as SearchFilterState? ??
+              const SearchFilterState();
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: SearchFilterPage(initialFilter: filter),
+            transitionsBuilder: _slideTransition,
+          );
+        },
+      ),
       ShellRoute(
         navigatorKey: shellNavigatorKey,
         builder: (context, state, child) => MainShellPage(child: child),
@@ -133,7 +163,7 @@ GoRouter createAppRouter() {
             name: 'search',
             pageBuilder: (context, state) => CustomTransitionPage(
               key: state.pageKey,
-              child: const PlaceholderTabPage(title: 'البحث'),
+              child: const SearchPage(),
               transitionsBuilder: _fadeTransition,
             ),
           ),

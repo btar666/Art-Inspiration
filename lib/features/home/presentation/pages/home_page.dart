@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../widgets/floating_cart_button.dart';
 import '../widgets/home_content.dart';
@@ -44,7 +46,10 @@ class _HomePageState extends State<HomePage> {
       body: Stack(
         children: [
           HomeContent(scrollController: _scrollController),
-          HomeLogoHeaderOverlay(scrollOffset: _scrollOffset),
+          HomeLogoHeaderOverlay(
+            scrollOffset: _scrollOffset,
+            onNotificationTap: () => context.push(AppRoutes.notifications),
+          ),
           DraggableFloatingCartButton(
             itemCount: 1,
             onTap: () {},
