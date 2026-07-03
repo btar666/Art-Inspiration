@@ -1,0 +1,54 @@
+name: art_inspiration_app
+description: Art Inspiration - Cosmetics E-Commerce App
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Navigation
+  go_router: ^14.6.0
+
+  # Storage
+  shared_preferences: ^2.3.2
+
+  # UI & Responsive
+  flutter_screenutil: ^5.9.3
+  google_fonts: ^6.2.1
+
+  # Animations
+  flutter_animate: ^4.5.2
+  lottie: ^3.3.1
+  smooth_page_indicator: ^1.2.1
+  carousel_slider: ^5.0.0
+
+  # Images
+  cached_network_image: ^3.4.1
+
+  # Utils
+  intl: ^0.20.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
