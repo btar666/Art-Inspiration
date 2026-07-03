@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/product_details_widget.dart';
 import '../../data/home_mock_data.dart';
 import 'home_category_chips.dart';
 import 'home_product_card.dart';
@@ -81,6 +82,7 @@ class _HomeContentState extends State<HomeContent> {
                 return HomeProductCard(
                   key: ValueKey('${product.id}_$index'),
                   product: product,
+                  onTap: () => ProductDetailsWidget.open(context, product),
                   onAddToCart: () {},
                 );
               },

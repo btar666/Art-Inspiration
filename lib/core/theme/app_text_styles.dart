@@ -191,4 +191,64 @@ abstract final class AppTextStyles {
         fontWeight: weight ?? FontWeight.w500,
         color: color ?? AppColors.homeNavInactive,
       );
+
+  // ── Product Details ───────────────────────────────────────
+  static TextStyle _productDetailsContent({Color? color}) => _base.copyWith(
+        fontSize: 15.96.sp,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0,
+        color: color ?? const Color(0xFF000000),
+      );
+
+  static TextStyle productDetailsAppBarTitle({Color? color}) => _base.copyWith(
+        fontSize: 18.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.homeSectionTitle,
+      );
+
+  static TextStyle productDetailsName({Color? color}) =>
+      _productDetailsContent(color: color);
+
+  static TextStyle productDetailsSectionTitle({Color? color}) =>
+      _productDetailsContent(color: color);
+
+  static TextStyle productDetailsBody({Color? color}) => _base.copyWith(
+        fontSize: 13.96.sp,
+        fontWeight: FontWeight.w400,
+        height: 1.6,
+        letterSpacing: 0,
+        color: color ?? const Color(0xFF000000).withValues(alpha: 0.58),
+      );
+
+  static TextStyle productDetailsMeta({Color? color}) =>
+      _productDetailsContent(color: color);
+
+  static TextStyle productDetailsMetaValue({Color? color}) =>
+      productDetailsBody(color: color);
+
+  static TextStyle productDetailsPrice({Color? color}) => _base.copyWith(
+        fontSize: 18.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.primary,
+      );
+
+  static TextStyle productDetailsQuantity({Color? color}) => _base.copyWith(
+        fontSize: 16.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle productDetailsAddToCart({Color? color}) => _base.copyWith(
+        fontSize: 15.96.sp,
+        fontWeight: FontWeight.w700,
+        height: 1.5,
+        letterSpacing: 0,
+        color: color ?? const Color(0xFF8C8EFD),
+      );
+
+  static TextStyle productDetailsRating({Color? color}) => _base.copyWith(
+        fontSize: 12.sp,
+        fontWeight: FontWeight.w600,
+        color: color ?? AppColors.textPrimary,
+      );
 }

@@ -13,12 +13,14 @@ class HomeProductCard extends StatefulWidget {
   const HomeProductCard({
     super.key,
     required this.product,
+    this.onTap,
     this.onFavoriteTap,
     this.onAddToCart,
     this.isFavorite = false,
   });
 
   final ProductModel product;
+  final VoidCallback? onTap;
   final VoidCallback? onFavoriteTap;
   final VoidCallback? onAddToCart;
   final bool isFavorite;
@@ -48,10 +50,12 @@ class _HomeProductCardState extends State<HomeProductCard> {
   Widget build(BuildContext context) {
     final product = widget.product;
 
-    return SizedBox(
-      width: HomeProductCardMetrics.width(),
-      height: HomeProductCardMetrics.height(),
-      child: DecoratedBox(
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: SizedBox(
+        width: HomeProductCardMetrics.width(),
+        height: HomeProductCardMetrics.height(),
+        child: DecoratedBox(
         decoration: BoxDecoration(
           color: AppColors.background,
           borderRadius: BorderRadius.circular(HomeProductCardMetrics.radius()),
@@ -109,6 +113,7 @@ class _HomeProductCardState extends State<HomeProductCard> {
           ),
         ),
       ),
+    ),
     );
   }
 }

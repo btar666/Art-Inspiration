@@ -12,6 +12,9 @@ class ProductModel {
     this.discountPercent,
     this.imageUrl,
     this.imageBgColor = const Color(0xFFE9E4F5),
+    this.expiryDate = '',
+    this.origin = '',
+    this.galleryImageUrls = const [],
   });
 
   final String id;
@@ -23,6 +26,9 @@ class ProductModel {
   final int? discountPercent;
   final String? imageUrl;
   final Color imageBgColor;
+  final String expiryDate;
+  final String origin;
+  final List<String> galleryImageUrls;
 
   String get formattedPrice {
     final formatted = price.toString().replaceAllMapped(
