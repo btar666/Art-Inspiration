@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_fonts.dart';
 
 /// أزرار موحدة قابلة لإعادة الاستخدام
 class AppButton extends StatelessWidget {
@@ -65,6 +66,7 @@ class _PrimaryButton extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
+              fontFamily: AppFonts.family,
               color: AppColors.textOnPrimary,
               fontSize: 16.sp,
               fontWeight: FontWeight.w700,
@@ -96,6 +98,7 @@ class _SecondaryButton extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
+              fontFamily: AppFonts.family,
               color: AppColors.primary,
               fontSize: 15.sp,
               fontWeight: FontWeight.w600,

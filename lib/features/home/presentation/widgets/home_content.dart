@@ -3,8 +3,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/home_mock_data.dart';
-import '../../../../shared/widgets/product/product_card.dart';
 import 'home_category_chips.dart';
+import 'home_product_card.dart';
+import 'home_product_card_metrics.dart';
 import 'home_promo_banner.dart';
 import 'home_scroll_metrics.dart';
 import 'home_top_section.dart';
@@ -71,13 +72,13 @@ class _HomeContentState extends State<HomeContent> {
               crossAxisCount: 2,
               mainAxisSpacing: 14.h,
               crossAxisSpacing: 14.w,
-              childAspectRatio: 0.54,
+              childAspectRatio: HomeProductCardMetrics.aspectRatio(),
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 final product =
                     HomeMockData.products[index % HomeMockData.products.length];
-                return ProductCard(
+                return HomeProductCard(
                   key: ValueKey('${product.id}_$index'),
                   product: product,
                   onAddToCart: () {},
