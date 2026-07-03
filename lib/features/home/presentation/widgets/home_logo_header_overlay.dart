@@ -1,13 +1,11 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/pinned_blur_gradient_background.dart';
 import 'home_scroll_metrics.dart';
 import 'home_top_section.dart';
 
-/// شريط الشعار الثابت بخلفية شفافة وتغويش — يختفي عند الوصول لقسم المنتجات
+/// شريط الشعار الثابت بتغويش متدرج — يختفي عند الوصول لقسم المنتجات
 class HomeLogoHeaderOverlay extends StatelessWidget {
   const HomeLogoHeaderOverlay({
     super.key,
@@ -21,7 +19,6 @@ class HomeLogoHeaderOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;
-    final barHeight = topInset + HomeScrollMetrics.logoBarHeight();
     final hideStart = HomeScrollMetrics.logoHideStartOffset();
     final hideRange = HomeScrollMetrics.logoHideAnimationRange();
     final hideProgress =
@@ -41,17 +38,23 @@ class HomeLogoHeaderOverlay extends StatelessWidget {
           child: Transform.translate(
             offset: Offset(0, -12.h * hideProgress),
             child: ClipRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                child: Container(
-                  height: barHeight,
-                  padding: EdgeInsets.only(top: topInset),
-                  decoration: BoxDecoration(
-                    color: AppColors.background.withValues(alpha: 0.72),
+              child: Stack(
+                children: [
+                  const Positioned.fill(
+                    child: PinnedBlurGradientBackground(
+                      fadeStops: PinnedBlurHeaderStyle.homeFadeStops,
+                    ),
                   ),
-                  alignment: Alignment.center,
-                  child: HomeLogoHeader(onNotificationTap: onNotificationTap),
-                ),
+                  Padding(
+                    padding: EdgeInsets.only(top: topInset),
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(0, 8.h, 0, 8.h),
+                      child: HomeLogoHeader(
+                        onNotificationTap: onNotificationTap,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

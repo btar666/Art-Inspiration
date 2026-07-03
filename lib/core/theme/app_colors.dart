@@ -33,4 +33,18 @@ abstract final class AppColors {
   static const Color homeNavInactive = Color(0xFF9AA8E8);
   static const Color homeHeart = Color(0xFF7B8FE8);
   static const Color notificationDot = Color(0xFFFF3B30);
+
+  // ── Orders ────────────────────────────────────────────────
+  static const Color orderLabel = Color(0x800000FF);
+  static const Color orderCardBorder = Color(0xFFE8EBFF);
+  static const Color orderStatusDeliveringBg = Color(0xFFFFF6D6);
+  static const Color orderStatusDeliveringText = Color(0xFF1A1A2E);
+  static const Color orderStatusDeliveredBg = Color(0xFFE5F8EC);
+  static const Color orderStatusDeliveredText = Color(0xFF1A1A2E);
+  static const Color orderStatusCancelledBg = Color(0xFFFFE8E8);
+  static const Color orderStatusCancelledText = Color(0xFF1A1A2E);
+  static const Color orderTotalPrice = Color(0xFFE85D4A);
+  static const Color orderFreeDelivery = Color(0xFF22A45D);
+  static const Color orderBackButton = Color(0xFFB8C4FF);
+  static const Color orderDetailsFooter = Color(0xFFF0F3FF);
 }

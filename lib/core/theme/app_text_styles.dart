@@ -147,4 +147,86 @@ abstract final class AppTextStyles {
         fontWeight: weight ?? FontWeight.w500,
         color: color ?? AppColors.homeNavInactive,
       );
+
+  // ── Orders ────────────────────────────────────────────────
+  static TextStyle ordersPageTitle({Color? color}) => _base.copyWith(
+        fontSize: 22.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle ordersCardTitle({Color? color}) => _base.copyWith(
+        fontSize: 16.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle ordersCardSubtitle({Color? color}) => _base.copyWith(
+        fontSize: 13.sp,
+        fontWeight: FontWeight.w500,
+        color: color ?? AppColors.orderLabel,
+      );
+
+  static TextStyle ordersCardPrice({Color? color}) => _base.copyWith(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle ordersStatusBadge({Color? color}) => _base.copyWith(
+        fontSize: 13.sp,
+        fontWeight: FontWeight.w700,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle ordersDetailLabel({Color? color}) => _base.copyWith(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w700,
+        color: color ?? AppColors.orderLabel,
+      );
+
+  static TextStyle ordersDetailValue({Color? color}) => _base.copyWith(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle ordersSectionTitle({Color? color}) => _base.copyWith(
+        fontSize: 16.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle ordersItemPrice({Color? color}) => _base.copyWith(
+        fontSize: 12.sp,
+        fontWeight: FontWeight.w700,
+        color: color ?? AppColors.primary,
+      );
+
+  // ── Explore ───────────────────────────────────────────────
+  static TextStyle exploreTabLabel({Color? color, FontWeight? weight}) =>
+      _base.copyWith(
+        fontSize: 14.sp,
+        fontWeight: weight ?? FontWeight.w500,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle exploreBrandLogo({Color? color}) => _base.copyWith(
+        fontSize: 22.sp,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 1.5,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle exploreBrandLabel({Color? color}) => _base.copyWith(
+        fontSize: 13.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle exploreSectionLabel({Color? color}) => _base.copyWith(
+        fontSize: 12.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.homeSectionTitle,
+      );
 }
