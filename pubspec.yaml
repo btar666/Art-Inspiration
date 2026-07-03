@@ -26,7 +26,6 @@ dependencies:
 
   # UI & Responsive
   flutter_screenutil: ^5.9.3
-  google_fonts: ^6.2.1
 
   # Animations
   flutter_animate: ^4.5.2
@@ -52,3 +51,13 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/animations/
+
+  fonts:
+    - family: DINNextLTArabic
+      fonts:
+        - asset: assets/font/DIN_Next_LT_Arabic_Light.ttf
+          weight: 300
+        - asset: assets/font/DINNextLTArabic-Regular-2_(1).ttf
+          weight: 400
+        - asset: assets/font/alfont_com_AlFont_com_DINNextLTArabic-Bold-3.ttf
+          weight: 700

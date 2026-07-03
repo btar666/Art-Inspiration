@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_fonts.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
 /// بانر ترويجي متحرك
@@ -118,6 +119,7 @@ class _BannerCard extends StatelessWidget {
                       Text(
                         'تسوقي الآن',
                         style: TextStyle(
+                          fontFamily: AppFonts.family,
                           color: Colors.white,
                           fontSize: 10.sp,
                           fontWeight: FontWeight.w600,

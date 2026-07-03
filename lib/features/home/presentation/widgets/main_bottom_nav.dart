@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_fonts.dart';
 
 /// شريط التنقل السفلي
 class MainBottomNav extends StatelessWidget {
@@ -111,6 +112,7 @@ class _NavBarItem extends StatelessWidget {
             Text(
               item.label,
               style: TextStyle(
+                fontFamily: AppFonts.family,
                 fontSize: 9.sp,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                 color: color,

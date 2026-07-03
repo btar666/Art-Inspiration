@@ -1,0 +1,39 @@
+---
+description: هيكلية وأنماط مشروع Art Inspiration Flutter
+globs: lib/**/*.dart
+alwaysApply: true
+---
+
+# Art Inspiration — Flutter Conventions
+
+## Structure (feature-first)
+- `lib/core/` — router, theme, constants, storage (shared infra)
+- `lib/features/<feature>/` — `data/` (models, mock/static content), `presentation/` (pages, widgets, providers)
+- `lib/shared/widgets/` — reusable UI across features (auth, product, decorative)
+
+## Patterns
+- **State**: Riverpod — `Provider` for services, `StateProvider` for simple UI state. Override `sharedPreferencesProvider` in `main.dart`.
+- **Navigation**: `go_router` — routes in `AppRoutes`, `context.go`/`push`, `CustomTransitionPage` with fade/slide.
+- **Pages**: `ConsumerStatefulWidget` when using Riverpod; plain `StatefulWidget` for local form/scroll state.
+- **Data**: Plain Dart models (no freezed/json yet). Mock data in `abstract final class XxxMockData`. Static content in `abstract final class XxxContent`.
+- **Storage**: Thin wrapper classes + Riverpod provider (see `OnboardingStorage`).
+
+## UI & RTL
+- Arabic-first: `locale: ar`, `TextDirection.rtl` in `app.dart`
+- Responsive: `flutter_screenutil` — `.w`, `.h`, `.r`, `.sp`; design size 393×852
+- Theme: `AppColors`, `AppTextStyles`, `AppFonts` (DIN Next LT Arabic), `AppTheme.light`
+- Animations: `flutter_animate` (`.animate().fadeIn().slideX()`), `FormErrorAnimator` + shake ticks for validation
+- Decorative: `DecorativeBackground`, `SparkleIcon`, `DecorativeDotGrid` on auth/splash/onboarding
+
+## Naming & style
+- Arabic doc comments (`///`) on public classes
+- `abstract final class` for constants/theme/static data
+- Shared widgets: `AppButton`, `AppTextField`, `AppDropdownField`, `AuthHeader`
+- Product card: `HomeProductCard` + `HomeProductCardMetrics` in `features/home/presentation/widgets/`
+- Assets paths in `AppAssets`
+
+## When adding a feature
+1. Create `lib/features/<name>/data/` + `presentation/pages|widgets|providers/`
+2. Register route in `app_router.dart` (`AppRoutes` + `GoRoute`)
+3. Reuse `shared/widgets` and `core/theme` — do not duplicate UI primitives
+4. Keep business logic out of widgets; use providers when state is shared

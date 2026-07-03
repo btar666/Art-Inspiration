@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
+import 'app_fonts.dart';
 
 /// أنماط النصوص الموحدة
 abstract final class AppTextStyles {
-  static TextStyle get _base => GoogleFonts.cairo();
+  static TextStyle get _base => AppFonts.base();
 
   // ── Splash ──────────────────────────────────────────────
   static TextStyle splashTitle({Color? color}) => _base.copyWith(
@@ -120,6 +120,50 @@ abstract final class AppTextStyles {
         fontSize: 14.sp,
         fontWeight: FontWeight.w800,
         color: color ?? AppColors.textPrimary,
+      );
+
+  /// اسم المنتج في كارت الصفحة الرئيسية
+  static TextStyle homeProductCardName({Color? color}) => _base.copyWith(
+        fontSize: 15.92.sp,
+        fontWeight: FontWeight.w700,
+        height: 1.5,
+        letterSpacing: 0,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle homeProductRating({Color? color}) => _base.copyWith(
+        fontSize: 11.sp,
+        fontWeight: FontWeight.w600,
+        height: 1.5,
+        letterSpacing: 0,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle homeProductCardCategory({Color? color}) => _base.copyWith(
+        fontSize: 12.sp,
+        fontWeight: FontWeight.w400,
+        color: color ?? const Color(0xFF0000FF).withValues(alpha: 0.5),
+      );
+
+  static TextStyle homeProductCardDescription({Color? color}) => _base.copyWith(
+        fontSize: 12.sp,
+        fontWeight: FontWeight.w400,
+        height: 1.5,
+        color: color ?? AppColors.textSecondary,
+      );
+
+  static TextStyle homeProductCardDiscount({Color? color}) => _base.copyWith(
+        fontSize: 11.94.sp,
+        fontWeight: FontWeight.w700,
+        height: 1.5,
+        letterSpacing: 0,
+        color: color ?? AppColors.textOnPrimary,
+      );
+
+  static TextStyle homeProductCardPrice({Color? color}) => _base.copyWith(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w700,
+        color: color ?? const Color(0xFF0000FF).withValues(alpha: 0.5),
       );
 
   static TextStyle homeProductCategory({Color? color}) => _base.copyWith(
