@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../../../core/constants/app_assets.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../cart/presentation/providers/cart_provider.dart';
+import '../../../cart/presentation/widgets/cart_icon_button.dart';
 
 /// زر السلة العائم القابل للسحب في أي مكان
-class DraggableFloatingCartButton extends StatefulWidget {
+class DraggableFloatingCartButton extends ConsumerStatefulWidget {
   const DraggableFloatingCartButton({
     super.key,
-    this.itemCount = 1,
     this.onTap,
     this.bottomReservedHeight = 88,
   });
 
-  final int itemCount;
   final VoidCallback? onTap;
   final double bottomReservedHeight;
 
   @override
-  State<DraggableFloatingCartButton> createState() =>
+  ConsumerState<DraggableFloatingCartButton> createState() =>
       _DraggableFloatingCartButtonState();
 }
 
-class _DraggableFloatingCartButtonState extends State<DraggableFloatingCartButton> {
+class _DraggableFloatingCartButtonState
+    extends ConsumerState<DraggableFloatingCartButton> {
   Offset? _position;
 
   double get _buttonSize => 56.w;
@@ -64,69 +64,36 @@ class _DraggableFloatingCartButtonState extends State<DraggableFloatingCartButto
     final screenSize = MediaQuery.sizeOf(context);
     final padding = MediaQuery.paddingOf(context);
     final position = _position ?? _defaultPosition(screenSize, padding);
+    final itemCount = ref.watch(cartItemCountProvider);
+    final animationTick = ref.watch(cartAnimationTickProvider);
 
     return Positioned(
       left: position.dx,
       top: position.dy,
       child: GestureDetector(
         onPanUpdate: (d) => _onPanUpdate(d, screenSize, padding),
-        onTap: widget.onTap,
-        child: FloatingCartButton(itemCount: widget.itemCount),
+        child: CartCircleIconButton(
+          itemCount: itemCount,
+          animationTick: animationTick,
+          onTap: widget.onTap,
+        ),
       ),
     );
   }
 }
 
-/// شكل زر السلة العائم
-class FloatingCartButton extends StatelessWidget {
-  const FloatingCartButton({
-    super.key,
-    this.itemCount = 1,
-  });
+/// شكل زر السلة العائم — للاستخدام المباشر مع Riverpod
+class FloatingCartButton extends ConsumerWidget {
+  const FloatingCartButton({super.key, this.onTap});
 
-  final int itemCount;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 56.w,
-      height: 56.w,
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: [
-          Image.asset(
-            AppAssets.shoppingCartIcon,
-            width: 28.w,
-            height: 28.w,
-            fit: BoxFit.contain,
-          ),
-          if (itemCount > 0)
-            Positioned(
-              top: 10.h,
-              right: 10.w,
-              child: Container(
-                width: 10.w,
-                height: 10.w,
-                decoration: const BoxDecoration(
-                  color: AppColors.notificationDot,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-        ],
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return CartCircleIconButton(
+      itemCount: ref.watch(cartItemCountProvider),
+      animationTick: ref.watch(cartAnimationTickProvider),
+      onTap: onTap,
     );
   }
 }

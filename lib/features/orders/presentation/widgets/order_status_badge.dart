@@ -14,6 +14,10 @@ class OrderStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bg, text) = switch (status) {
+      OrderStatus.reviewing => (
+          AppColors.orderStatusDeliveringBg,
+          AppColors.orderStatusDeliveringText,
+        ),
       OrderStatus.delivering => (
           AppColors.orderStatusDeliveringBg,
           AppColors.orderStatusDeliveringText,

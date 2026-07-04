@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../checkout/data/local_orders_storage.dart';
 import '../../data/models/order_model.dart';
 import '../../data/orders_mock_data.dart';
 import '../widgets/order_card.dart';
@@ -11,14 +13,14 @@ import '../widgets/orders_page_header.dart';
 import '../widgets/orders_search_row.dart';
 
 /// صفحة الفواتير
-class OrdersPage extends StatefulWidget {
+class OrdersPage extends ConsumerStatefulWidget {
   const OrdersPage({super.key});
 
   @override
-  State<OrdersPage> createState() => _OrdersPageState();
+  ConsumerState<OrdersPage> createState() => _OrdersPageState();
 }
 
-class _OrdersPageState extends State<OrdersPage> {
+class _OrdersPageState extends ConsumerState<OrdersPage> {
   final _searchController = TextEditingController();
   String _query = '';
 
@@ -28,10 +30,21 @@ class _OrdersPageState extends State<OrdersPage> {
     super.dispose();
   }
 
+  List<OrderModel> get _allOrders {
+    final local = ref.watch(localOrdersNotifierProvider);
+    final mock = OrdersMockData.orders;
+    final localIds = local.map((o) => o.id).toSet();
+    final merged = [
+      ...local,
+      ...mock.where((o) => !localIds.contains(o.id)),
+    ];
+    return merged;
+  }
+
   List<OrderModel> get _filteredOrders {
-    if (_query.trim().isEmpty) return OrdersMockData.orders;
+    if (_query.trim().isEmpty) return _allOrders;
     final q = _query.trim();
-    return OrdersMockData.orders
+    return _allOrders
         .where(
           (o) =>
               o.orderName.contains(q) ||

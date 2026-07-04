@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../cart/presentation/cart_actions.dart';
 import '../../../home/data/home_mock_data.dart';
 import '../../../home/data/models/product_model.dart';
 import '../../../home/presentation/widgets/home_product_card.dart';
@@ -12,16 +14,16 @@ import '../widgets/section_filter_chips.dart';
 import '../widgets/section_page_header.dart';
 
 /// صفحة منتجات القسم
-class ExploreSectionPage extends StatefulWidget {
+class ExploreSectionPage extends ConsumerStatefulWidget {
   const ExploreSectionPage({super.key, required this.sectionId});
 
   final String sectionId;
 
   @override
-  State<ExploreSectionPage> createState() => _ExploreSectionPageState();
+  ConsumerState<ExploreSectionPage> createState() => _ExploreSectionPageState();
 }
 
-class _ExploreSectionPageState extends State<ExploreSectionPage> {
+class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
   int _selectedFilterIndex = 0;
 
   List<ProductModel> get _products => [
@@ -73,7 +75,8 @@ class _ExploreSectionPageState extends State<ExploreSectionPage> {
                   return HomeProductCard(
                     key: ValueKey('section_${section.id}_${product.id}_$index'),
                     product: product,
-                    onAddToCart: () {},
+                    onAddToCart: () =>
+                        addProductToCart(context, ref, product),
                   );
                 },
               ),

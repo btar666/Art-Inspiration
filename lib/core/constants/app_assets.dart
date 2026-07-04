@@ -18,6 +18,9 @@ abstract final class AppAssets {
 
   static const String frameIllustration = 'assets/images/Frame.png';
   static const String splashReference = 'assets/images/splash_reference.png';
+  static const String basketLogo = 'assets/images/basket_logo.png';
+  static const String confirmOrderIllustration = 'assets/images/conform_order.png';
+  static const String orderTrackingIllustration = 'assets/images/order_check.png';
 
   // ── Settings ──────────────────────────────────────────────
   static const String settingsFavorites = 'assets/images/fav.png';

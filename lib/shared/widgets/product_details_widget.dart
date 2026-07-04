@@ -3,12 +3,18 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../features/cart/presentation/cart_actions.dart';
+import '../../features/cart/presentation/providers/cart_provider.dart';
+import '../../features/cart/presentation/widgets/cart_icon_button.dart';
+import '../../features/favorites/presentation/favorites_actions.dart';
+import '../../features/favorites/presentation/providers/favorites_provider.dart';
 import '../../features/home/data/home_mock_data.dart';
 import '../../features/home/data/models/product_model.dart';
 import 'product_details_app_bar_metrics.dart';
@@ -16,7 +22,7 @@ import 'product_details_bottom_bar_metrics.dart';
 import 'product_details_gallery_metrics.dart';
 
 /// صفحة تفاصيل المنتج — ويدجت قابل لإعادة الاستخدام من أي مكان
-class ProductDetailsWidget extends StatefulWidget {
+class ProductDetailsWidget extends ConsumerStatefulWidget {
   const ProductDetailsWidget({
     super.key,
     required this.product,
@@ -37,20 +43,19 @@ class ProductDetailsWidget extends StatefulWidget {
   }
 
   @override
-  State<ProductDetailsWidget> createState() => _ProductDetailsWidgetState();
+  ConsumerState<ProductDetailsWidget> createState() =>
+      _ProductDetailsWidgetState();
 }
 
-class _ProductDetailsWidgetState extends State<ProductDetailsWidget> {
+class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
   late int _quantity;
   late int _selectedImageIndex;
-  late bool _isFavorite;
 
   @override
   void initState() {
     super.initState();
     _quantity = widget.initialQuantity;
     _selectedImageIndex = 0;
-    _isFavorite = false;
   }
 
   ProductModel get product => widget.product;
@@ -65,6 +70,7 @@ class _ProductDetailsWidgetState extends State<ProductDetailsWidget> {
         screenHeight * ProductDetailsBottomBarMetrics.whiteContainerHeightFraction;
     final bottomRadius =
         ProductDetailsBottomBarMetrics.whiteContainerBottomRadius();
+    final isFavorite = ref.watch(isProductFavoriteProvider(product.id));
 
     return Scaffold(
       backgroundColor: ProductDetailsBottomBarMetrics.pageBackground,
@@ -90,10 +96,10 @@ class _ProductDetailsWidgetState extends State<ProductDetailsWidget> {
                     SafeArea(
                       bottom: false,
                       child: _ProductDetailsAppBar(
-                        isFavorite: _isFavorite,
+                        isFavorite: isFavorite,
                         onBack: () => context.pop(),
                         onFavoriteTap: () =>
-                            setState(() => _isFavorite = !_isFavorite),
+                            toggleProductFavorite(ref, product),
                       ),
                     ),
                     Expanded(
@@ -188,7 +194,18 @@ class _ProductDetailsWidgetState extends State<ProductDetailsWidget> {
                     if (_quantity > 1) setState(() => _quantity--);
                   },
                   onIncrement: () => setState(() => _quantity++),
-                  onAddToCart: () => widget.onAddToCart?.call(_quantity),
+                  onAddToCart: () {
+                    if (widget.onAddToCart != null) {
+                      widget.onAddToCart!.call(_quantity);
+                      return;
+                    }
+                    addProductToCart(
+                      context,
+                      ref,
+                      product,
+                      quantity: _quantity,
+                    );
+                  },
                 ),
               ),
             ),
@@ -199,7 +216,7 @@ class _ProductDetailsWidgetState extends State<ProductDetailsWidget> {
   }
 }
 
-class _ProductDetailsAppBar extends StatelessWidget {
+class _ProductDetailsAppBar extends ConsumerWidget {
   const _ProductDetailsAppBar({
     required this.isFavorite,
     required this.onBack,
@@ -211,14 +228,18 @@ class _ProductDetailsAppBar extends StatelessWidget {
   final VoidCallback onFavoriteTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cartCount = ref.watch(cartItemCountProvider);
+    final animationTick = ref.watch(cartAnimationTickProvider);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
       child: Row(
         children: [
-          _ProductDetailsFavoriteButton(
-            isFavorite: isFavorite,
-            onTap: onFavoriteTap,
+          ProductDetailsCartButton(
+            itemCount: cartCount,
+            animationTick: animationTick,
+            onTap: () => context.push(AppRoutes.cart),
           ),
           Expanded(
             child: Text(
@@ -227,6 +248,11 @@ class _ProductDetailsAppBar extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ),
+          _ProductDetailsFavoriteButton(
+            isFavorite: isFavorite,
+            onTap: onFavoriteTap,
+          ),
+          SizedBox(width: 8.w),
           _ShapeIconButton(
             size: 36.w,
             color: AppColors.primary,

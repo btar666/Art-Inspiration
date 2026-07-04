@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/cart/presentation/pages/cart_page.dart';
+import '../../features/checkout/presentation/pages/checkout_page.dart';
+import '../../features/checkout/presentation/pages/checkout_review_page.dart';
+import '../../features/checkout/presentation/pages/checkout_success_page.dart';
+import '../../features/checkout/presentation/pages/order_tracking_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/request_success_page.dart';
@@ -21,6 +26,7 @@ import '../../features/settings/presentation/pages/about_us_page.dart';
 import '../../features/settings/presentation/pages/contact_us_page.dart';
 import '../../features/settings/presentation/pages/help_page.dart';
 import '../../features/settings/presentation/pages/saved_addresses_page.dart';
+import '../../features/settings/presentation/pages/select_address_for_order_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/widgets/product_details_widget.dart';
@@ -47,6 +53,17 @@ abstract final class AppRoutes {
   static const exploreSection = '/explore/sections/:sectionId';
   static const notifications = '/notifications';
   static const searchFilter = '/search/filter';
+  static const cart = '/cart';
+  static const checkout = '/checkout';
+  static const checkoutReview = '/checkout/review';
+  static const checkoutSuccess = '/checkout/success/:orderId';
+  static const checkoutSelectAddress = '/checkout/select-address';
+  static const orderTracking = '/checkout/tracking/:orderId';
+
+  static String checkoutSuccessPath(String orderId) =>
+      '/checkout/success/$orderId';
+  static String orderTrackingPath(String orderId) =>
+      '/checkout/tracking/$orderId';
 
   static String productDetailsPath(String id) => '/product/$id';
   static String orderDetailsPath(String id) => '/orders/$id';
@@ -168,6 +185,72 @@ GoRouter createAppRouter() {
           return CustomTransitionPage(
             key: state.pageKey,
             child: SearchFilterPage(initialFilter: filter),
+            transitionsBuilder: _slideTransition,
+          );
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.cart,
+        name: 'cart',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const CartPage(),
+          transitionsBuilder: _slideTransition,
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.checkout,
+        name: 'checkout',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const CheckoutPage(),
+          transitionsBuilder: _slideTransition,
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.checkoutReview,
+        name: 'checkout-review',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const CheckoutReviewPage(),
+          transitionsBuilder: _slideTransition,
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.checkoutSuccess,
+        name: 'checkout-success',
+        pageBuilder: (context, state) {
+          final orderId = state.pathParameters['orderId']!;
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: CheckoutSuccessPage(orderId: orderId),
+            transitionsBuilder: _slideTransition,
+          );
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.checkoutSelectAddress,
+        name: 'checkout-select-address',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const SelectAddressForOrderPage(),
+          transitionsBuilder: _slideTransition,
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.orderTracking,
+        name: 'order-tracking',
+        pageBuilder: (context, state) {
+          final orderId = state.pathParameters['orderId']!;
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: OrderTrackingPage(orderId: orderId),
             transitionsBuilder: _slideTransition,
           );
         },

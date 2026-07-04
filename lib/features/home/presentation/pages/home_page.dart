@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
@@ -8,14 +9,14 @@ import '../widgets/home_content.dart';
 import '../widgets/home_logo_header_overlay.dart';
 
 /// الصفحة الرئيسية
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends ConsumerState<HomePage> {
   final _scrollController = ScrollController();
   double _scrollOffset = 0;
 
@@ -51,8 +52,7 @@ class _HomePageState extends State<HomePage> {
             onNotificationTap: () => context.push(AppRoutes.notifications),
           ),
           DraggableFloatingCartButton(
-            itemCount: 1,
-            onTap: () {},
+            onTap: () => context.push(AppRoutes.cart),
           ),
         ],
       ),

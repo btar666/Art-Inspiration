@@ -4,6 +4,10 @@ abstract final class AppConstants {
   static const String appTagline = 'FOR GENERAL TRADING COSMETICS';
 
   static const String onboardingCompletedKey = 'onboarding_completed';
+  static const String cartItemsKey = 'cart_items';
+  static const String favoritesKey = 'favorites';
+  static const String savedAddressesKey = 'saved_addresses';
+  static const String localOrdersKey = 'local_orders';
 
   /// عرض Onboarding في كل مرة — غيّرها إلى false لاحقاً لإخفائها
   static const bool alwaysShowOnboarding = true;

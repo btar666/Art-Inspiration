@@ -421,4 +421,105 @@ abstract final class AppTextStyles {
         fontWeight: FontWeight.w600,
         color: color ?? AppColors.textPrimary,
       );
+
+  // ── Cart ──────────────────────────────────────────────────
+  static TextStyle cartSectionTitle({Color? color}) => _base.copyWith(
+        fontSize: 16.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.homeSectionTitle,
+      );
+
+  static TextStyle cartItemName({Color? color}) => _base.copyWith(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle cartItemPrice({Color? color}) => _base.copyWith(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle cartQuantity({Color? color}) => _base.copyWith(
+        fontSize: 15.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle cartPriceLabel({Color? color, FontWeight? weight}) =>
+      _base.copyWith(
+        fontSize: 14.sp,
+        fontWeight: weight ?? FontWeight.w600,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle cartPriceValue({Color? color, FontWeight? weight}) =>
+      _base.copyWith(
+        fontSize: 14.sp,
+        fontWeight: weight ?? FontWeight.w700,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle cartCheckoutButton({Color? color}) => _base.copyWith(
+        fontSize: 16.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.primary,
+      );
+
+  static TextStyle cartBadgeCount({Color? color}) => _base.copyWith(
+        fontSize: 9.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.textOnPrimary,
+        height: 1,
+      );
+
+  static TextStyle cartEmptyMessage({Color? color}) => _base.copyWith(
+        fontSize: 15.sp,
+        fontWeight: FontWeight.w700,
+        color: color ?? AppColors.textSecondary,
+      );
+
+  // ── Checkout ──────────────────────────────────────────────
+  static TextStyle checkoutSectionTitle({Color? color}) => _base.copyWith(
+        fontSize: 16.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle checkoutLink({Color? color}) => _base.copyWith(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w700,
+        color: color ?? AppColors.primary,
+      );
+
+  static TextStyle checkoutSuccessTitle({Color? color}) => _base.copyWith(
+        fontSize: 20.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.textPrimary,
+      );
+
+  static TextStyle cartDialogTitle({Color? color}) => _base.copyWith(
+        fontSize: 16.sp,
+        fontWeight: FontWeight.w800,
+        color: color ?? AppColors.homeDiscount,
+      );
+
+  static TextStyle cartDialogBody({Color? color}) => _base.copyWith(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w500,
+        color: color ?? AppColors.textSecondary,
+      );
+
+  static TextStyle cartDialogConfirm({Color? color}) => _base.copyWith(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w700,
+        color: color ?? AppColors.background,
+      );
+
+  static TextStyle cartDialogCancel({Color? color}) => _base.copyWith(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w700,
+        color: color ?? AppColors.homeDiscount,
+      );
 }

@@ -1,35 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/page_back_header.dart';
 import '../../data/models/delivery_address_model.dart';
-import '../../data/saved_addresses_mock_data.dart';
+import '../providers/saved_addresses_provider.dart';
 import '../widgets/address_form_bottom_sheet.dart';
 import '../widgets/saved_address_card_widget.dart';
 import '../widgets/settings_bottom_bar.dart';
 
 /// صفحة عناوين التوصيل المحفوظة
-class SavedAddressesPage extends StatefulWidget {
+class SavedAddressesPage extends ConsumerWidget {
   const SavedAddressesPage({super.key});
 
   @override
-  State<SavedAddressesPage> createState() => _SavedAddressesPageState();
-}
-
-class _SavedAddressesPageState extends State<SavedAddressesPage> {
-  late List<DeliveryAddressModel> _addresses;
-
-  @override
-  void initState() {
-    super.initState();
-    _addresses = List.of(SavedAddressesMockData.initial());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isEmpty = _addresses.isEmpty;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final addresses = ref.watch(savedAddressesNotifierProvider);
+    final isEmpty = addresses.isEmpty;
+    final notifier = ref.read(savedAddressesNotifierProvider.notifier);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -51,7 +41,7 @@ class _SavedAddressesPageState extends State<SavedAddressesPage> {
                   : ListView.separated(
                       padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 16.h),
                       physics: const BouncingScrollPhysics(),
-                      itemCount: _addresses.length,
+                      itemCount: addresses.length,
                       separatorBuilder: (_, __) => Divider(
                         height: 1,
                         thickness: 1,
@@ -60,18 +50,22 @@ class _SavedAddressesPageState extends State<SavedAddressesPage> {
                         ),
                       ),
                       itemBuilder: (context, index) {
-                        final address = _addresses[index];
+                        final address = addresses[index];
                         return SavedAddressCardWidget(
                           address: address,
-                          onEdit: () => _onEditAddress(address),
-                          onDelete: () => _deleteAddress(address.id),
+                          onEdit: () => _onEditAddress(
+                            context,
+                            notifier,
+                            address,
+                          ),
+                          onDelete: () => notifier.removeAddress(address.id),
                         );
                       },
                     ),
             ),
             SettingsBottomBar(
               label: isEmpty ? 'أضافة عنوان' : 'أضافة عنوان جديد',
-              onTap: _onAddAddress,
+              onTap: () => _onAddAddress(context, notifier),
             ),
           ],
         ),
@@ -79,27 +73,20 @@ class _SavedAddressesPageState extends State<SavedAddressesPage> {
     );
   }
 
-  Future<void> _onAddAddress() async {
+  Future<void> _onAddAddress(
+    BuildContext context,
+    SavedAddressesNotifier notifier,
+  ) async {
     final result = await AddressFormBottomSheet.showAdd(context);
     if (result == null) return;
-
-    setState(() {
-      final isFirst = _addresses.isEmpty;
-      _addresses.add(
-        DeliveryAddressModel(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          governorate: result.governorate,
-          area: result.area,
-          landmark: result.landmark,
-          lat: result.lat,
-          lng: result.lng,
-          isCurrent: isFirst,
-        ),
-      );
-    });
+    notifier.addAddress(result);
   }
 
-  Future<void> _onEditAddress(DeliveryAddressModel address) async {
+  Future<void> _onEditAddress(
+    BuildContext context,
+    SavedAddressesNotifier notifier,
+    DeliveryAddressModel address,
+  ) async {
     final result = await AddressFormBottomSheet.showEdit(
       context,
       governorate: address.governorate,
@@ -109,27 +96,6 @@ class _SavedAddressesPageState extends State<SavedAddressesPage> {
       lng: address.lng,
     );
     if (result == null) return;
-
-    setState(() {
-      final index = _addresses.indexWhere((a) => a.id == address.id);
-      if (index == -1) return;
-      _addresses[index] = address.copyWith(
-        governorate: result.governorate,
-        area: result.area,
-        landmark: result.landmark,
-        lat: result.lat,
-        lng: result.lng,
-      );
-    });
-  }
-
-  void _deleteAddress(String id) {
-    setState(() {
-      final wasCurrent = _addresses.any((a) => a.id == id && a.isCurrent);
-      _addresses.removeWhere((a) => a.id == id);
-      if (wasCurrent && _addresses.isNotEmpty) {
-        _addresses[0] = _addresses[0].copyWith(isCurrent: true);
-      }
-    });
+    notifier.updateAddress(address.id, result);
   }
 }

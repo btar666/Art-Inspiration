@@ -1,39 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/page_back_header.dart';
 import '../../../../shared/widgets/product_details_widget.dart';
-import '../../../home/data/models/product_model.dart';
+import '../../../cart/presentation/cart_actions.dart';
 import '../../../home/presentation/widgets/home_product_card.dart';
 import '../../../home/presentation/widgets/home_product_card_metrics.dart';
 import '../../../settings/presentation/widgets/settings_bottom_bar.dart';
-import '../../data/favorites_mock_data.dart';
+import '../providers/favorites_provider.dart';
 
 /// صفحة المفضلات
-class FavoritesPage extends StatefulWidget {
+class FavoritesPage extends ConsumerWidget {
   const FavoritesPage({super.key});
 
   @override
-  State<FavoritesPage> createState() => _FavoritesPageState();
-}
-
-class _FavoritesPageState extends State<FavoritesPage> {
-  late List<ProductModel> _favorites;
-
-  @override
-  void initState() {
-    super.initState();
-    _favorites = List.of(FavoritesMockData.initial());
-  }
-
-  void _removeFavorite(String id) {
-    setState(() => _favorites.removeWhere((p) => p.id == id));
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final favorites = ref.watch(favoritesNotifierProvider);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
@@ -48,7 +33,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
               onBack: () => context.pop(),
             ),
             Expanded(
-              child: _favorites.isEmpty
+              child: favorites.isEmpty
                   ? const SettingsEmptyState(
                       title: 'لا توجد منتجات في المفضلة',
                       icon: Icons.favorite_border_rounded,
@@ -67,17 +52,16 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         crossAxisSpacing: 14.w,
                         childAspectRatio: HomeProductCardMetrics.aspectRatio(),
                       ),
-                      itemCount: _favorites.length,
+                      itemCount: favorites.length,
                       itemBuilder: (context, index) {
-                        final product = _favorites[index];
+                        final product = favorites[index];
                         return HomeProductCard(
                           key: ValueKey(product.id),
                           product: product,
-                          isFavorite: true,
                           onTap: () =>
                               ProductDetailsWidget.open(context, product),
-                          onFavoriteTap: () => _removeFavorite(product.id),
-                          onAddToCart: () {},
+                          onAddToCart: () =>
+                              addProductToCart(context, ref, product),
                         );
                       },
                     ),

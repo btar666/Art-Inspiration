@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../cart/presentation/cart_actions.dart';
 import '../../data/models/explore_models.dart';
 import '../widgets/explore_pinned_header.dart';
 import '../widgets/explore_scroll_metrics.dart';
 import '../widgets/explore_tab_content.dart';
 
 /// صفحة الاكسبلور — عام | براندات | اقسام
-class ExplorePage extends StatefulWidget {
+class ExplorePage extends ConsumerStatefulWidget {
   const ExplorePage({super.key});
 
   @override
-  State<ExplorePage> createState() => _ExplorePageState();
+  ConsumerState<ExplorePage> createState() => _ExplorePageState();
 }
 
-class _ExplorePageState extends State<ExplorePage> {
+class _ExplorePageState extends ConsumerState<ExplorePage> {
   final _scrollController = ScrollController();
   final _headerKey = GlobalKey();
   ExploreTab _selectedTab = ExploreTab.general;
@@ -66,6 +68,8 @@ class _ExplorePageState extends State<ExplorePage> {
               ExploreTabSlivers.build(
                 tab: _selectedTab,
                 bottomInset: bottomInset,
+                onAddToCart: (product) =>
+                    addProductToCart(context, ref, product),
               ),
             ],
           ),

@@ -1,54 +1,38 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../cart/presentation/widgets/cart_icon_button.dart';
+import '../../../favorites/presentation/favorites_actions.dart';
+import '../../../favorites/presentation/providers/favorites_provider.dart';
 import '../../data/models/product_model.dart';
 import 'home_product_card_metrics.dart';
 
 /// كارت منتج بحجم ثابت — مطابق لأبعاد التصميم
-class HomeProductCard extends StatefulWidget {
+class HomeProductCard extends ConsumerStatefulWidget {
   const HomeProductCard({
     super.key,
     required this.product,
     this.onTap,
-    this.onFavoriteTap,
     this.onAddToCart,
-    this.isFavorite = false,
   });
 
   final ProductModel product;
   final VoidCallback? onTap;
-  final VoidCallback? onFavoriteTap;
   final VoidCallback? onAddToCart;
-  final bool isFavorite;
 
   @override
-  State<HomeProductCard> createState() => _HomeProductCardState();
+  ConsumerState<HomeProductCard> createState() => _HomeProductCardState();
 }
 
-class _HomeProductCardState extends State<HomeProductCard> {
-  late bool _isFavorite;
-
-  @override
-  void initState() {
-    super.initState();
-    _isFavorite = widget.isFavorite;
-  }
-
-  @override
-  void didUpdateWidget(covariant HomeProductCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.isFavorite != widget.isFavorite) {
-      _isFavorite = widget.isFavorite;
-    }
-  }
-
+class _HomeProductCardState extends ConsumerState<HomeProductCard> {
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
+    final isFavorite = ref.watch(isProductFavoriteProvider(product.id));
 
     return GestureDetector(
       onTap: widget.onTap,
@@ -77,11 +61,9 @@ class _HomeProductCardState extends State<HomeProductCard> {
                 padding: HomeProductCardMetrics.imagePadding(),
                 child: _HomeProductImageSection(
                   product: product,
-                  isFavorite: _isFavorite,
-                  onFavoriteTap: () {
-                    setState(() => _isFavorite = !_isFavorite);
-                    widget.onFavoriteTap?.call();
-                  },
+                  isFavorite: isFavorite,
+                  onFavoriteTap: () =>
+                      toggleProductFavorite(ref, product),
                 ),
               ),
               Expanded(
@@ -341,36 +323,7 @@ class _HomeProductPriceBar extends StatelessWidget {
             top: 0,
             bottom: 0,
             child: Center(
-              child: GestureDetector(
-                onTap: onAddToCart,
-                child: SizedBox(
-                  width: HomeProductCardMetrics.cartButtonSize(),
-                  height: HomeProductCardMetrics.cartButtonSize(),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Image.asset(
-                        AppAssets.logo,
-                        width: HomeProductCardMetrics.cartButtonSize(),
-                        height: HomeProductCardMetrics.cartButtonSize(),
-                        fit: BoxFit.fill,
-                      ),
-                      ColorFiltered(
-                        colorFilter: const ColorFilter.mode(
-                          Colors.white,
-                          BlendMode.srcIn,
-                        ),
-                        child: Image.asset(
-                          AppAssets.shoppingCartIcon,
-                          width: HomeProductCardMetrics.cartIconSize(),
-                          height: HomeProductCardMetrics.cartIconSize(),
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              child: ProductCardCartButton(onAddToCart: onAddToCart),
             ),
           ),
         ],

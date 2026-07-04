@@ -22,15 +22,19 @@ abstract final class ExploreTabSlivers {
   static Widget build({
     required ExploreTab tab,
     required double bottomInset,
+    void Function(ProductModel product)? onAddToCart,
   }) {
     return switch (tab) {
-      ExploreTab.general => _generalGrid(bottomInset),
+      ExploreTab.general => _generalGrid(bottomInset, onAddToCart),
       ExploreTab.brands => _brandsGrid(bottomInset),
       ExploreTab.sections => _sectionsGrid(bottomInset),
     };
   }
 
-  static Widget _generalGrid(double bottomInset) {
+  static Widget _generalGrid(
+    double bottomInset,
+    void Function(ProductModel product)? onAddToCart,
+  ) {
     return SliverPadding(
       padding: EdgeInsets.fromLTRB(
         20.w,
@@ -51,7 +55,7 @@ abstract final class ExploreTabSlivers {
             return HomeProductCard(
               key: ValueKey('explore_${product.id}_$index'),
               product: product,
-              onAddToCart: () {},
+              onAddToCart: () => onAddToCart?.call(product),
             );
           },
           childCount: _products.length,

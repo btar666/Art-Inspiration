@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/product_details_widget.dart';
+import '../../../cart/presentation/cart_actions.dart';
 import '../../data/home_mock_data.dart';
 import 'home_category_chips.dart';
 import 'home_product_card.dart';
@@ -12,7 +14,7 @@ import 'home_scroll_metrics.dart';
 import 'home_top_section.dart';
 
 /// محتوى الصفحة الرئيسية القابل للتمرير
-class HomeContent extends StatefulWidget {
+class HomeContent extends ConsumerStatefulWidget {
   const HomeContent({
     super.key,
     required this.scrollController,
@@ -21,10 +23,10 @@ class HomeContent extends StatefulWidget {
   final ScrollController scrollController;
 
   @override
-  State<HomeContent> createState() => _HomeContentState();
+  ConsumerState<HomeContent> createState() => _HomeContentState();
 }
 
-class _HomeContentState extends State<HomeContent> {
+class _HomeContentState extends ConsumerState<HomeContent> {
   int _selectedCategoryIndex = 0;
 
   @override
@@ -83,7 +85,8 @@ class _HomeContentState extends State<HomeContent> {
                   key: ValueKey('${product.id}_$index'),
                   product: product,
                   onTap: () => ProductDetailsWidget.open(context, product),
-                  onAddToCart: () {},
+                  onAddToCart: () =>
+                      addProductToCart(context, ref, product),
                 );
               },
               childCount: HomeMockData.products.length,

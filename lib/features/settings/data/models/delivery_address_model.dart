@@ -38,6 +38,27 @@ class DeliveryAddressModel {
       isCurrent: isCurrent ?? this.isCurrent,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'governorate': governorate,
+        'area': area,
+        'landmark': landmark,
+        'lat': lat,
+        'lng': lng,
+        'isCurrent': isCurrent,
+      };
+
+  factory DeliveryAddressModel.fromJson(Map<String, dynamic> json) =>
+      DeliveryAddressModel(
+        id: json['id'] as String,
+        governorate: json['governorate'] as String,
+        area: json['area'] as String,
+        landmark: json['landmark'] as String? ?? '',
+        lat: (json['lat'] as num?)?.toDouble() ?? 0,
+        lng: (json['lng'] as num?)?.toDouble() ?? 0,
+        isCurrent: json['isCurrent'] as bool? ?? false,
+      );
 }
 
 /// نتيجة نموذج العنوان

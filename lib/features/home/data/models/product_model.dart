@@ -37,4 +37,37 @@ class ProductModel {
         );
     return '$formatted د.ع';
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'categoryName': categoryName,
+        'description': description,
+        'price': price,
+        'rating': rating,
+        'discountPercent': discountPercent,
+        'imageUrl': imageUrl,
+        'imageBgColor': imageBgColor.toARGB32(),
+        'expiryDate': expiryDate,
+        'origin': origin,
+        'galleryImageUrls': galleryImageUrls,
+      };
+
+  factory ProductModel.fromJson(Map<String, dynamic> json) => ProductModel(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        categoryName: json['categoryName'] as String,
+        description: json['description'] as String,
+        price: json['price'] as int,
+        rating: (json['rating'] as num).toDouble(),
+        discountPercent: json['discountPercent'] as int?,
+        imageUrl: json['imageUrl'] as String?,
+        imageBgColor: Color(json['imageBgColor'] as int? ?? 0xFFE9E4F5),
+        expiryDate: json['expiryDate'] as String? ?? '',
+        origin: json['origin'] as String? ?? '',
+        galleryImageUrls: (json['galleryImageUrls'] as List<dynamic>?)
+                ?.map((e) => e as String)
+                .toList() ??
+            const [],
+      );
 }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../cart/presentation/cart_actions.dart';
 import '../../../home/data/home_mock_data.dart';
 import '../../../home/data/models/product_model.dart';
 import '../../../home/presentation/widgets/home_product_card.dart';
@@ -17,14 +19,14 @@ import '../widgets/search_input_bar.dart';
 import '../widgets/search_page_header.dart';
 
 /// صفحة البحث
-class SearchPage extends StatefulWidget {
+class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
 
   @override
-  State<SearchPage> createState() => _SearchPageState();
+  ConsumerState<SearchPage> createState() => _SearchPageState();
 }
 
-class _SearchPageState extends State<SearchPage> {
+class _SearchPageState extends ConsumerState<SearchPage> {
   final _queryController = TextEditingController();
   final _focusNode = FocusNode();
 
@@ -207,7 +209,7 @@ class _SearchPageState extends State<SearchPage> {
                 return HomeProductCard(
                   key: ValueKey('search_${product.id}_$index'),
                   product: product,
-                  onAddToCart: () {},
+                  onAddToCart: () => addProductToCart(context, ref, product),
                 );
               },
               childCount: products.length,

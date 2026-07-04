@@ -1,21 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../checkout/data/local_orders_storage.dart';
 import '../../data/models/order_model.dart';
 import '../../data/orders_mock_data.dart';
 
 /// صفحة تفاصيل الطلب
-class OrderDetailsPage extends StatelessWidget {
+class OrderDetailsPage extends ConsumerWidget {
   const OrderDetailsPage({super.key, required this.orderId});
 
   final String orderId;
 
   @override
-  Widget build(BuildContext context) {
-    final order = OrdersMockData.detailFor(orderId);
+  Widget build(BuildContext context, WidgetRef ref) {
+    OrderDetailModel? order;
+    for (final item in ref.watch(localOrdersNotifierProvider)) {
+      if (item.id == orderId) {
+        order = item;
+        break;
+      }
+    }
+    order ??= OrdersMockData.detailFor(orderId);
 
     return Scaffold(
       backgroundColor: AppColors.surface,
