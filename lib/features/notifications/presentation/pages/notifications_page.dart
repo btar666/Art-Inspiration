@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,16 +7,30 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/page_back_header.dart';
 import '../../data/models/notification_model.dart';
-import '../../data/notifications_mock_data.dart';
+import '../providers/notifications_provider.dart';
 import '../widgets/notification_card.dart';
 
 /// صفحة الإشعارات
-class NotificationsPage extends StatelessWidget {
+class NotificationsPage extends ConsumerStatefulWidget {
   const NotificationsPage({super.key});
+
+  @override
+  ConsumerState<NotificationsPage> createState() => _NotificationsPageState();
+}
+
+class _NotificationsPageState extends ConsumerState<NotificationsPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationsProvider.notifier).markAllAsRead();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final notifications = ref.watch(notificationsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -35,7 +50,7 @@ class NotificationsPage extends StatelessWidget {
                     _GroupHeader(label: group.label),
                     SizedBox(height: 12.h),
                     for (final notification
-                        in NotificationsMockData.forGroup(group)) ...[
+                        in notifications.where((item) => item.group == group)) ...[
                       NotificationCard(notification: notification),
                       SizedBox(height: 10.h),
                     ],

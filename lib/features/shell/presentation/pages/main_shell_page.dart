@@ -35,15 +35,25 @@ class MainShellPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
     final currentIndex = _indexFromLocation(location);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      body: child,
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: MainBottomNav(
-          currentIndex: currentIndex,
-          onTap: (index) => _onNavTap(context, index),
-        ),
+      extendBody: true,
+      body: Stack(
+        children: [
+          child,
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: MainBottomNavMetrics.bottomMargin() + bottomInset,
+            child: Center(
+              child: MainBottomNav(
+                currentIndex: currentIndex,
+                onTap: (index) => _onNavTap(context, index),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

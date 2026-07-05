@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 import 'app_fonts.dart';
@@ -48,6 +49,13 @@ abstract final class AppTextStyles {
   static TextStyle buttonSecondary({Color? color}) => _base.copyWith(
         fontSize: 15.sp,
         fontWeight: FontWeight.w600,
+        color: color ?? AppColors.primary,
+      );
+
+  // ── Bottom nav ────────────────────────────────────────────
+  static TextStyle bottomNavLabel({Color? color}) => GoogleFonts.almarai(
+        fontSize: 13.sp,
+        fontWeight: FontWeight.w800,
         color: color ?? AppColors.primary,
       );
 
@@ -310,9 +318,11 @@ abstract final class AppTextStyles {
   // ── Explore ───────────────────────────────────────────────
   static TextStyle exploreTabLabel({Color? color, FontWeight? weight}) =>
       _base.copyWith(
-        fontSize: 14.sp,
-        fontWeight: weight ?? FontWeight.w500,
-        color: color ?? AppColors.textPrimary,
+        fontSize: 16.sp,
+        fontWeight: weight ?? AppFonts.bold,
+        height: 1.5,
+        letterSpacing: 0,
+        color: color ?? const Color(0xFF000000),
       );
 
   static TextStyle exploreBrandLogo({Color? color}) => _base.copyWith(
@@ -323,14 +333,15 @@ abstract final class AppTextStyles {
       );
 
   static TextStyle exploreBrandLabel({Color? color}) => _base.copyWith(
-        fontSize: 13.sp,
+        fontSize: 14.sp,
         fontWeight: FontWeight.w800,
         color: color ?? AppColors.textPrimary,
       );
 
   static TextStyle exploreSectionLabel({Color? color}) => _base.copyWith(
-        fontSize: 12.sp,
+        fontSize: 14.sp,
         fontWeight: FontWeight.w800,
+        height: 1.3,
         color: color ?? AppColors.homeSectionTitle,
       );
 

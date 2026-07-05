@@ -18,6 +18,7 @@ import '../../features/favorites/presentation/providers/favorites_provider.dart'
 import '../../features/home/data/home_mock_data.dart';
 import '../../features/home/data/models/product_model.dart';
 import 'product_details_app_bar_metrics.dart';
+import 'app_back_button.dart';
 import 'product_details_bottom_bar_metrics.dart';
 import 'product_details_gallery_metrics.dart';
 
@@ -254,11 +255,11 @@ class _ProductDetailsAppBar extends ConsumerWidget {
           ),
           SizedBox(width: 8.w),
           _ShapeIconButton(
-            size: 36.w,
+            size: AppBackButtonMetrics.size(),
             color: AppColors.primary,
             icon: Icons.arrow_back_ios_new_rounded,
             iconColor: AppColors.textOnPrimary,
-            iconSize: 16.sp,
+            iconSize: AppBackButtonMetrics.iconSize(),
             iconRotation: math.pi,
             onTap: onBack,
           ),

@@ -10,8 +10,9 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/page_back_header.dart';
 import '../../../orders/data/models/order_model.dart';
 import '../../../orders/data/models/order_status.dart';
+import '../../../orders/presentation/pages/order_details_page.dart';
+import '../../../orders/presentation/widgets/order_details_action_bar.dart';
 import '../../data/local_orders_storage.dart';
-import '../widgets/checkout_bottom_bar.dart';
 
 /// صفحة تتبع الطلب
 class OrderTrackingPage extends ConsumerWidget {
@@ -30,68 +31,123 @@ class OrderTrackingPage extends ConsumerWidget {
       }
     }
 
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final footerHeight =
+        screenHeight * OrderDetailsPageMetrics.footerHeightFraction;
+    final bottomRadius = OrderDetailsPageMetrics.whiteContainerBottomRadius();
+
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            PageBackHeader(
-              title: 'تتبع الطلب',
-              onBack: () => context.pop(),
-            ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 16.h),
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 20.w,
-                      vertical: 24.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(24.r),
-                      border: Border.all(color: AppColors.orderCardBorder),
-                    ),
-                    child: Column(
-                      children: [
-                        Image.asset(
-                          AppAssets.orderTrackingIllustration,
-                          height: 160.h,
-                          fit: BoxFit.contain,
+      backgroundColor: OrderDetailsPageMetrics.pageBackground,
+      body: Column(
+        children: [
+          Expanded(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(bottomRadius),
+                  bottomRight: Radius.circular(bottomRadius),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(bottomRadius),
+                  bottomRight: Radius.circular(bottomRadius),
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      PageBackHeader(
+                        title: 'تتبع الطلب',
+                        onBack: () => context.pop(),
+                      ),
+                      Expanded(
+                        child: ListView(
+                          padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
+                          children: [
+                            _InfoCard(
+                              children: [
+                                Image.asset(
+                                  AppAssets.orderTrackingIllustration,
+                                  height: 160.h,
+                                  fit: BoxFit.contain,
+                                ),
+                                SizedBox(height: 16.h),
+                                Text(
+                                  'تم تأكيد طلبك بنجاح !',
+                                  style: AppTextStyles.checkoutSuccessTitle(),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 24.h),
+                            Text(
+                              'تتبع الطلب',
+                              style: AppTextStyles.ordersSectionTitle(),
+                            ),
+                            SizedBox(height: 16.h),
+                            _TrackingTimeline(
+                              status: order?.status ?? OrderStatus.reviewing,
+                            ),
+                          ],
                         ),
-                        SizedBox(height: 16.h),
-                        Text(
-                          'تم تأكيد طلبك بنجاح !',
-                          style: AppTextStyles.checkoutSuccessTitle(),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 24.h),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      'تتبع الطلب',
-                      style: AppTextStyles.checkoutSectionTitle(),
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-                  _TrackingTimeline(status: order?.status ?? OrderStatus.reviewing),
-                ],
+                ),
               ),
             ),
-            CheckoutBottomBar(
-              label: 'عرض الطلبات',
-              secondaryLabel: 'الرئيسية',
-              onTap: () => context.go(AppRoutes.orders),
-              onSecondaryTap: () => context.go(AppRoutes.home),
+          ),
+          SizedBox(
+            height: footerHeight,
+            child: ColoredBox(
+              color: OrderDetailsPageMetrics.pageBackground,
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: OrderDetailsPageMetrics.footerPadding(),
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Transform.translate(
+                      offset: Offset(0, 5.h),
+                      child: OrderDetailsActionBar(
+                        primaryLabel: 'عرض الطلبات',
+                        secondaryLabel: 'الرئيسية',
+                        onPrimary: () => context.go(AppRoutes.orders),
+                        onSecondary: () => context.go(AppRoutes.home),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: OrderDetailsPageMetrics.cardShadow(),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
       ),
     );
   }
@@ -155,32 +211,9 @@ class _TrackingStep extends StatelessWidget {
 
     return IntrinsicHeight(
       child: Row(
+        textDirection: TextDirection.rtl,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: dotColor.withValues(alpha: 0.45), size: 22.sp),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 20.h),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    title,
-                    style: AppTextStyles.ordersDetailValue(color: textColor),
-                  ),
-                  if (subtitle.isNotEmpty) ...[
-                    SizedBox(height: 4.h),
-                    Text(
-                      subtitle,
-                      style: AppTextStyles.ordersDetailLabel(color: textColor),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          SizedBox(width: 12.w),
           Column(
             children: [
               Container(
@@ -201,6 +234,32 @@ class _TrackingStep extends StatelessWidget {
                 ),
             ],
           ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 20.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    title,
+                    style: AppTextStyles.ordersDetailValue(color: textColor),
+                    textAlign: TextAlign.right,
+                  ),
+                  if (subtitle.isNotEmpty) ...[
+                    SizedBox(height: 4.h),
+                    Text(
+                      subtitle,
+                      style: AppTextStyles.ordersDetailLabel(color: textColor),
+                      textAlign: TextAlign.right,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Icon(icon, color: dotColor.withValues(alpha: 0.45), size: 22.sp),
         ],
       ),
     );

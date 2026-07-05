@@ -12,7 +12,7 @@ abstract final class NotificationsMockData {
       description: 'تمت مراجعة طلبك بنجاح وسيتم التواصل معك قريباً',
       timeLabel: 'الآن',
       icon: Icons.schedule_rounded,
-      isHighlighted: true,
+      isRead: false,
     ),
     AppNotificationModel(
       id: '2',
@@ -21,7 +21,7 @@ abstract final class NotificationsMockData {
       description: 'تحقق من أحدث المنتجات والعروض المتوفرة الآن',
       timeLabel: 'منذ 10 دقائق',
       icon: Icons.spa_outlined,
-      isHighlighted: true,
+      isRead: false,
     ),
     AppNotificationModel(
       id: '3',

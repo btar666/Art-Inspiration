@@ -10,7 +10,9 @@ import '../../../home/presentation/widgets/home_product_card_metrics.dart';
 import '../../data/explore_mock_data.dart';
 import '../../data/models/explore_models.dart';
 import 'explore_brand_card.dart';
+import 'explore_brand_card_metrics.dart';
 import 'explore_section_card.dart';
+import 'explore_section_card_metrics.dart';
 
 /// شبكة المحتوى لكل تبويب داخل CustomScrollView
 abstract final class ExploreTabSlivers {
@@ -77,7 +79,7 @@ abstract final class ExploreTabSlivers {
           crossAxisCount: 3,
           mainAxisSpacing: 14.h,
           crossAxisSpacing: 12.w,
-          childAspectRatio: 0.70,
+          childAspectRatio: ExploreBrandCardMetrics.gridAspectRatio(),
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
@@ -102,7 +104,7 @@ abstract final class ExploreTabSlivers {
           crossAxisCount: 3,
           mainAxisSpacing: 14.h,
           crossAxisSpacing: 12.w,
-          childAspectRatio: 0.82,
+          childAspectRatio: ExploreSectionCardMetrics.gridAspectRatio(),
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {

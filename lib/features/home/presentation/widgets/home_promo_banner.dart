@@ -33,7 +33,7 @@ class _HomePromoBannerState extends State<HomePromoBanner> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 0),
+      padding: EdgeInsets.fromLTRB(20.w, 6.h, 20.w, 0),
       child: Column(
         children: [
           CarouselSlider.builder(

@@ -81,25 +81,33 @@ class _CarouselCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // تأثير دائري خلفي
-          Container(
-            width: 120.w,
-            height: 120.w,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.3),
+      clipBehavior: Clip.antiAlias,
+      child: item.imageAsset != null
+          ? Image.asset(
+              item.imageAsset!,
+              width: 220.w,
+              height: 300.h,
+              fit: BoxFit.cover,
+            )
+          : Stack(
+              alignment: Alignment.center,
+              children: [
+                // تأثير دائري خلفي
+                Container(
+                  width: 120.w,
+                  height: 120.w,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.3),
+                  ),
+                ),
+                Icon(
+                  item.icon,
+                  size: 64.sp,
+                  color: AppColors.primary.withValues(alpha: 0.6),
+                ),
+              ],
             ),
-          ),
-          Icon(
-            item.icon,
-            size: 64.sp,
-            color: AppColors.primary.withValues(alpha: 0.6),
-          ),
-        ],
-      ),
     )
         .animate(key: ValueKey(item.title))
         .fadeIn(duration: 500.ms)

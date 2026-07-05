@@ -8,6 +8,26 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../checkout/data/local_orders_storage.dart';
 import '../../data/models/order_model.dart';
 import '../../data/orders_mock_data.dart';
+import '../widgets/order_details_action_bar.dart';
+
+/// مقاييس صفحة تفاصيل الطلب — نفس آلية صفحة تفاصيل المنتج
+abstract final class OrderDetailsPageMetrics {
+  static const Color pageBackground = Color(0xFFEAECFC);
+
+  static const double footerHeightFraction = 0.10;
+
+  static double whiteContainerBottomRadius() => 44.r;
+
+  static EdgeInsets footerPadding() => EdgeInsets.symmetric(horizontal: 24.w);
+
+  static List<BoxShadow> cardShadow() => [
+        BoxShadow(
+          color: const Color(0xFF659AB9).withValues(alpha: 0.38),
+          blurRadius: 3.76.r,
+          offset: Offset.zero,
+        ),
+      ];
+}
 
 /// صفحة تفاصيل الطلب
 class OrderDetailsPage extends ConsumerWidget {
@@ -17,149 +37,215 @@ class OrderDetailsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    OrderDetailModel? order;
+    OrderDetailModel? foundOrder;
     for (final item in ref.watch(localOrdersNotifierProvider)) {
       if (item.id == orderId) {
-        order = item;
+        foundOrder = item;
         break;
       }
     }
-    order ??= OrdersMockData.detailFor(orderId);
+    final order = foundOrder ?? OrdersMockData.detailFor(orderId);
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final footerHeight =
+        screenHeight * OrderDetailsPageMetrics.footerHeightFraction;
+    final bottomRadius = OrderDetailsPageMetrics.whiteContainerBottomRadius();
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 12.h),
-              child: Text(
-                'تفاصيل الطلب',
-                style: AppTextStyles.ordersPageTitle(),
-                textAlign: TextAlign.center,
+      backgroundColor: OrderDetailsPageMetrics.pageBackground,
+      body: Column(
+        children: [
+          Expanded(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(bottomRadius),
+                  bottomRight: Radius.circular(bottomRadius),
+                ),
               ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 16.h),
-                children: [
-                  _InfoCard(
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(bottomRadius),
+                  bottomRight: Radius.circular(bottomRadius),
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: ListView(
+                    padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 16.h),
                     children: [
-                      _InlineInfoRow(
-                        label: 'اسم الزبون :',
-                        value: order.customerName,
+                      Text(
+                        'تفاصيل الطلب',
+                        style: AppTextStyles.ordersPageTitle(),
+                        textAlign: TextAlign.center,
                       ),
-                      _InlineInfoRow(label: 'رقم الهاتف :', value: order.phone),
-                      _InlineInfoRow(
-                        label: 'رقم هاتف آخر :',
-                        value: order.altPhone ?? 'لا يوجد',
-                      ),
-                      _InlineInfoRow(
-                        label: 'عنوان التوصيل :',
-                        value: order.deliveryAddress,
-                        isLast: true,
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 12.h),
-                  _InfoCard(
-                    children: [
-                      _InfoRow(
-                        label: 'تاريخ الطلب :',
-                        value: order.formattedOrderDate,
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 20.h),
-                  Text(
-                    'المنتجات المطلوبة ( ${order.items.length} )',
-                    style: AppTextStyles.ordersSectionTitle(),
-                  ),
-                  SizedBox(height: 12.h),
-                  _InfoCard(
-                    children: [
-                      for (var i = 0; i < order.items.length; i++) ...[
-                        if (i > 0) ...[
-                          SizedBox(height: 12.h),
-                          Divider(
-                            color: AppColors.dotGrid,
-                            height: 1,
+                      SizedBox(height: 12.h),
+                          _InfoCard(
+                            children: [
+                              _InlineInfoRow(
+                                label: 'اسم الزبون :',
+                                value: order.customerName,
+                              ),
+                              _InlineInfoRow(
+                                label: 'رقم الهاتف :',
+                                value: order.phone,
+                              ),
+                              _InlineInfoRow(
+                                label: 'رقم هاتف آخر :',
+                                value: order.altPhone ?? 'لا يوجد',
+                              ),
+                              _InlineInfoRow(
+                                label: 'عنوان التوصيل :',
+                                value: order.deliveryAddress,
+                                isLast: true,
+                              ),
+                            ],
                           ),
                           SizedBox(height: 12.h),
+                          _InfoCard(
+                            padding: EdgeInsets.fromLTRB(0, 16.h, 18.w, 16.h),
+                            children: [
+                              _OrderDateRow(date: order.formattedOrderDate),
+                            ],
+                          ),
+                          SizedBox(height: 20.h),
+                          Text(
+                            'المنتجات المطلوبة ( ${order.items.length} )',
+                            style: AppTextStyles.ordersSectionTitle(),
+                          ),
+                          SizedBox(height: 12.h),
+                          _InfoCard(
+                            children: [
+                              for (var i = 0; i < order.items.length; i++) ...[
+                                if (i > 0) ...[
+                                  SizedBox(height: 12.h),
+                                  Center(
+                                    child: Container(
+                                      width: 168.w,
+                                      height: 1.h,
+                                      color: AppColors.dotGrid
+                                          .withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                  SizedBox(height: 12.h),
+                                ],
+                                _OrderLineItemRow(item: order.items[i]),
+                              ],
+                            ],
+                          ),
+                          SizedBox(height: 20.h),
+                          Text(
+                            'تفاصيل السعر',
+                            style: AppTextStyles.ordersSectionTitle(),
+                          ),
+                          SizedBox(height: 12.h),
+                          _InfoCard(
+                            children: [
+                              _InfoRow(
+                                label: 'سعر الطلب :',
+                                value: order.formattedPrice,
+                                valueColor: AppColors.primary,
+                              ),
+                              SizedBox(height: 10.h),
+                              _InfoRow(
+                                label: 'سعر التوصيل :',
+                                value: order.formattedDeliveryPrice,
+                                valueColor: order.deliveryPrice == 0
+                                    ? AppColors.orderFreeDelivery
+                                    : AppColors.textPrimary,
+                              ),
+                              SizedBox(height: 10.h),
+                              _InfoRow(
+                                label: 'السعر الكلي :',
+                                value: order.formattedTotalPrice,
+                                valueColor: AppColors.orderTotalPrice,
+                              ),
+                            ],
+                          ),
                         ],
-                        _OrderLineItemRow(item: order.items[i]),
-                      ],
-                    ],
                   ),
-                  SizedBox(height: 20.h),
-                  Text(
-                    'تفاصيل السعر',
-                    style: AppTextStyles.ordersSectionTitle(),
-                  ),
-                  SizedBox(height: 12.h),
-                  _InfoCard(
-                    children: [
-                      _InfoRow(
-                        label: 'سعر الطلب :',
-                        value: order.formattedPrice,
-                        valueColor: AppColors.primary,
-                      ),
-                      SizedBox(height: 10.h),
-                      _InfoRow(
-                        label: 'سعر التوصيل :',
-                        value: order.formattedDeliveryPrice,
-                        valueColor: order.deliveryPrice == 0
-                            ? AppColors.orderFreeDelivery
-                            : AppColors.textPrimary,
-                      ),
-                      SizedBox(height: 10.h),
-                      _InfoRow(
-                        label: 'السعر الكلي :',
-                        value: order.formattedTotalPrice,
-                        valueColor: AppColors.orderTotalPrice,
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
             ),
-            _OrderDetailsFooter(
-              onBack: () => context.pop(),
-              onReorder: () {},
+          ),
+          SizedBox(
+            height: footerHeight,
+            child: ColoredBox(
+              color: OrderDetailsPageMetrics.pageBackground,
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: OrderDetailsPageMetrics.footerPadding(),
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Transform.translate(
+                      offset: Offset(0, 5.h),
+                      child: OrderDetailsActionBar(
+                        onPrimary: () {},
+                        onSecondary: () => context.pop(),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _InfoCard extends StatelessWidget {
-  const _InfoCard({required this.children});
+  const _InfoCard({
+    required this.children,
+    this.padding,
+  });
 
   final List<Widget> children;
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 16.h),
+      padding: padding ?? EdgeInsets.symmetric(horizontal: 18.w, vertical: 16.h),
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(20.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        boxShadow: OrderDetailsPageMetrics.cardShadow(),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: children,
       ),
+    );
+  }
+}
+
+class _OrderDateRow extends StatelessWidget {
+  const _OrderDateRow({required this.date});
+
+  final String date;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      textDirection: TextDirection.ltr,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(left: 10.w),
+          child: Text(
+            date,
+            style: AppTextStyles.ordersDetailValue(),
+          ),
+        ),
+        const Spacer(),
+        Text(
+          'تاريخ الطلب :',
+          style: AppTextStyles.ordersDetailLabel(),
+          textDirection: TextDirection.rtl,
+        ),
+      ],
     );
   }
 }
@@ -266,7 +352,9 @@ class _OrderLineItemRow extends StatelessWidget {
               SizedBox(height: 6.h),
               Text(
                 'الكمية المطلوبة : ${item.quantity}',
-                style: AppTextStyles.ordersDetailLabel(),
+                style: AppTextStyles.ordersDetailLabel(
+                  color: const Color(0xFF3D3E46).withValues(alpha: 0.6),
+                ),
               ),
             ],
           ),
@@ -276,7 +364,7 @@ class _OrderLineItemRow extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.background,
             borderRadius: BorderRadius.circular(20.r),
-            border: Border.all(color: AppColors.primary, width: 1.2),
+            border: Border.all(color: AppColors.primary, width: 0.5),
           ),
           child: Text(
             item.formattedPrice,
@@ -284,72 +372,6 @@ class _OrderLineItemRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _OrderDetailsFooter extends StatelessWidget {
-  const _OrderDetailsFooter({
-    required this.onBack,
-    required this.onReorder,
-  });
-
-  final VoidCallback onBack;
-  final VoidCallback onReorder;
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-
-    return Container(
-      padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 16.h + bottomInset),
-      decoration: BoxDecoration(
-        color: AppColors.orderDetailsFooter,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Material(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(28.r),
-              child: InkWell(
-                onTap: onReorder,
-                borderRadius: BorderRadius.circular(28.r),
-                child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 16.h),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'أعادة الطلب',
-                    style: AppTextStyles.buttonPrimary(),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Material(
-              color: AppColors.orderBackButton,
-              borderRadius: BorderRadius.circular(28.r),
-              child: InkWell(
-                onTap: onBack,
-                borderRadius: BorderRadius.circular(28.r),
-                child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 16.h),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'العودة',
-                    style: AppTextStyles.buttonPrimary(
-                      color: AppColors.textOnPrimary,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

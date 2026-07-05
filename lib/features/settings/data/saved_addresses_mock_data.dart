@@ -5,16 +5,16 @@ abstract final class SavedAddressesMockData {
   static List<DeliveryAddressModel> initial() => [
         const DeliveryAddressModel(
           id: '1',
-          governorate: 'بغداد',
-          area: 'الكرادة',
+          governorate: 'المنزل',
+          area: 'شارع الجمعية',
           landmark: 'قرب جسر الأحرار',
           isCurrent: true,
         ),
         const DeliveryAddressModel(
           id: '2',
-          governorate: 'البصرة',
-          area: 'العشار',
-          landmark: 'شارع الكورنيش',
+          governorate: 'العمل',
+          area: 'شارع الكورنيش',
+          landmark: 'مبنى الإدارة',
         ),
       ];
 }

@@ -18,6 +18,8 @@ class AppTextField extends StatefulWidget {
     this.readOnly = false,
     this.onTap,
     this.suffix,
+    this.height,
+    this.borderRadius,
   });
 
   final String hint;
@@ -30,6 +32,8 @@ class AppTextField extends StatefulWidget {
   final bool readOnly;
   final VoidCallback? onTap;
   final Widget? suffix;
+  final double? height;
+  final double? borderRadius;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -46,7 +50,14 @@ class _AppTextFieldState extends State<AppTextField> {
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
+    final fieldHeight = widget.height;
+    final verticalPadding = fieldHeight == null ? 18.h : 0.0;
+    final radius = widget.borderRadius ?? 28.r;
+    final fieldBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(radius),
+    );
+
+    final field = TextFormField(
       controller: widget.controller,
       obscureText: _obscured,
       keyboardType: widget.keyboardType,
@@ -60,7 +71,9 @@ class _AppTextFieldState extends State<AppTextField> {
         hintStyle: AppTextStyles.authField(),
         filled: true,
         fillColor: AppColors.background,
-        contentPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
+        isDense: fieldHeight != null,
+        contentPadding:
+            EdgeInsets.symmetric(horizontal: 20.w, vertical: verticalPadding),
         prefixIcon: Icon(widget.icon, color: AppColors.textSecondary, size: 22.sp),
         suffixIcon: widget.suffix ??
             (widget.obscureText
@@ -73,23 +86,26 @@ class _AppTextFieldState extends State<AppTextField> {
                     ),
                   )
                 : null),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(28.r),
+        enabledBorder: fieldBorder.copyWith(
           borderSide: const BorderSide(color: AppColors.dotGrid, width: 1.2),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(28.r),
+        focusedBorder: fieldBorder.copyWith(
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(28.r),
+        errorBorder: fieldBorder.copyWith(
           borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
         ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(28.r),
+        focusedErrorBorder: fieldBorder.copyWith(
           borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
         ),
       ),
+    );
+
+    if (fieldHeight == null) return field;
+
+    return SizedBox(
+      height: fieldHeight,
+      child: field,
     );
   }
 }

@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../widgets/floating_cart_button.dart';
 import '../widgets/home_content.dart';
 import '../widgets/home_logo_header_overlay.dart';
+import '../widgets/main_bottom_nav.dart';
 
 /// الصفحة الرئيسية
 class HomePage extends ConsumerStatefulWidget {
@@ -53,6 +54,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
           DraggableFloatingCartButton(
             onTap: () => context.push(AppRoutes.cart),
+            bottomReservedHeight: MainBottomNavMetrics.floatingBarReservedHeight,
           ),
         ],
       ),

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_notification_icon_button.dart';
 import '../../../../shared/widgets/unified_search_bar.dart';
 
 /// الجزء العلوي: شعار وسط + إشعارات يسار + شريط بحث موحّد
@@ -55,7 +55,7 @@ class HomeLogoHeader extends StatelessWidget {
         children: [
           SizedBox(width: 28.sp),
           Expanded(child: _CenterLogo()),
-          _NotificationButton(onTap: onNotificationTap),
+          AppNotificationIconButton(onTap: onNotificationTap),
         ],
       ),
     );
@@ -105,20 +105,6 @@ class _CenterLogo extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
       ],
-    );
-  }
-}
-
-class _NotificationButton extends StatelessWidget {
-  const _NotificationButton({this.onTap});
-
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Icon(Icons.notifications_rounded, color: AppColors.primary, size: 28.sp),
     );
   }
 }
