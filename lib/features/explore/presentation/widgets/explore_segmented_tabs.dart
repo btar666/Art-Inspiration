@@ -52,12 +52,21 @@ class ExploreSegmentedTabs extends StatelessWidget {
                 ),
                 child: Text(
                   tab.label,
-                  style: AppTextStyles.exploreTabLabel(
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.textPrimary.withValues(alpha: 0.72),
-                    weight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  ),
+                  textAlign: TextAlign.center,
+                  style: glassStyle
+                      ? AppTextStyles.exploreTabLabel(
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF000000),
+                        )
+                      : AppTextStyles.exploreTabLabel(
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.textPrimary.withValues(alpha: 0.72),
+                          weight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
                 ),
               ),
             ),

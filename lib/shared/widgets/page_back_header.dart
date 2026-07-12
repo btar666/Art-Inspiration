@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import 'app_back_button.dart';
 
 /// رأس صفحة فرعية — زر رجوع يسار + عنوان وسط
 class PageBackHeader extends StatelessWidget {
@@ -22,7 +22,7 @@ class PageBackHeader extends StatelessWidget {
       child: Row(
         textDirection: TextDirection.ltr,
         children: [
-          _BackButton(onTap: onBack),
+          AppBackButton(onTap: onBack),
           Expanded(
             child: Text(
               title,
@@ -30,35 +30,8 @@ class PageBackHeader extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ),
-          SizedBox(width: 40.w),
+          SizedBox(width: AppBackButtonMetrics.size()),
         ],
-      ),
-    );
-  }
-}
-
-class _BackButton extends StatelessWidget {
-  const _BackButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40.w,
-        height: 40.w,
-        decoration: const BoxDecoration(
-          color: AppColors.primary,
-          shape: BoxShape.circle,
-        ),
-        alignment: Alignment.center,
-        child: Icon(
-          Icons.chevron_right_rounded,
-          color: AppColors.background,
-          size: 24.sp,
-        ),
       ),
     );
   }

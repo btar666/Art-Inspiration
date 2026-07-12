@@ -25,7 +25,7 @@ class _DraggableFloatingCartButtonState
     extends ConsumerState<DraggableFloatingCartButton> {
   Offset? _position;
 
-  double get _buttonSize => 56.w;
+  double get _buttonSize => 50.w;
 
   Offset _defaultPosition(Size screenSize, EdgeInsets padding) {
     return Offset(
@@ -76,6 +76,11 @@ class _DraggableFloatingCartButtonState
           itemCount: itemCount,
           animationTick: animationTick,
           onTap: widget.onTap,
+          size: 50.w,
+          iconSize: 40.w,
+          blurred: true,
+          showBadge: false,
+          showDot: true,
         ),
       ),
     );

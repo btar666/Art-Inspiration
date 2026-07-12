@@ -22,7 +22,8 @@ class OrderCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.all(14.w),
+        height: 135.h,
+        padding: EdgeInsets.fromLTRB(14.w, 12.h, 14.w, 12.h),
         decoration: BoxDecoration(
           color: AppColors.background,
           borderRadius: BorderRadius.circular(20.r),
@@ -35,36 +36,50 @@ class OrderCard extends StatelessWidget {
             ),
           ],
         ),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _OrderImage(order: order),
-              SizedBox(width: 14.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(order.orderName, style: AppTextStyles.ordersCardTitle()),
-                    SizedBox(height: 4.h),
-                    Text(
-                      order.address,
-                      style: AppTextStyles.ordersCardSubtitle(),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _OrderImage(order: order),
+            SizedBox(width: 14.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          order.orderName,
+                          style: AppTextStyles.ordersCardTitle(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 3.h),
+                        Text(
+                          order.address,
+                          style: AppTextStyles.ordersCardSubtitle(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 5.h),
+                        const _DottedDivider(),
+                        SizedBox(height: 5.h),
+                        Text(
+                          'السعر : ${order.formattedPrice}',
+                          style: AppTextStyles.ordersCardPrice(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 10.h),
-                    const _DottedDivider(),
-                    SizedBox(height: 10.h),
-                    Text(
-                      'السعر : ${order.formattedPrice}',
-                      style: AppTextStyles.ordersCardPrice(),
-                    ),
-                    SizedBox(height: 12.h),
-                    OrderStatusBadge(status: order.status),
-                  ],
-                ),
+                  ),
+                  OrderStatusBadge(status: order.status, compact: true),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

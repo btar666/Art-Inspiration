@@ -25,7 +25,7 @@ class HomeCategoryChips extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 12.h),
+          padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 12.h),
           child: Text(title, style: AppTextStyles.homeSectionTitle()),
         ),
         SizedBox(

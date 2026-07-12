@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_back_button.dart';
 
 /// رأس صفحة السلة — رجوع + عنوان + حذف الكل
 class CartPageHeader extends StatelessWidget {
@@ -20,11 +21,11 @@ class CartPageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 8.h),
+      padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 16.h),
       child: Row(
         textDirection: TextDirection.ltr,
         children: [
-          _BackButton(onTap: onBack),
+          AppBackButton(onTap: onBack),
           Expanded(
             child: Text(
               'السلة',
@@ -33,52 +34,25 @@ class CartPageHeader extends StatelessWidget {
             ),
           ),
           if (showClearAll)
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: onClearAll,
-                borderRadius: BorderRadius.circular(20.r),
-                child: SizedBox(
-                  width: 40.w,
-                  height: 40.w,
-                  child: Icon(
-                    Icons.delete_outline_rounded,
-                    color: AppColors.homeDiscount,
-                    size: 26.sp,
+            GestureDetector(
+              onTap: onClearAll,
+              behavior: HitTestBehavior.opaque,
+              child: SizedBox(
+                width: 40.w,
+                height: 40.w,
+                child: Center(
+                  child: Image.asset(
+                    AppAssets.cartClearAll,
+                    width: 24.w,
+                    height: 24.h,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
             )
           else
-            SizedBox(width: 40.w),
+            SizedBox(width: AppBackButtonMetrics.size()),
         ],
-      ),
-    );
-  }
-}
-
-class _BackButton extends StatelessWidget {
-  const _BackButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40.w,
-        height: 40.w,
-        decoration: const BoxDecoration(
-          color: AppColors.primary,
-          shape: BoxShape.circle,
-        ),
-        alignment: Alignment.center,
-        child: Icon(
-          Icons.chevron_right_rounded,
-          color: AppColors.background,
-          size: 24.sp,
-        ),
       ),
     );
   }

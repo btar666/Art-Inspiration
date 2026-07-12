@@ -123,7 +123,7 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                   ),
                   const HomePromoBanner(),
                   Padding(
-                    padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 12.h),
+                    padding: EdgeInsets.fromLTRB(20.w, 6.h, 20.w, 12.h),
                     child: Text(
                       'جميع المنتجات',
                       style: AppTextStyles.homeSectionTitle(),

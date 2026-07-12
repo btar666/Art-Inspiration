@@ -8,10 +8,12 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../checkout/data/checkout_provider.dart';
 import '../providers/cart_provider.dart';
+import '../widgets/cart_checkout_footer.dart';
 import '../widgets/cart_confirm_dialog.dart';
 import '../widgets/cart_empty_state.dart';
 import '../widgets/cart_item_card.dart';
 import '../widgets/cart_page_header.dart';
+import '../widgets/cart_page_metrics.dart';
 import '../widgets/cart_price_summary.dart';
 
 /// صفحة السلة
@@ -50,6 +52,13 @@ class CartPage extends ConsumerWidget {
     ref.read(cartNotifierProvider.notifier).clearAll();
   }
 
+  void _startCheckout(BuildContext context, WidgetRef ref) {
+    final items = ref.read(cartNotifierProvider);
+    if (items.isEmpty) return;
+    ref.read(checkoutDraftProvider.notifier).startFromCart(items);
+    context.push(AppRoutes.checkout);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final items = ref.watch(cartNotifierProvider);
@@ -57,103 +66,122 @@ class CartPage extends ConsumerWidget {
     final totalQuantity =
         items.fold(0, (sum, item) => sum + item.quantity);
     final subtotal = ref.watch(cartSubtotalProvider);
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
     final cart = ref.read(cartNotifierProvider.notifier);
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final footerHeight = screenHeight * CartPageMetrics.footerHeightFraction;
+    final bottomRadius = CartPageMetrics.whiteContainerBottomRadius();
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            CartPageHeader(
-              onBack: () => context.pop(),
-              showClearAll: !isEmpty,
-              onClearAll: () => _confirmClearAll(context, ref),
-            ),
-            Expanded(
-              child: isEmpty
-                  ? const CartEmptyState()
-                  : ListView(
-                      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 16.h),
-                      children: [
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            'المنتجات ( $totalQuantity )',
-                            style: AppTextStyles.cartSectionTitle(),
-                          ),
-                        ),
-                        SizedBox(height: 12.h),
-                        ...List.generate(items.length, (index) {
-                          final item = items[index];
-                          return Padding(
-                            padding: EdgeInsets.only(bottom: 12.h),
-                            child: CartItemCard(
-                              item: item,
-                              onRemove: () =>
-                                  _confirmRemoveItem(context, ref, index),
-                              onIncrement: () => cart.incrementQuantity(index),
-                              onDecrement: () => cart.decrementQuantity(index),
+      backgroundColor: CartPageMetrics.pageBackground,
+      body: Column(
+        children: [
+          Expanded(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(bottomRadius),
+                  bottomRight: Radius.circular(bottomRadius),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(bottomRadius),
+                  bottomRight: Radius.circular(bottomRadius),
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: isEmpty
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            CartPageHeader(
+                              onBack: () => context.pop(),
                             ),
-                          );
-                        }),
-                        SizedBox(height: 8.h),
-                        CartPriceSummary(
-                          subtotal: _formatPrice(subtotal),
-                          deliveryLabel: 'مجاني',
-                          total: _formatPrice(subtotal),
-                          isFreeDelivery: true,
+                            const Expanded(child: CartEmptyState()),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            CartPageHeader(
+                              onBack: () => context.pop(),
+                              showClearAll: true,
+                              onClearAll: () =>
+                                  _confirmClearAll(context, ref),
+                            ),
+                            Expanded(
+                              child: ListView(
+                                padding: EdgeInsets.fromLTRB(
+                                  20.w,
+                                  12.h,
+                                  20.w,
+                                  16.h,
+                                ),
+                                children: [
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      'المنتجات ( $totalQuantity )',
+                                      style:
+                                          AppTextStyles.cartSectionTitle(),
+                                    ),
+                                  ),
+                                  SizedBox(height: 12.h),
+                                  ...List.generate(items.length, (index) {
+                                    final item = items[index];
+                                    return Padding(
+                                      padding: EdgeInsets.only(bottom: 12.h),
+                                      child: CartItemCard(
+                                        item: item,
+                                        onRemove: () => _confirmRemoveItem(
+                                          context,
+                                          ref,
+                                          index,
+                                        ),
+                                        onIncrement: () =>
+                                            cart.incrementQuantity(index),
+                                        onDecrement: () =>
+                                            cart.decrementQuantity(index),
+                                      ),
+                                    );
+                                  }),
+                                  SizedBox(height: 8.h),
+                                  CartPriceSummary(
+                                    subtotal: _formatPrice(subtotal),
+                                    deliveryLabel: 'مجاني',
+                                    total: _formatPrice(subtotal),
+                                    isFreeDelivery: true,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                ),
+              ),
             ),
-            if (!isEmpty)
-              Container(
-                padding: EdgeInsets.fromLTRB(
-                  20.w,
-                  12.h,
-                  20.w,
-                  12.h + bottomInset,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.orderDetailsFooter,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.orderCardShadow,
-                      blurRadius: 12,
-                      offset: const Offset(0, -4),
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(28.r),
-                  child: InkWell(
-                    onTap: () {
-                      final items = ref.read(cartNotifierProvider);
-                      if (items.isEmpty) return;
-                      ref
-                          .read(checkoutDraftProvider.notifier)
-                          .startFromCart(items);
-                      context.push(AppRoutes.checkout);
-                    },
-                    borderRadius: BorderRadius.circular(28.r),
-                    child: Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(vertical: 16.h),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'أكمال الشراء',
-                        style: AppTextStyles.cartCheckoutButton(),
+          ),
+          if (!isEmpty)
+            SizedBox(
+              height: footerHeight,
+              child: ColoredBox(
+                color: CartPageMetrics.pageBackground,
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: CartPageMetrics.footerPadding(),
+                    child: Transform.translate(
+                      offset: CartPageMetrics.footerButtonOffset(),
+                      child: CartCheckoutFooter(
+                        onTap: () => _startCheckout(context, ref),
                       ),
                     ),
                   ),
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }

@@ -18,15 +18,33 @@ abstract final class AppAssets {
 
   static const String frameIllustration = 'assets/images/Frame.png';
   static const String splashReference = 'assets/images/splash_reference.png';
+  static const String onboarding1 = 'assets/images/onboarding1.png';
+  static const String onboarding2 = 'assets/images/onboarding2.png';
+  static const String onboarding3 = 'assets/images/onboarding3.png';
+  static const String notificationRed = 'assets/images/notred.png';
+  static const String notificationClean = 'assets/images/notclean.png';
   static const String basketLogo = 'assets/images/basket_logo.png';
+  static const String cartClearAll = 'assets/images/delt.png';
+  static const String addressDeleteIcon = 'assets/images/delt.png';
+  static const String addressEditIcon = 'assets/images/deltloc.png';
   static const String confirmOrderIllustration = 'assets/images/conform_order.png';
   static const String orderTrackingIllustration = 'assets/images/order_check.png';
+
+  // ── Bottom nav ────────────────────────────────────────────
+  static const String navExploreIn = 'assets/images/exploer_in.png';
+  static const String navExploreOut = 'assets/images/exploer_out.png';
+  static const String navFoaterIn = 'assets/images/foater_in.png';
+  static const String navFoaterOut = 'assets/images/foater_out.png';
+  static const String navSearchIn = 'assets/images/search_in.png';
+  static const String navSearchOut = 'assets/images/search_out.png';
+  static const String navSettingsIn = 'assets/images/settiong_in.png';
+  static const String navSettingsOut = 'assets/images/setting_out.png';
 
   // ── Settings ──────────────────────────────────────────────
   static const String settingsFavorites = 'assets/images/fav.png';
   static const String settingsEdit = 'assets/images/edit.png';
   static const String settingsLocation = 'assets/images/loc.png';
-  static const String settingsNotifications = 'assets/images/not.png';
+  static const String settingsNotifications = 'assets/images/notclean.png';
   static const String settingsAbout = 'assets/images/who.png';
   static const String settingsContact = 'assets/images/cont.png';
   static const String settingsHelp = 'assets/images/help.png';

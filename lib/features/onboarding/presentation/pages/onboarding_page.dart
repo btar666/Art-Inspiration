@@ -8,11 +8,11 @@ import '../../../../core/network/erp_dev_session.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/storage/onboarding_storage.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/decorative_background.dart';
 import '../../../../shared/widgets/sparkle_icon.dart';
 import '../../data/onboarding_content.dart';
 import '../providers/onboarding_provider.dart';
+import '../widgets/onboarding_action_bar.dart';
 import '../widgets/onboarding_carousel.dart';
 import '../widgets/onboarding_page_indicator.dart';
 
@@ -135,20 +135,10 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   const Spacer(),
                   Padding(
                     padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h),
-                    child: Row(
-                      children: [
-                        AppButton(
-                          label: 'تخطي',
-                          variant: AppButtonVariant.secondary,
-                          onPressed: _completeOnboarding,
-                        ),
-                        const Spacer(),
-                        AppButton(
-                          label: isLast ? 'ابدئي الآن' : 'التالي',
-                          variant: AppButtonVariant.primary,
-                          onPressed: _onNext,
-                        ),
-                      ],
+                    child: OnboardingActionBar(
+                      nextLabel: isLast ? 'ابدئي الآن' : 'التالي',
+                      onNext: _onNext,
+                      onSkip: _completeOnboarding,
                     ),
                   )
                       .animate()

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -6,6 +8,43 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/shake_animation.dart';
 import '../../../home/presentation/widgets/home_product_card_metrics.dart';
+
+/// نقطة حمراء صغيرة على أيقونة السلة (بدون رقم)
+class CartItemDot extends StatelessWidget {
+  const CartItemDot({
+    super.key,
+    required this.visible,
+    this.top,
+    this.right,
+    this.dotSize,
+  });
+
+  final bool visible;
+  final double? top;
+  final double? right;
+  final double? dotSize;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!visible) return const SizedBox.shrink();
+
+    final size = dotSize ?? 9.w;
+
+    return Positioned(
+      top: top ?? 0,
+      right: right ?? 2.w,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: AppColors.notificationDot,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 1.5),
+        ),
+      ),
+    );
+  }
+}
 
 /// شارة عدد المنتجات على زر السلة
 class CartItemCountBadge extends StatelessWidget {
@@ -57,6 +96,9 @@ class CartCircleIconButton extends StatelessWidget {
     this.size,
     this.iconSize,
     this.showShadow = true,
+    this.blurred = false,
+    this.showBadge = true,
+    this.showDot = false,
   });
 
   final int itemCount;
@@ -65,42 +107,94 @@ class CartCircleIconButton extends StatelessWidget {
   final double? size;
   final double? iconSize;
   final bool showShadow;
+  final bool blurred;
+  final bool showBadge;
+  final bool showDot;
 
   @override
   Widget build(BuildContext context) {
     final buttonSize = size ?? 56.w;
     final cartIconSize = iconSize ?? 28.w;
 
-    final button = Container(
-      width: buttonSize,
-      height: buttonSize,
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        shape: BoxShape.circle,
-        boxShadow: showShadow
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.12),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: [
-          Image.asset(
-            AppAssets.shoppingCartIcon,
-            width: cartIconSize,
-            height: cartIconSize,
-            fit: BoxFit.contain,
+    final content = Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        SizedBox(
+          width: cartIconSize,
+          height: cartIconSize,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Image.asset(
+                AppAssets.shoppingCartIcon,
+                width: cartIconSize,
+                height: cartIconSize,
+                fit: BoxFit.contain,
+              ),
+              if (showDot)
+                CartItemDot(visible: itemCount > 0),
+            ],
           ),
-          CartItemCountBadge(count: itemCount),
-        ],
-      ),
+        ),
+        if (showBadge)
+          CartItemCountBadge(
+            count: itemCount,
+            top: blurred ? 2.h : null,
+            right: blurred ? 2.w : null,
+          ),
+      ],
     );
+
+    final Widget button;
+    if (blurred) {
+      button = DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipOval(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              width: buttonSize,
+              height: buttonSize,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: content,
+            ),
+          ),
+        ),
+      );
+    } else {
+      button = Container(
+        width: buttonSize,
+        height: buttonSize,
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          shape: BoxShape.circle,
+          boxShadow: showShadow
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: content,
+      );
+    }
 
     return GestureDetector(
       onTap: onTap,

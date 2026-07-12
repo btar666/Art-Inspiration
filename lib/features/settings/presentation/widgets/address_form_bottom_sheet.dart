@@ -17,12 +17,14 @@ class AddressFormBottomSheet extends StatefulWidget {
     this.initialGovernorate,
     this.initialArea = '',
     this.initialLandmark = '',
+    this.isDialog = false,
   });
 
   final String title;
   final String? initialGovernorate;
   final String initialArea;
   final String initialLandmark;
+  final bool isDialog;
 
   static Future<AddressFormResult?> showAdd(BuildContext context) {
     return showModalBottomSheet<AddressFormResult>(
@@ -30,6 +32,26 @@ class AddressFormBottomSheet extends StatefulWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const AddressFormBottomSheet._(title: 'أضافة عنوان'),
+    );
+  }
+
+  static Future<AddressFormResult?> showAddDialog(BuildContext context) {
+    return showDialog<AddressFormResult>(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.45),
+      useRootNavigator: true,
+      builder: (_) => Dialog(
+        backgroundColor: AppColors.background,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18.r),
+        ),
+        insetPadding: EdgeInsets.symmetric(horizontal: 20.w),
+        child: const AddressFormBottomSheet._(
+          title: 'أضافة عنوان جديد',
+          isDialog: true,
+        ),
+      ),
     );
   }
 
@@ -50,6 +72,36 @@ class AddressFormBottomSheet extends StatefulWidget {
         initialGovernorate: governorate,
         initialArea: area,
         initialLandmark: landmark,
+      ),
+    );
+  }
+
+  static Future<AddressFormResult?> showEditDialog(
+    BuildContext context, {
+    required String governorate,
+    required String area,
+    required String landmark,
+    double lat = 0,
+    double lng = 0,
+  }) {
+    return showDialog<AddressFormResult>(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.45),
+      useRootNavigator: true,
+      builder: (_) => Dialog(
+        backgroundColor: AppColors.background,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18.r),
+        ),
+        insetPadding: EdgeInsets.symmetric(horizontal: 20.w),
+        child: AddressFormBottomSheet._(
+          title: 'تعديل العنوان',
+          initialGovernorate: governorate,
+          initialArea: area,
+          initialLandmark: landmark,
+          isDialog: true,
+        ),
       ),
     );
   }
@@ -114,7 +166,80 @@ class _AddressFormBottomSheetState extends State<AddressFormBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final bottomInset = widget.isDialog ? 0.0 : MediaQuery.viewInsetsOf(context).bottom;
+
+    final form = Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (!widget.isDialog) ...[
+            Center(
+              child: Container(
+                width: 40.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: AppColors.dotGrid,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+            ),
+            SizedBox(height: 16.h),
+          ] else
+            SizedBox(height: 24.h),
+          Text(
+            widget.title,
+            style: AppTextStyles.settingsSectionTitle(),
+            textAlign: TextAlign.right,
+          ),
+          SizedBox(height: 20.h),
+          FormErrorAnimator(
+            tick: _governorateShakeTick,
+            child: AppDropdownField<String>(
+              hint: 'المحافظة',
+              icon: Icons.map_outlined,
+              value: _selectedGovernorate,
+              items: IraqiGovernorates.all,
+              onChanged: (value) =>
+                  setState(() => _selectedGovernorate = value),
+              validator: (value) =>
+                  _isGovernorateInvalid() ? 'اختر المحافظة' : null,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          FormErrorAnimator(
+            tick: _areaShakeTick,
+            child: AppTextField(
+              hint: 'المنطقة',
+              controller: _areaController,
+              icon: Icons.location_city_outlined,
+              validator: (value) => _isAreaInvalid() ? 'أدخل المنطقة' : null,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          AppTextField(
+            hint: 'أقرب نقطة دالة (اختياري)',
+            controller: _landmarkController,
+            icon: Icons.place_outlined,
+          ),
+          SizedBox(height: 24.h),
+          AppButton(
+            label: 'حفظ العنوان',
+            expanded: true,
+            onPressed: _submit,
+          ),
+          if (widget.isDialog) SizedBox(height: 24.h),
+        ],
+      ),
+    );
+
+    if (widget.isDialog) {
+      return Padding(
+        padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 0),
+        child: form,
+      );
+    }
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
@@ -124,68 +249,7 @@ class _AddressFormBottomSheetState extends State<AddressFormBottomSheet> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
         ),
         padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 40.w,
-                  height: 4.h,
-                  decoration: BoxDecoration(
-                    color: AppColors.dotGrid,
-                    borderRadius: BorderRadius.circular(2.r),
-                  ),
-                ),
-              ),
-              SizedBox(height: 16.h),
-              Text(
-                widget.title,
-                style: AppTextStyles.settingsSectionTitle(),
-                textAlign: TextAlign.right,
-              ),
-              SizedBox(height: 20.h),
-              FormErrorAnimator(
-                tick: _governorateShakeTick,
-                child: AppDropdownField<String>(
-                  hint: 'المحافظة',
-                  icon: Icons.map_outlined,
-                  value: _selectedGovernorate,
-                  items: IraqiGovernorates.all,
-                  onChanged: (value) =>
-                      setState(() => _selectedGovernorate = value),
-                  validator: (value) =>
-                      _isGovernorateInvalid() ? 'اختر المحافظة' : null,
-                ),
-              ),
-              SizedBox(height: 12.h),
-              FormErrorAnimator(
-                tick: _areaShakeTick,
-                child: AppTextField(
-                  hint: 'المنطقة',
-                  controller: _areaController,
-                  icon: Icons.location_city_outlined,
-                  validator: (value) =>
-                      _isAreaInvalid() ? 'أدخل المنطقة' : null,
-                ),
-              ),
-              SizedBox(height: 12.h),
-              AppTextField(
-                hint: 'أقرب نقطة دالة (اختياري)',
-                controller: _landmarkController,
-                icon: Icons.place_outlined,
-              ),
-              SizedBox(height: 24.h),
-              AppButton(
-                label: 'حفظ العنوان',
-                expanded: true,
-                onPressed: _submit,
-              ),
-            ],
-          ),
-        ),
+        child: form,
       ),
     );
   }

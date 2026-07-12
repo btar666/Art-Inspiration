@@ -5,9 +5,21 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_fonts.dart';
+import '../../../../core/theme/app_text_styles.dart';
 
-/// شريط التنقل السفلي
+/// أبعاد شريط التنقل العائم
+abstract final class MainBottomNavMetrics {
+  static double width() => 360.w;
+  static double height() => 64.h;
+  static double radius() => 40.r;
+  static double horizontalMargin() => 16.5.w;
+  static double bottomMargin() => 16.h;
+
+  /// ارتفاع محجوز فوق الشريط العائم (هامش + شريط + فراغ)
+  static const double floatingBarReservedHeight = 92;
+}
+
+/// شريط التنقل السفلي العائم
 class MainBottomNav extends StatelessWidget {
   const MainBottomNav({
     super.key,
@@ -19,41 +31,78 @@ class MainBottomNav extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   static const _items = [
-    _NavItem(icon: Icons.search, label: 'البحث'),
-    _NavItem(icon: Icons.grid_view_rounded, label: 'اكسبلور'),
-    _NavItem(icon: Icons.home_rounded, label: 'الرئيسية', isHome: true),
-    _NavItem(icon: Icons.inventory_2_outlined, label: 'الفواتير'),
-    _NavItem(icon: Icons.settings_outlined, label: 'الأعدادات'),
+    _NavItem(
+      label: 'البحث',
+      iconActive: AppAssets.navSearchIn,
+      iconInactive: AppAssets.navSearchOut,
+      iconWidth: 23,
+      iconHeight: 23,
+    ),
+    _NavItem(
+      label: 'اكسبلور',
+      iconActive: AppAssets.navExploreIn,
+      iconInactive: AppAssets.navExploreOut,
+      iconWidth: 22,
+      iconHeight: 20,
+    ),
+    _NavItem(
+      label: 'الرئيسية',
+      iconWidth: 20,
+      iconHeight: 20,
+      isHome: true,
+    ),
+    _NavItem(
+      label: 'الفواتير',
+      iconActive: AppAssets.navFoaterIn,
+      iconInactive: AppAssets.navFoaterOut,
+      iconWidth: 24,
+      iconHeight: 18,
+    ),
+    _NavItem(
+      label: 'الأعدادات',
+      iconActive: AppAssets.navSettingsIn,
+      iconInactive: AppAssets.navSettingsOut,
+      iconWidth: 20,
+      iconHeight: 19,
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 10.h),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 20,
-                offset: const Offset(0, -4),
-              ),
-            ],
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(MainBottomNavMetrics.radius()),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(_items.length, (index) {
-              return _NavBarItem(
-                item: _items[index],
-                isActive: index == currentIndex,
-                onTap: () => onTap(index),
-              );
-            }),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(MainBottomNavMetrics.radius()),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            width: MainBottomNavMetrics.width(),
+            height: MainBottomNavMetrics.height(),
+            padding: EdgeInsets.symmetric(horizontal: 8.w),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius:
+                  BorderRadius.circular(MainBottomNavMetrics.radius()),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(_items.length, (index) {
+                return _NavBarItem(
+                  item: _items[index],
+                  isActive: index == currentIndex,
+                  onTap: () => onTap(index),
+                );
+              }),
+            ),
           ),
         ),
       ),
@@ -63,13 +112,19 @@ class MainBottomNav extends StatelessWidget {
 
 class _NavItem {
   const _NavItem({
-    required this.icon,
     required this.label,
+    required this.iconWidth,
+    required this.iconHeight,
+    this.iconActive,
+    this.iconInactive,
     this.isHome = false,
   });
 
-  final IconData icon;
   final String label;
+  final String? iconActive;
+  final String? iconInactive;
+  final double iconWidth;
+  final double iconHeight;
   final bool isHome;
 }
 
@@ -95,34 +150,54 @@ class _NavBarItem extends StatelessWidget {
         width: 58.w,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (item.isHome)
-              Opacity(
-                opacity: isActive ? 1 : 0.45,
-                child: Image.asset(
-                  AppAssets.logo,
-                  width: 24.w,
-                  height: 24.w,
-                  fit: BoxFit.contain,
-                ),
-              )
-            else
-              Icon(item.icon, color: color, size: 24.sp),
-            SizedBox(height: 4.h),
+            _NavIcon(item: item, isActive: isActive),
+            SizedBox(height: 2.h),
             Text(
               item.label,
-              style: TextStyle(
-                fontFamily: AppFonts.family,
-                fontSize: 9.sp,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                color: color,
-              ),
+              style: AppTextStyles.bottomNavLabel(color: color),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _NavIcon extends StatelessWidget {
+  const _NavIcon({
+    required this.item,
+    required this.isActive,
+  });
+
+  final _NavItem item;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = item.iconWidth.w;
+    final height = item.iconHeight.h;
+
+    if (item.isHome) {
+      return Opacity(
+        opacity: isActive ? 1 : 0.45,
+        child: Image.asset(
+          AppAssets.logo,
+          width: width,
+          height: height,
+          fit: BoxFit.contain,
+        ),
+      );
+    }
+
+    return Image.asset(
+      isActive ? item.iconActive! : item.iconInactive!,
+      width: width,
+      height: height,
+      fit: BoxFit.contain,
     );
   }
 }

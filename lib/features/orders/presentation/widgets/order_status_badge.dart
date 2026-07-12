@@ -7,9 +7,14 @@ import '../../data/models/order_status.dart';
 
 /// شارة حالة الطلب
 class OrderStatusBadge extends StatelessWidget {
-  const OrderStatusBadge({super.key, required this.status});
+  const OrderStatusBadge({
+    super.key,
+    required this.status,
+    this.compact = false,
+  });
 
   final OrderStatus status;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +39,7 @@ class OrderStatusBadge extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: 10.h),
+      padding: EdgeInsets.symmetric(vertical: compact ? 5.h : 10.h),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(24.r),
