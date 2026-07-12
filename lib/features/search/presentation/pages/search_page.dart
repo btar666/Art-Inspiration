@@ -9,6 +9,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../cart/presentation/cart_actions.dart';
 import '../../../home/data/home_mock_data.dart';
 import '../../../home/data/models/product_model.dart';
+import '../../../home/presentation/providers/products_provider.dart';
 import '../../../home/presentation/widgets/home_product_card.dart';
 import '../../../home/presentation/widgets/home_product_card_metrics.dart';
 import '../../data/models/search_filter_state.dart';
@@ -35,11 +36,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   String _query = '';
   bool _showResults = false;
 
-  List<ProductModel> get _allProducts => [
-        ...HomeMockData.products,
-        ...HomeMockData.products,
-        ...HomeMockData.products,
-      ];
+  List<ProductModel> get _allProducts {
+    return ref.watch(productsProvider).value ?? HomeMockData.products;
+  }
 
   List<ProductModel> get _filteredProducts {
     if (!_showResults || _query.trim().isEmpty) return [];

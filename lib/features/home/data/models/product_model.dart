@@ -12,6 +12,7 @@ class ProductModel {
     this.discountPercent,
     this.imageUrl,
     this.imageBgColor = const Color(0xFFE9E4F5),
+    this.brandName = '',
     this.expiryDate = '',
     this.origin = '',
     this.galleryImageUrls = const [],
@@ -26,6 +27,7 @@ class ProductModel {
   final int? discountPercent;
   final String? imageUrl;
   final Color imageBgColor;
+  final String brandName;
   final String expiryDate;
   final String origin;
   final List<String> galleryImageUrls;
@@ -48,6 +50,7 @@ class ProductModel {
         'discountPercent': discountPercent,
         'imageUrl': imageUrl,
         'imageBgColor': imageBgColor.toARGB32(),
+        'brandName': brandName,
         'expiryDate': expiryDate,
         'origin': origin,
         'galleryImageUrls': galleryImageUrls,
@@ -63,6 +66,7 @@ class ProductModel {
         discountPercent: json['discountPercent'] as int?,
         imageUrl: json['imageUrl'] as String?,
         imageBgColor: Color(json['imageBgColor'] as int? ?? 0xFFE9E4F5),
+        brandName: json['brandName'] as String? ?? '',
         expiryDate: json['expiryDate'] as String? ?? '',
         origin: json['origin'] as String? ?? '',
         galleryImageUrls: (json['galleryImageUrls'] as List<dynamic>?)

@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../checkout/data/local_orders_storage.dart';
 import '../../data/models/order_model.dart';
 import '../../data/orders_mock_data.dart';
+import '../providers/orders_provider.dart';
 import '../widgets/order_card.dart';
 import '../widgets/orders_page_header.dart';
 import '../widgets/orders_search_row.dart';
@@ -30,21 +31,28 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
     super.dispose();
   }
 
-  List<OrderModel> get _allOrders {
+  List<OrderModel> _allOrders(List<OrderModel> erpOrders) {
     final local = ref.watch(localOrdersNotifierProvider);
-    final mock = OrdersMockData.orders;
-    final localIds = local.map((o) => o.id).toSet();
-    final merged = [
-      ...local,
-      ...mock.where((o) => !localIds.contains(o.id)),
-    ];
+    final seenIds = <String>{};
+    final merged = <OrderModel>[];
+
+    for (final order in [...local, ...erpOrders]) {
+      if (seenIds.add(order.id)) {
+        merged.add(order);
+      }
+    }
+
+    if (merged.isEmpty) {
+      return OrdersMockData.orders;
+    }
+
     return merged;
   }
 
-  List<OrderModel> get _filteredOrders {
-    if (_query.trim().isEmpty) return _allOrders;
+  List<OrderModel> _filteredOrders(List<OrderModel> orders) {
+    if (_query.trim().isEmpty) return orders;
     final q = _query.trim();
-    return _allOrders
+    return orders
         .where(
           (o) =>
               o.orderName.contains(q) ||
@@ -57,7 +65,32 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final erpAsync = ref.watch(erpOrdersListProvider);
 
+    return erpAsync.when(
+      loading: () => _buildScaffold(
+        context,
+        bottomInset,
+        const [],
+        isLoading: true,
+      ),
+      error: (_, __) {
+        final orders = _allOrders(const []);
+        return _buildScaffold(context, bottomInset, _filteredOrders(orders));
+      },
+      data: (erpOrders) {
+        final orders = _allOrders(erpOrders);
+        return _buildScaffold(context, bottomInset, _filteredOrders(orders));
+      },
+    );
+  }
+
+  Widget _buildScaffold(
+    BuildContext context,
+    double bottomInset,
+    List<OrderModel> orders, {
+    bool isLoading = false,
+  }) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -74,25 +107,34 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
             ),
             SizedBox(height: 16.h),
             Expanded(
-              child: ListView.separated(
-                padding: EdgeInsets.fromLTRB(
-                  20.w,
-                  0,
-                  20.w,
-                  100.h + bottomInset,
-                ),
-                itemCount: _filteredOrders.length,
-                separatorBuilder: (_, __) => SizedBox(height: 14.h),
-                itemBuilder: (context, index) {
-                  final order = _filteredOrders[index];
-                  return OrderCard(
-                    order: order,
-                    onTap: () => context.push(
-                      AppRoutes.orderDetailsPath(order.id),
-                    ),
-                  );
-                },
-              ),
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : orders.isEmpty
+                      ? Center(
+                          child: Text(
+                            'لا توجد طلبات',
+                            style: TextStyle(fontSize: 16.sp),
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: EdgeInsets.fromLTRB(
+                            20.w,
+                            0,
+                            20.w,
+                            100.h + bottomInset,
+                          ),
+                          itemCount: orders.length,
+                          separatorBuilder: (_, __) => SizedBox(height: 14.h),
+                          itemBuilder: (context, index) {
+                            final order = orders[index];
+                            return OrderCard(
+                              order: order,
+                              onTap: () => context.push(
+                                AppRoutes.orderDetailsPath(order.id),
+                              ),
+                            );
+                          },
+                        ),
             ),
           ],
         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
@@ -12,25 +13,29 @@ import '../../../../shared/widgets/auth_header.dart';
 import '../../../../shared/widgets/decorative_background.dart';
 import '../../../../shared/widgets/form_error_animator.dart';
 import '../../data/iraqi_governorates.dart';
+import '../providers/auth_provider.dart';
+import '../widgets/auth_message_dialog.dart';
 
 /// صفحة طلب الانضمام / إنشاء حساب
-class RegisterPage extends StatefulWidget {
+class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
 
   @override
-  State<RegisterPage> createState() => _RegisterPageState();
+  ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage> {
+class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _shopController = TextEditingController();
+  final _passwordController = TextEditingController();
   String? _selectedGovernorate;
   int _nameShakeTick = 0;
   int _phoneShakeTick = 0;
   int _governorateShakeTick = 0;
   int _shopShakeTick = 0;
+  int _passwordShakeTick = 0;
   int _logoShakeTick = 0;
 
   @override
@@ -38,6 +43,7 @@ class _RegisterPageState extends State<RegisterPage> {
     _nameController.dispose();
     _phoneController.dispose();
     _shopController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -49,30 +55,71 @@ class _RegisterPageState extends State<RegisterPage> {
 
   bool _isShopInvalid() => _shopController.text.trim().isEmpty;
 
-  void _onSubmit() {
+  bool _isPasswordInvalid() => _passwordController.text.length < 6;
+
+  Future<void> _onSubmit() async {
     _formKey.currentState!.validate();
 
     final nameInvalid = _isNameInvalid();
     final phoneInvalid = _isPhoneInvalid();
     final governorateInvalid = _isGovernorateInvalid();
     final shopInvalid = _isShopInvalid();
+    final passwordInvalid = _isPasswordInvalid();
 
-    if (nameInvalid || phoneInvalid || governorateInvalid || shopInvalid) {
+    if (nameInvalid ||
+        phoneInvalid ||
+        governorateInvalid ||
+        shopInvalid ||
+        passwordInvalid) {
       setState(() {
         if (nameInvalid) _nameShakeTick++;
         if (phoneInvalid) _phoneShakeTick++;
         if (governorateInvalid) _governorateShakeTick++;
         if (shopInvalid) _shopShakeTick++;
+        if (passwordInvalid) _passwordShakeTick++;
         _logoShakeTick++;
       });
+
+      final issues = <String>[
+        if (nameInvalid) 'يرجى إدخال اسمك الكامل',
+        if (phoneInvalid) 'يرجى إدخال رقم هاتف صحيح (10 أرقام على الأقل)',
+        if (governorateInvalid) 'يرجى اختيار محافظتك',
+        if (shopInvalid) 'يرجى إدخال اسم المتجر',
+        if (passwordInvalid) 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
+      ];
+      await AuthMessageDialog.showValidation(context, issues: issues);
       return;
     }
 
-    context.go(AppRoutes.requestSuccess);
+    final success = await ref.read(authNotifierProvider.notifier).register(
+          fullName: _nameController.text.trim(),
+          phone: _phoneController.text.trim(),
+          password: _passwordController.text,
+          shopName: _shopController.text.trim(),
+          governorate: _selectedGovernorate!,
+        );
+
+    if (!mounted) return;
+
+    if (success) {
+      context.go(AppRoutes.requestSuccess);
+      return;
+    }
+
+    final error = ref.read(authNotifierProvider).errorMessage;
+    if (error != null) {
+      await AuthMessageDialog.showError(
+        context,
+        title: 'تعذر إرسال الطلب',
+        message: error,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = ref.watch(authNotifierProvider).isLoading;
+
     return Scaffold(
       body: DecorativeBackground(
         child: AuthPageBackground(
@@ -149,14 +196,29 @@ class _RegisterPageState extends State<RegisterPage> {
                           .fadeIn(duration: 350.ms, delay: 260.ms)
                           .slideX(begin: 0.08, end: 0),
                     ),
+                    SizedBox(height: 14.h),
+                    FormErrorAnimator(
+                      tick: _passwordShakeTick,
+                      child: AppTextField(
+                        hint: 'كلمة المرور',
+                        controller: _passwordController,
+                        icon: Icons.lock_outline,
+                        obscureText: true,
+                        validator: (v) =>
+                            _isPasswordInvalid() ? 'أدخل كلمة مرور (6 أحرف)' : null,
+                      )
+                          .animate()
+                          .fadeIn(duration: 350.ms, delay: 320.ms)
+                          .slideX(begin: 0.08, end: 0),
+                    ),
                     SizedBox(height: 28.h),
                     AppButton(
-                      label: 'تقديم الطلب',
+                      label: isLoading ? 'جاري الإرسال...' : 'تقديم الطلب',
                       expanded: true,
-                      onPressed: _onSubmit,
+                      onPressed: isLoading ? null : _onSubmit,
                     )
                         .animate()
-                        .fadeIn(duration: 400.ms, delay: 320.ms)
+                        .fadeIn(duration: 400.ms, delay: 380.ms)
                         .slideY(begin: 0.12, end: 0),
                     AuthFooterLink(
                       prefix: 'لديك حساب ؟',

@@ -8,6 +8,11 @@ abstract final class AppConstants {
   static const String favoritesKey = 'favorites';
   static const String savedAddressesKey = 'saved_addresses';
   static const String localOrdersKey = 'local_orders';
+  static const String authAccessTokenKey = 'auth_access_token';
+  static const String authRefreshTokenKey = 'auth_refresh_token';
+  static const String authUserKey = 'auth_user';
+  static const String catalogOfflineCacheKey = 'catalog_offline_cache';
+  static const int catalogOfflineCacheVersion = 4;
 
   /// عرض Onboarding في كل مرة — غيّرها إلى false لاحقاً لإخفائها
   static const bool alwaysShowOnboarding = true;

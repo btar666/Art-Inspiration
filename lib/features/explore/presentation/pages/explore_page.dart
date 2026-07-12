@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../cart/presentation/cart_actions.dart';
+import '../../../home/data/home_mock_data.dart';
+import '../../../home/data/models/catalog_snapshot.dart';
+import '../../../home/presentation/providers/products_provider.dart';
 import '../../data/models/explore_models.dart';
 import '../widgets/explore_pinned_header.dart';
 import '../widgets/explore_scroll_metrics.dart';
@@ -54,6 +57,13 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
     final fallbackHeader = ExploreScrollMetrics.pinnedHeaderHeight(topInset);
     final scrollTopPadding =
         _headerHeight > 0 ? _headerHeight : fallbackHeader;
+    final catalogAsync = ref.watch(catalogProvider);
+    final catalog = catalogAsync.value;
+    final products = ref.watch(productsProvider).value ?? HomeMockData.products;
+    final brands = catalog?.brands ?? const [];
+    final categories = catalog != null && catalog.source != CatalogDataSource.mock
+        ? catalog.categories
+        : HomeMockData.categories;
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _updateHeaderHeight());
 
@@ -68,6 +78,9 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
               ExploreTabSlivers.build(
                 tab: _selectedTab,
                 bottomInset: bottomInset,
+                products: products,
+                brands: brands,
+                categories: categories,
                 onAddToCart: (product) =>
                     addProductToCart(context, ref, product),
               ),

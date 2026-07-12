@@ -39,6 +39,9 @@ dependencies:
   # Utils
   intl: ^0.20.1
 
+  # Network
+  dio: ^5.7.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

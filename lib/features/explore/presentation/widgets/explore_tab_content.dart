@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../../../home/data/home_mock_data.dart';
 import '../../../home/data/models/product_model.dart';
 import '../../../home/presentation/widgets/home_product_card.dart';
@@ -14,27 +15,30 @@ import 'explore_section_card.dart';
 
 /// شبكة المحتوى لكل تبويب داخل CustomScrollView
 abstract final class ExploreTabSlivers {
-  static List<ProductModel> get _products => [
-        ...HomeMockData.products,
-        ...HomeMockData.products,
-      ];
-
   static Widget build({
     required ExploreTab tab,
     required double bottomInset,
+    required List<ProductModel> products,
+    required List<String> brands,
+    required List<String> categories,
     void Function(ProductModel product)? onAddToCart,
   }) {
     return switch (tab) {
-      ExploreTab.general => _generalGrid(bottomInset, onAddToCart),
-      ExploreTab.brands => _brandsGrid(bottomInset),
-      ExploreTab.sections => _sectionsGrid(bottomInset),
+      ExploreTab.general => _generalGrid(bottomInset, products, onAddToCart),
+      ExploreTab.brands => _brandsGrid(bottomInset, brands),
+      ExploreTab.sections => _sectionsGrid(bottomInset, categories),
     };
   }
 
   static Widget _generalGrid(
     double bottomInset,
+    List<ProductModel> products,
     void Function(ProductModel product)? onAddToCart,
   ) {
+    final items = products.length <= 1
+        ? [...HomeMockData.products, ...HomeMockData.products]
+        : products;
+
     return SliverPadding(
       padding: EdgeInsets.fromLTRB(
         20.w,
@@ -51,20 +55,32 @@ abstract final class ExploreTabSlivers {
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
-            final product = _products[index];
+            final product = items[index];
             return HomeProductCard(
               key: ValueKey('explore_${product.id}_$index'),
               product: product,
               onAddToCart: () => onAddToCart?.call(product),
             );
           },
-          childCount: _products.length,
+          childCount: items.length,
         ),
       ),
     );
   }
 
-  static Widget _brandsGrid(double bottomInset) {
+  static Widget _brandsGrid(double bottomInset, List<String> brands) {
+    if (brands.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Text(
+            'لا توجد براندات في النظام',
+            style: AppTextStyles.settingsMenuItem(),
+          ),
+        ),
+      );
+    }
+
     return SliverPadding(
       padding: EdgeInsets.fromLTRB(
         20.w,
@@ -81,15 +97,34 @@ abstract final class ExploreTabSlivers {
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
-            return ExploreBrandCard(brand: ExploreMockData.brands[index]);
+            final name = brands[index];
+            return ExploreBrandCard(
+              brand: ExploreBrandModel(id: name, name: name),
+              onTap: () => context.push(
+                AppRoutes.exploreSectionPath(name),
+              ),
+            );
           },
-          childCount: ExploreMockData.brands.length,
+          childCount: brands.length,
         ),
       ),
     );
   }
 
-  static Widget _sectionsGrid(double bottomInset) {
+  static Widget _sectionsGrid(double bottomInset, List<String> categories) {
+    final sections = categories.where((c) => c != 'الكل').toList();
+    if (sections.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Text(
+            'لا توجد أقسام في النظام',
+            style: AppTextStyles.settingsMenuItem(),
+          ),
+        ),
+      );
+    }
+
     return SliverPadding(
       padding: EdgeInsets.fromLTRB(
         20.w,
@@ -106,7 +141,15 @@ abstract final class ExploreTabSlivers {
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
-            final section = ExploreMockData.sections[index];
+            final name = sections[index];
+            final template =
+                ExploreMockData.sections[index % ExploreMockData.sections.length];
+            final section = ExploreSectionModel(
+              id: name,
+              name: name,
+              iconAsset: template.iconAsset,
+              bgColor: template.bgColor,
+            );
             return ExploreSectionCard(
               section: section,
               onTap: () => context.push(
@@ -114,7 +157,7 @@ abstract final class ExploreTabSlivers {
               ),
             );
           },
-          childCount: ExploreMockData.sections.length,
+          childCount: sections.length,
         ),
       ),
     );

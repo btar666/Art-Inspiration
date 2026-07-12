@@ -207,6 +207,18 @@ class _HomeProductImage extends StatelessWidget {
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.contain,
+        placeholder: (_, __) => Center(
+          child: Icon(
+            Icons.image_outlined,
+            size: 40.sp,
+            color: AppColors.primary.withValues(alpha: 0.25),
+          ),
+        ),
+        errorWidget: (_, __, ___) => Icon(
+          Icons.spa_outlined,
+          size: 64.sp,
+          color: AppColors.primary.withValues(alpha: 0.35),
+        ),
       );
     }
 
@@ -260,7 +272,9 @@ class _HomeProductInfoSection extends StatelessWidget {
         ),
         SizedBox(height: HomeProductCardMetrics.nameToCategoryGap()),
         Text(
-          product.categoryName,
+          product.brandName.isNotEmpty
+              ? product.brandName
+              : product.categoryName,
           style: AppTextStyles.homeProductCardCategory(),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,

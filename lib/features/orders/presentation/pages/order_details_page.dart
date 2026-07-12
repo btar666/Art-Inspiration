@@ -8,6 +8,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../checkout/data/local_orders_storage.dart';
 import '../../data/models/order_model.dart';
 import '../../data/orders_mock_data.dart';
+import '../providers/orders_provider.dart';
 
 /// صفحة تفاصيل الطلب
 class OrderDetailsPage extends ConsumerWidget {
@@ -17,15 +18,42 @@ class OrderDetailsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    OrderDetailModel? order;
+    OrderDetailModel? localOrder;
     for (final item in ref.watch(localOrdersNotifierProvider)) {
       if (item.id == orderId) {
-        order = item;
+        localOrder = item;
         break;
       }
     }
-    order ??= OrdersMockData.detailFor(orderId);
 
+    if (localOrder != null) {
+      return _OrderDetailsBody(order: localOrder);
+    }
+
+    final erpAsync = ref.watch(erpOrderDetailProvider(orderId));
+
+    return erpAsync.when(
+      loading: () => const Scaffold(
+        backgroundColor: AppColors.surface,
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, __) => _OrderDetailsBody(
+        order: OrdersMockData.detailFor(orderId),
+      ),
+      data: (OrderDetailModel? order) => _OrderDetailsBody(
+        order: order ?? OrdersMockData.detailFor(orderId),
+      ),
+    );
+  }
+}
+
+class _OrderDetailsBody extends StatelessWidget {
+  const _OrderDetailsBody({required this.order});
+
+  final OrderDetailModel order;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: SafeArea(
