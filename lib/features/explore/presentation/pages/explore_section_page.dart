@@ -47,9 +47,9 @@ class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
 
   List<ProductModel> _filterProducts(List<ProductModel> products) {
     final sectionName = widget.sectionId;
-    return products.where((p) {
-      return p.brandName == sectionName || p.categoryName == sectionName;
-    }).toList();
+    return products
+        .where((p) => p.matchesCategoryOrBrand(sectionName))
+        .toList();
   }
 
   @override

@@ -4,12 +4,17 @@ import '../../../core/network/advanced_filter_api.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/models/advanced_filter_models.dart';
 import '../../auth/data/auth_storage.dart';
+import '../../checkout/data/checkout_provider.dart';
+import 'create_invoice_api.dart';
+import 'erp_invoice_request_builder.dart';
 import 'erp_order_mapper.dart';
 import 'models/order_model.dart';
+import 'models/order_status.dart';
 
 final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
   return OrdersRepository(
     api: ref.watch(advancedFilterApiProvider),
+    createInvoiceApi: ref.watch(createInvoiceApiProvider),
     authStorage: ref.watch(authStorageProvider),
   );
 });
@@ -28,11 +33,14 @@ class OrdersFetchResult {
 class OrdersRepository {
   OrdersRepository({
     required AdvancedFilterApi api,
+    required CreateInvoiceApi createInvoiceApi,
     required AuthStorage authStorage,
   })  : _api = api,
+        _createInvoiceApi = createInvoiceApi,
         _authStorage = authStorage;
 
   final AdvancedFilterApi _api;
+  final CreateInvoiceApi _createInvoiceApi;
   final AuthStorage _authStorage;
 
   Future<OrdersFetchResult> fetchOrders() async {
@@ -87,5 +95,61 @@ class OrdersRepository {
     } on ApiException {
       return null;
     }
+  }
+
+  /// إنشاء فاتورة مبيعات من مسودة الدفع
+  Future<OrderDetailModel> createInvoice(CheckoutDraft draft) async {
+    if (!_authStorage.isLoggedIn) {
+      throw const ApiException(
+        message: 'سجّل الدخول أولاً لإتمام الطلب',
+        statusCode: 401,
+        type: ApiExceptionType.unauthorized,
+      );
+    }
+
+    if (draft.selectedAddress == null || draft.items.isEmpty) {
+      throw const ApiException(message: 'بيانات الطلب غير مكتملة');
+    }
+
+    final body = ErpInvoiceRequestBuilder.build(
+      draft: draft,
+      user: _authStorage.user,
+    );
+
+    final created = await _createInvoiceApi.create(body);
+    final address = draft.selectedAddress!;
+    final firstItem = draft.items.first.product;
+    final elementNumber = created.elementNumber.isNotEmpty
+        ? created.elementNumber
+        : body['elementNumber']?.toString() ?? '';
+
+    return OrderDetailModel(
+      id: created.id,
+      orderName: elementNumber.isEmpty
+          ? 'طلب ${draft.totalQuantity} منتج'
+          : elementNumber,
+      address: address.fullAddress,
+      price: draft.subtotal,
+      status: OrderStatus.reviewing,
+      imageUrl: firstItem.imageUrl,
+      imageBgColor: firstItem.imageBgColor,
+      customerName: draft.customerName,
+      phone: draft.phone,
+      altPhone: draft.secondPhone.isEmpty ? null : draft.secondPhone,
+      deliveryAddress: address.fullAddress,
+      orderDate: DateTime.now(),
+      deliveryPrice: 0,
+      items: draft.items
+          .map(
+            (item) => OrderLineItem(
+              productName: item.product.name,
+              quantity: item.quantity,
+              price: item.product.price,
+              imageUrl: item.product.imageUrl,
+              imageBgColor: item.product.imageBgColor,
+            ),
+          )
+          .toList(),
+    );
   }
 }

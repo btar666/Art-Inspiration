@@ -4,68 +4,65 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/page_back_header.dart';
 import '../../../cart/data/models/cart_item_model.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
-import '../../../orders/data/models/order_model.dart';
-import '../../../orders/data/models/order_status.dart';
+import '../../../orders/data/orders_repository.dart';
 import '../../../orders/presentation/pages/order_details_page.dart';
 import '../../../orders/presentation/widgets/order_details_action_bar.dart';
 import '../../data/checkout_provider.dart';
 import '../../data/local_orders_storage.dart';
 
 /// الخطوة 2 — مراجعة وتأكيد الطلب
-class CheckoutReviewPage extends ConsumerWidget {
+class CheckoutReviewPage extends ConsumerStatefulWidget {
   const CheckoutReviewPage({super.key});
 
-  Future<void> _confirmOrder(BuildContext context, WidgetRef ref) async {
+  @override
+  ConsumerState<CheckoutReviewPage> createState() => _CheckoutReviewPageState();
+}
+
+class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
+  bool _submitting = false;
+
+  Future<void> _confirmOrder() async {
+    if (_submitting) return;
+
     final draft = ref.read(checkoutDraftProvider);
     if (draft == null || draft.selectedAddress == null) return;
 
-    final orderId = DateTime.now().millisecondsSinceEpoch.toString();
-    final address = draft.selectedAddress!;
-    final firstItem = draft.items.first.product;
+    setState(() => _submitting = true);
 
-    final order = OrderDetailModel(
-      id: orderId,
-      orderName: 'طلب ${draft.totalQuantity} منتج',
-      address: address.fullAddress,
-      price: draft.subtotal,
-      status: OrderStatus.reviewing,
-      imageUrl: firstItem.imageUrl,
-      imageBgColor: firstItem.imageBgColor,
-      customerName: draft.customerName,
-      phone: draft.phone,
-      altPhone: draft.secondPhone.isEmpty ? null : draft.secondPhone,
-      deliveryAddress: address.fullAddress,
-      orderDate: DateTime.now(),
-      deliveryPrice: 0,
-      items: draft.items
-          .map(
-            (item) => OrderLineItem(
-              productName: item.product.name,
-              quantity: item.quantity,
-              price: item.product.price,
-              imageUrl: item.product.imageUrl,
-              imageBgColor: item.product.imageBgColor,
-            ),
-          )
-          .toList(),
-    );
+    try {
+      final order =
+          await ref.read(ordersRepositoryProvider).createInvoice(draft);
 
-    await ref.read(localOrdersNotifierProvider.notifier).addOrder(order);
-    ref.read(cartNotifierProvider.notifier).clearAll();
-    ref.read(checkoutDraftProvider.notifier).clear();
+      await ref.read(localOrdersNotifierProvider.notifier).addOrder(order);
+      ref.read(cartNotifierProvider.notifier).clearAll();
+      ref.read(checkoutDraftProvider.notifier).clear();
 
-    if (!context.mounted) return;
-    context.go(AppRoutes.checkoutSuccessPath(orderId));
+      if (!mounted) return;
+      context.go(AppRoutes.checkoutSuccessPath(order.id));
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر تأكيد الطلب — حاول مجدداً')),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final draft = ref.watch(checkoutDraftProvider);
     if (draft == null) {
       return Scaffold(
@@ -219,10 +216,11 @@ class CheckoutReviewPage extends ConsumerWidget {
                     child: Transform.translate(
                       offset: Offset(0, 5.h),
                       child: OrderDetailsActionBar(
-                        primaryLabel: 'تأكيد الطلب',
+                        primaryLabel:
+                            _submitting ? 'جاري التأكيد...' : 'تأكيد الطلب',
                         secondaryLabel: 'عودة',
-                        onPrimary: () => _confirmOrder(context, ref),
-                        onSecondary: () => context.pop(),
+                        onPrimary: _submitting ? () {} : _confirmOrder,
+                        onSecondary: _submitting ? () {} : () => context.pop(),
                       ),
                     ),
                   ),

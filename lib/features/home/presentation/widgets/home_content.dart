@@ -87,10 +87,9 @@ class _HomeContentState extends ConsumerState<HomeContent> {
             _selectedCategoryIndex.clamp(0, categories.length - 1)];
         final visibleProducts = selectedCategory == 'الكل'
             ? catalog.products
-            : catalog.products.where((p) {
-                return p.categoryName == selectedCategory ||
-                    p.brandName == selectedCategory;
-              }).toList();
+            : catalog.products
+                .where((p) => p.matchesCategoryOrBrand(selectedCategory))
+                .toList();
 
         return CustomScrollView(
           controller: widget.scrollController,

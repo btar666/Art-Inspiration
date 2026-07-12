@@ -39,10 +39,16 @@ class AuthUser {
   final String? phone;
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
+    final firstName = json['firstName']?.toString().trim() ?? '';
+    final lastName = json['lastName']?.toString().trim() ?? '';
+    final combinedName = '$firstName $lastName'.trim();
+    final name = (json['name'] ?? json['user_name'] ?? combinedName)
+        .toString()
+        .trim();
+
     return AuthUser(
       id: (json['id'] ?? json['user_id'] ?? '').toString(),
-      name: (json['name'] ?? json['user_name'] ?? json['firstName'] ?? '')
-          .toString(),
+      name: name.isNotEmpty ? name : combinedName,
       email: json['email']?.toString() ?? json['user_email']?.toString(),
       phone: json['phone']?.toString(),
     );

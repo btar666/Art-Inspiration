@@ -149,11 +149,11 @@ class AuthApiService {
   }
 
   AuthUser? _extractUser(Map<String, dynamic> root, dynamic node) {
-    if (node is Map) {
-      return AuthUser.fromJson(Map<String, dynamic>.from(node));
-    }
     if (root['user'] is Map) {
       return AuthUser.fromJson(Map<String, dynamic>.from(root['user'] as Map));
+    }
+    if (node is Map) {
+      return AuthUser.fromJson(Map<String, dynamic>.from(node));
     }
     return null;
   }

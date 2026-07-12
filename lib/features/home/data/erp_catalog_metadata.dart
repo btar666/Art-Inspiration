@@ -1,4 +1,5 @@
 import '../../../core/network/api_response_parser.dart';
+import 'erp_product_fields.dart';
 import 'models/catalog_stats.dart';
 
 /// استخراج الأقسام والبراندات من سجلات المنتجات
@@ -6,27 +7,20 @@ abstract final class ErpCatalogMetadata {
   static CatalogMetadata fromProductRecords(
     List<Map<String, dynamic>> records, {
     int totalProducts = 0,
+    List<String> settingsCategories = const [],
+    List<String> settingsBrands = const [],
   }) {
-    final categories = <String>{'الكل'};
-    final brands = <String>{};
+    final categories = <String>{'الكل', ...settingsCategories};
+    final brands = <String>{...settingsBrands};
     var productsWithImages = 0;
     var productsWithoutBrand = 0;
 
     for (final record in records) {
       final main = ApiResponseParser.decodeJsonField(record['main']) ?? {};
 
-      final category = _firstNonEmpty([
-        main['categoryName'],
-        main['category'],
-        main['categoryId'],
-      ]);
-      if (category.isNotEmpty) categories.add(category);
+      categories.addAll(ErpProductFields.categoryValues(main));
 
-      final brand = _firstNonEmpty([
-        main['brandId'],
-        main['brand'],
-        main['brandName'],
-      ]);
+      final brand = ErpProductFields.brandValue(main);
       if (brand.isNotEmpty) {
         brands.add(brand);
       } else {
@@ -40,7 +34,12 @@ abstract final class ErpCatalogMetadata {
       if (imageName.isNotEmpty) productsWithImages++;
     }
 
-    final sortedCategories = categories.toList()..sort();
+    final sortedCategories = categories.toList()
+      ..sort((a, b) {
+        if (a == 'الكل') return -1;
+        if (b == 'الكل') return 1;
+        return a.compareTo(b);
+      });
     final sortedBrands = brands.toList()..sort();
 
     final categoryCount =

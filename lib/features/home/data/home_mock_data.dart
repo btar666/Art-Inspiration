@@ -6,11 +6,16 @@ import 'models/product_model.dart';
 abstract final class HomeMockData {
   static const categories = [
     'الكل',
-    'حشوات',
-    'حشوات',
-    'حشوات',
-    'حشوات',
-    'حشوات',
+    'المكياج',
+    'العطور',
+    'العناية بالبشرة',
+    'العناية بالجسم',
+    'مرطبات',
+    'صبغ الاظافر',
+    'الرموش',
+    'العناية بالشعر',
+    'اصباغ الشعر',
+    'التخفيضات',
   ];
 
   static const _detailsDescription =

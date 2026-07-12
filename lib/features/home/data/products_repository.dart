@@ -91,13 +91,12 @@ class ProductsRepository {
     try {
       final results = await Future.wait([
         _fetchProductsPage(1),
-        _fetchCatalogMetadata(),
         _fetchStoreSettings(),
       ]);
 
       final pageResult = results[0] as _ProductsPageResult;
-      final metadata = results[1] as CatalogMetadata;
-      final storeSettings = results[2] as StoreSettings;
+      final storeSettings = results[1] as StoreSettings;
+      final metadata = await _fetchCatalogMetadata(storeSettings);
 
       final snapshot = _buildSnapshot(
         products: pageResult.products,
@@ -116,7 +115,9 @@ class ProductsRepository {
         lastPage: pageResult.lastPage,
         warning: pageResult.products.isEmpty
             ? 'لا توجد منتجات — عرض بيانات تجريبية'
-            : null,
+            : metadata.stats.categoryCount == 0
+                ? 'الأقسام غير معبأة في ERP (categoryIds / setting)'
+                : null,
       );
 
       await _persistSnapshot(snapshot);
@@ -167,12 +168,17 @@ class ProductsRepository {
     String? warning,
   }) {
     final useMockProducts = products.isEmpty;
-    final useMockCategories =
-        categories.length <= 1 && categories.every((c) => c == 'الكل');
+    final hasRealCategories =
+        categories.any((c) => c != 'الكل') || storeSettings.categories.isNotEmpty;
+
+    // لا نحقن أقسام وهمية فوق منتجات ERP الحقيقية — حتى لا يفشل الفلتر
+    final resolvedCategories = !hasRealCategories
+        ? (useMockProducts ? HomeMockData.categories : const ['الكل'])
+        : categories;
 
     return CatalogSnapshot(
       products: useMockProducts ? HomeMockData.products : products,
-      categories: useMockCategories ? HomeMockData.categories : categories,
+      categories: resolvedCategories,
       brands: brands,
       stats: stats,
       storeSettings: storeSettings,
@@ -243,7 +249,9 @@ class ProductsRepository {
     );
   }
 
-  Future<CatalogMetadata> _fetchCatalogMetadata() async {
+  Future<CatalogMetadata> _fetchCatalogMetadata(
+    StoreSettings storeSettings,
+  ) async {
     final result = await _api.fetch(
       request: const AdvancedFilterRequest(
         tableName: ErpTables.products,
@@ -259,6 +267,8 @@ class ProductsRepository {
     return ErpCatalogMetadata.fromProductRecords(
       result.items,
       totalProducts: result.total,
+      settingsCategories: storeSettings.categories,
+      settingsBrands: storeSettings.brands,
     );
   }
 

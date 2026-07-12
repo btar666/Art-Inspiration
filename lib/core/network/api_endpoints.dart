@@ -4,4 +4,5 @@ abstract final class ApiEndpoints {
   static const register = '/api/auth/register';
   static const refreshToken = '/api/auth/refreshToken';
   static const advancedFilter = '/api/auth/advancedFilter';
+  static const createInvoice = '/api/v1/invoices';
 }

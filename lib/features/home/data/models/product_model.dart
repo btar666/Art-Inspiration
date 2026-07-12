@@ -16,6 +16,7 @@ class ProductModel {
     this.expiryDate = '',
     this.origin = '',
     this.galleryImageUrls = const [],
+    this.categoryIds = const [],
   });
 
   final String id;
@@ -31,6 +32,13 @@ class ProductModel {
   final String expiryDate;
   final String origin;
   final List<String> galleryImageUrls;
+  final List<String> categoryIds;
+
+  bool matchesCategoryOrBrand(String selected) {
+    if (selected == 'الكل') return true;
+    if (categoryName == selected || brandName == selected) return true;
+    return categoryIds.contains(selected);
+  }
 
   String get formattedPrice {
     final formatted = price.toString().replaceAllMapped(
@@ -54,6 +62,7 @@ class ProductModel {
         'expiryDate': expiryDate,
         'origin': origin,
         'galleryImageUrls': galleryImageUrls,
+        'categoryIds': categoryIds,
       };
 
   factory ProductModel.fromJson(Map<String, dynamic> json) => ProductModel(
@@ -71,6 +80,10 @@ class ProductModel {
         origin: json['origin'] as String? ?? '',
         galleryImageUrls: (json['galleryImageUrls'] as List<dynamic>?)
                 ?.map((e) => e as String)
+                .toList() ??
+            const [],
+        categoryIds: (json['categoryIds'] as List<dynamic>?)
+                ?.map((e) => e.toString())
                 .toList() ??
             const [],
       );

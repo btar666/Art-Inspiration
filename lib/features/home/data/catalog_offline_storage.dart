@@ -38,6 +38,8 @@ class CatalogOfflineStorage {
         'currencyCode': snapshot.storeSettings.currencyCode,
         'currencySymbol': snapshot.storeSettings.currencySymbol,
         'currencyArabicName': snapshot.storeSettings.currencyArabicName,
+        'categories': snapshot.storeSettings.categories,
+        'brands': snapshot.storeSettings.brands,
       },
       'currentPage': snapshot.currentPage,
       'lastPage': snapshot.lastPage,
@@ -80,6 +82,14 @@ class CatalogOfflineStorage {
         currencySymbol: settingsMap?['currencySymbol'] as String? ?? 'د.ع',
         currencyArabicName:
             settingsMap?['currencyArabicName'] as String? ?? 'الدينار العراقي',
+        categories: (settingsMap?['categories'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            const [],
+        brands: (settingsMap?['brands'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            const [],
       );
 
       return CatalogSnapshot(
