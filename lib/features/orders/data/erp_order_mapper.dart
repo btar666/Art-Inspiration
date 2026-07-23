@@ -1,8 +1,7 @@
-import '../../../core/network/api_response_parser.dart';
 import 'models/order_model.dart';
 import 'models/order_status.dart';
 
-/// تحويل فواتير sales_invoices إلى OrderModel
+/// تحويل فواتير sales_invoices من أمان ERP
 abstract final class ErpOrderMapper {
   static List<OrderModel> fromRecords(List<Map<String, dynamic>> records) {
     return records.map(fromRecord).whereType<OrderModel>().toList();
@@ -12,29 +11,14 @@ abstract final class ErpOrderMapper {
     final id = (record['id'] ?? '').toString();
     if (id.isEmpty) return null;
 
-    final main = ApiResponseParser.decodeJsonField(record['main']) ?? {};
-    final elementNumber = _firstNonEmpty([
-      main['elementNumber'],
-      record['elementNumber'],
-    ]);
-
-    final price = _parsePrice(record['totalAmount'] ?? main['amount']);
-    final address = _firstNonEmpty([
-      main['shippingAddressAr'],
-      main['shippingAddress'],
-      _customerField(main, 'address'),
-      _customerField(main, 'city'),
-    ]);
-
-    final statusRaw = _firstNonEmpty([
-      record['status'],
-      main['status'],
-    ]);
+    final number = (record['number'] ?? '').toString().trim();
+    final price = _parsePrice(record['total'] ?? record['subtotal']);
+    final statusRaw = (record['status'] ?? '').toString();
 
     return OrderModel(
       id: id,
-      orderName: elementNumber.isEmpty ? 'فاتورة #$id' : elementNumber,
-      address: address.isEmpty ? '—' : address,
+      orderName: number.isEmpty ? 'فاتورة #$id' : number,
+      address: '—',
       price: price,
       status: _mapStatus(statusRaw),
     );
@@ -44,38 +28,21 @@ abstract final class ErpOrderMapper {
     final base = fromRecord(record);
     if (base == null) return null;
 
-    final main = ApiResponseParser.decodeJsonField(record['main']) ?? {};
-    final customer = main['customer'];
-    final customerMap = customer is Map
-        ? Map<String, dynamic>.from(customer)
-        : <String, dynamic>{};
-
-    final customerName = _firstNonEmpty([
-      customerMap['name'],
-      '${customerMap['firstName'] ?? ''} ${customerMap['lastName'] ?? ''}',
-      main['customerName'],
-    ]);
-
-    final phone = _firstNonEmpty([
-      customerMap['phone'],
-      _customerField(main, 'phone'),
-    ]);
-
-    final issueDate = _parseDate(record['issueDate'] ?? main['issueDate']);
-    final items = _lineItems(main['items']);
+    final items = _lineItems(record['items']);
+    final notes = (record['notes'] ?? '').toString().trim();
 
     return OrderDetailModel(
       id: base.id,
       orderName: base.orderName,
-      address: base.address,
+      address: notes.isEmpty ? base.address : notes,
       price: base.price,
       status: base.status,
-      customerName: customerName.isEmpty ? '—' : customerName.trim(),
-      phone: phone.isEmpty ? '—' : phone,
-      deliveryAddress: base.address,
-      orderDate: issueDate,
+      customerName: '—',
+      phone: '—',
+      deliveryAddress: notes.isEmpty ? base.address : notes,
+      orderDate: _parseDate(record['date'] ?? record['created_at']),
       items: items,
-      deliveryPrice: _parsePrice(main['shippingCost']),
+      deliveryPrice: 0,
     );
   }
 
@@ -86,13 +53,13 @@ abstract final class ErpOrderMapper {
         .whereType<Map>()
         .map((item) {
           final map = Map<String, dynamic>.from(item);
-          final name = _firstNonEmpty([map['productName'], map['name']]);
+          final name = (map['name'] ?? '').toString().trim();
           if (name.isEmpty) return null;
 
           return OrderLineItem(
             productName: name,
-            quantity: _parsePrice(map['quantity']),
-            price: _parsePrice(map['unitPrice'] ?? map['total']),
+            quantity: _parsePrice(map['quantity']).clamp(1, 999999),
+            price: _parsePrice(map['unit_price'] ?? map['total']),
           );
         })
         .whereType<OrderLineItem>()
@@ -113,14 +80,6 @@ abstract final class ErpOrderMapper {
     return OrderStatus.reviewing;
   }
 
-  static String _customerField(Map<String, dynamic> main, String key) {
-    final customer = main['customer'];
-    if (customer is Map) {
-      return customer[key]?.toString().trim() ?? '';
-    }
-    return '';
-  }
-
   static DateTime _parseDate(dynamic value) {
     if (value is String && value.isNotEmpty) {
       return DateTime.tryParse(value) ?? DateTime.now();
@@ -136,13 +95,5 @@ abstract final class ErpOrderMapper {
       return double.tryParse(cleaned)?.round() ?? 0;
     }
     return 0;
-  }
-
-  static String _firstNonEmpty(List<dynamic> values) {
-    for (final value in values) {
-      final text = value?.toString().trim() ?? '';
-      if (text.isNotEmpty) return text;
-    }
-    return '';
   }
 }

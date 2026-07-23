@@ -1,8 +1,8 @@
 /// حالة فلترة نتائج البحث
 class SearchFilterState {
   const SearchFilterState({
-    this.minPrice = 20000,
-    this.maxPrice = 122000,
+    this.minPrice = priceMin,
+    this.maxPrice = priceMax,
     this.selectedBrand = 'الكل',
     this.selectedCategory = 'الكل',
   });
@@ -12,8 +12,8 @@ class SearchFilterState {
   final String selectedBrand;
   final String selectedCategory;
 
-  static const double priceMin = 20000;
-  static const double priceMax = 150000;
+  static const double priceMin = 0;
+  static const double priceMax = 500000;
 
   bool get hasActiveFilters =>
       minPrice > priceMin ||

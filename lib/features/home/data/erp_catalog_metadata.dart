@@ -1,37 +1,16 @@
-import '../../../core/network/api_response_parser.dart';
-import '../../../core/network/erp_media_url.dart';
-import 'erp_product_fields.dart';
 import 'models/catalog_stats.dart';
 
-/// استخراج الأقسام والبراندات من سجلات المنتجات
+/// بناء بيانات الكتالوج من قوائم أمان ERP
 abstract final class ErpCatalogMetadata {
-  static CatalogMetadata fromProductRecords(
-    List<Map<String, dynamic>> records, {
-    int totalProducts = 0,
-    List<String> settingsCategories = const [],
-    List<String> settingsBrands = const [],
+  static CatalogMetadata fromLookups({
+    required List<String> categoryNames,
+    required List<String> brandNames,
+    required int totalProducts,
+    int productsWithImages = 0,
+    int productsWithoutBrand = 0,
   }) {
-    final categories = <String>{'الكل', ...settingsCategories};
-    final brands = <String>{...settingsBrands};
-    var productsWithImages = 0;
-    var productsWithoutBrand = 0;
-
-    for (final record in records) {
-      final main = ApiResponseParser.decodeJsonField(record['main']) ?? {};
-
-      categories.addAll(ErpProductFields.categoryValues(main));
-
-      final brand = ErpProductFields.brandValue(main);
-      if (brand.isNotEmpty) {
-        brands.add(brand);
-      } else {
-        productsWithoutBrand++;
-      }
-
-      if (ErpMediaUrl.allUrls(record: record, main: main).isNotEmpty) {
-        productsWithImages++;
-      }
-    }
+    final categories = <String>{'الكل', ...categoryNames};
+    final brands = {...brandNames};
 
     final sortedCategories = categories.toList()
       ..sort((a, b) {
@@ -41,16 +20,13 @@ abstract final class ErpCatalogMetadata {
       });
     final sortedBrands = brands.toList()..sort();
 
-    final categoryCount =
-        sortedCategories.where((c) => c != 'الكل').length;
-
     return CatalogMetadata(
       categories: sortedCategories,
       brands: sortedBrands,
       stats: CatalogStats(
-        totalProducts: totalProducts > 0 ? totalProducts : records.length,
+        totalProducts: totalProducts,
         brandCount: sortedBrands.length,
-        categoryCount: categoryCount,
+        categoryCount: sortedCategories.where((c) => c != 'الكل').length,
         productsWithImages: productsWithImages,
         productsWithoutBrand: productsWithoutBrand,
       ),

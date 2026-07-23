@@ -1,7 +1,6 @@
-import 'api_config.dart';
 import 'api_response_parser.dart';
 
-/// بناء روابط صور منتجات Dan ERP — من بيانات ERP فقط
+/// بناء روابط صور المنتجات — من بيانات ERP فقط
 abstract final class ErpMediaUrl {
   /// أول صورة صالحة للمنتج (صورة رئيسية)
   static String? resolve({
@@ -150,12 +149,11 @@ abstract final class ErpMediaUrl {
 
     if (_isHttpUrl(cleanName)) return _normalizeUrl(cleanName);
 
-    final table = tableName ?? 'inventory_products';
+    final table = tableName ?? 'products';
     final encodedName = cleanName.split('/').map(Uri.encodeComponent).join('/');
-    final encodedClient = Uri.encodeComponent(ApiConfig.clientId);
     final encodedTable = Uri.encodeComponent(table);
 
-    return '${ApiConfig.baseUrl}/storage/$encodedClient/$encodedTable/$encodedName';
+    return 'https://aman-erp.com/storage/$encodedTable/$encodedName';
   }
 
   /// ERP غالباً يرجع http — نحوّله لـ https ليتوافق مع Android

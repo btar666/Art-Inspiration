@@ -7,9 +7,8 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../cart/presentation/cart_actions.dart';
-import '../../../home/data/home_mock_data.dart';
 import '../../../home/data/models/product_model.dart';
-import '../../../home/presentation/providers/products_provider.dart';
+import '../../../home/data/products_repository.dart';
 import '../../../home/presentation/widgets/home_product_card.dart';
 import '../../../home/presentation/widgets/home_product_card_metrics.dart';
 import '../../data/models/search_filter_state.dart';
@@ -19,7 +18,7 @@ import '../widgets/search_history_section.dart';
 import '../widgets/search_input_bar.dart';
 import '../widgets/search_page_header.dart';
 
-/// صفحة البحث
+/// صفحة البحث — مربوطة بـ أمان ERP (`q` + فلاتر)
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
 
@@ -35,34 +34,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   SearchFilterState _filter = const SearchFilterState();
   String _query = '';
   bool _showResults = false;
-
-  List<ProductModel> get _allProducts {
-    return ref.watch(productsProvider).value ?? HomeMockData.products;
-  }
-
-  List<ProductModel> get _filteredProducts {
-    if (!_showResults || _query.trim().isEmpty) return [];
-
-    return _allProducts.where((product) {
-      final inPriceRange = product.price >= _filter.minPrice &&
-          product.price <= _filter.maxPrice;
-      if (!inPriceRange) return false;
-
-      if (_filter.selectedCategory != 'الكل' &&
-          !product.categoryName.contains(_filter.selectedCategory) &&
-          _filter.selectedCategory != 'مكياج') {
-        // mock: allow all unless strict filter with high min price
-      }
-
-      final q = _query.trim().toLowerCase();
-      if (q == 'لايوجد' || q == 'empty') return false;
-
-      return product.name.contains(q) ||
-          product.description.contains(q) ||
-          product.categoryName.contains(q) ||
-          q.isNotEmpty;
-    }).toList();
-  }
+  bool _loading = false;
+  List<ProductModel> _results = const [];
 
   @override
   void dispose() {
@@ -76,23 +49,49 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     setState(() {
       _query = '';
       _showResults = false;
+      _loading = false;
+      _results = const [];
     });
     _focusNode.unfocus();
   }
 
-  void _onSearch(String value) {
+  Future<void> _onSearch(String value) async {
     final trimmed = value.trim();
     if (trimmed.isEmpty) return;
 
     setState(() {
       _query = trimmed;
       _showResults = true;
+      _loading = true;
       _history.remove(trimmed);
       _history.insert(0, trimmed);
       if (_history.length > 8) {
         _history = _history.take(8).toList();
       }
     });
+
+    try {
+      final results =
+          await ref.read(productsRepositoryProvider).searchProducts(
+                query: trimmed,
+                category: _filter.selectedCategory,
+                brand: _filter.selectedBrand,
+                minPrice: _filter.minPrice,
+                maxPrice: _filter.maxPrice,
+              );
+
+      if (!mounted) return;
+      setState(() {
+        _results = results;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _results = const [];
+        _loading = false;
+      });
+    }
   }
 
   void _onQueryChanged(String value) {
@@ -100,6 +99,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       _query = value;
       if (value.trim().isEmpty) {
         _showResults = false;
+        _results = const [];
       }
     });
   }
@@ -110,16 +110,15 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       extra: _filter,
     );
     if (result == null || !mounted) return;
-    setState(() {
-      _filter = result;
-      if (_query.trim().isNotEmpty) _showResults = true;
-    });
+    setState(() => _filter = result);
+    if (_query.trim().isNotEmpty) {
+      await _onSearch(_query);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final products = _filteredProducts;
     final isSearching = _showResults && _query.trim().isNotEmpty;
 
     return Scaffold(
@@ -141,7 +140,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               SearchActiveFiltersRow(filter: _filter),
             Expanded(
               child: isSearching
-                  ? _buildResults(products, bottomInset)
+                  ? _buildResults(bottomInset)
                   : _buildHistory(),
             ),
           ],
@@ -164,8 +163,12 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     );
   }
 
-  Widget _buildResults(List<ProductModel> products, double bottomInset) {
-    if (products.isEmpty) {
+  Widget _buildResults(double bottomInset) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_results.isEmpty) {
       return Center(
         child: Text(
           'لا توجد نتائج',
@@ -182,7 +185,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             child: Align(
               alignment: Alignment.centerRight,
               child: Text(
-                'نتائج البحث',
+                'نتائج البحث (${_results.length})',
                 style: AppTextStyles.searchSectionTitle(),
               ),
             ),
@@ -204,14 +207,14 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) {
-                final product = products[index];
+                final product = _results[index];
                 return HomeProductCard(
                   key: ValueKey('search_${product.id}_$index'),
                   product: product,
                   onAddToCart: () => addProductToCart(context, ref, product),
                 );
               },
-              childCount: products.length,
+              childCount: _results.length,
             ),
           ),
         ),

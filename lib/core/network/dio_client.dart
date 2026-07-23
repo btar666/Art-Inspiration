@@ -2,18 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../features/auth/data/auth_api_service.dart';
 import '../../features/auth/data/auth_storage.dart';
 import 'api_config.dart';
 import 'api_exception.dart';
 import 'api_response_parser.dart';
 import 'retry_interceptor.dart';
-import 'token_refresh_coordinator.dart';
 
-final tokenRefreshCoordinatorProvider =
-    Provider<TokenRefreshCoordinator>((ref) => TokenRefreshCoordinator());
-
-/// Dio للمصادقة فقط — retry للشبكة
+/// Dio بدون Bearer — نادر الاستخدام مع أمان ERP
 final baseDioProvider = Provider<Dio>((ref) {
   final dio = _createDio();
   dio.interceptors.add(RetryInterceptor(dio: dio));
@@ -21,22 +16,13 @@ final baseDioProvider = Provider<Dio>((ref) {
   return dio;
 });
 
-/// Dio للطلبات المحمية — Bearer + refresh + logging
+/// Dio لطلبات أمان ERP — Bearer API key
 final dioProvider = Provider<Dio>((ref) {
   final authStorage = ref.watch(authStorageProvider);
-  final authApi = ref.read(authApiServiceProvider);
-  final coordinator = ref.watch(tokenRefreshCoordinatorProvider);
 
   final dio = _createDio();
   dio.interceptors.add(RetryInterceptor(dio: dio));
-  dio.interceptors.add(
-    _AuthInterceptor(
-      authStorage: authStorage,
-      authApi: authApi,
-      dio: dio,
-      coordinator: coordinator,
-    ),
-  );
+  dio.interceptors.add(_AmanAuthInterceptor(authStorage: authStorage));
 
   if (kDebugMode) {
     dio.interceptors.add(
@@ -44,7 +30,7 @@ final dioProvider = Provider<Dio>((ref) {
         requestHeader: false,
         responseHeader: false,
         requestBody: true,
-        responseBody: true,
+        responseBody: false,
       ),
     );
   }
@@ -62,67 +48,26 @@ Dio _createDio() {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'x-client': ApiConfig.clientId,
       },
     ),
   );
 }
 
-class _AuthInterceptor extends Interceptor {
-  _AuthInterceptor({
-    required this.authStorage,
-    required this.authApi,
-    required this.dio,
-    required this.coordinator,
-  });
+class _AmanAuthInterceptor extends Interceptor {
+  _AmanAuthInterceptor({required this.authStorage});
 
   final AuthStorage authStorage;
-  final AuthApiService authApi;
-  final Dio dio;
-  final TokenRefreshCoordinator coordinator;
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    final token = authStorage.accessToken;
-    if (token != null && token.isNotEmpty) {
+    final stored = authStorage.accessToken;
+    final token = (stored != null && stored.isNotEmpty)
+        ? stored
+        : ApiConfig.apiToken;
+    if (token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
     }
     handler.next(options);
-  }
-
-  @override
-  void onError(DioException err, ErrorInterceptorHandler handler) async {
-    final response = err.response;
-    final isUnauthorized = response?.statusCode == 401;
-    final alreadyRetried = err.requestOptions.extra['retried'] == true;
-
-    if (!isUnauthorized || alreadyRetried) {
-      handler.next(err);
-      return;
-    }
-
-    final refreshToken = authStorage.refreshToken;
-    if (refreshToken == null || refreshToken.isEmpty) {
-      handler.next(err);
-      return;
-    }
-
-    try {
-      final tokens = await coordinator.run(
-        () => authApi.refreshToken(refreshToken),
-      );
-      await authStorage.saveTokens(tokens);
-
-      final request = err.requestOptions;
-      request.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
-      request.extra['retried'] = true;
-
-      final retryResponse = await dio.fetch<dynamic>(request);
-      handler.resolve(retryResponse);
-    } catch (_) {
-      await authStorage.clear();
-      handler.next(err);
-    }
   }
 }
 
@@ -140,15 +85,9 @@ ApiException mapDioError(DioException error) {
     return ApiException.network();
   }
 
-  final fallback = switch (response?.statusCode) {
-    422 => 'تعذر إتمام الطلب — تحقق من البيانات والمخزون',
-    401 || 403 => 'انتهت الجلسة — سجّل الدخول مجدداً',
-    _ => error.message ?? 'فشل الاتصال بالخادم',
-  };
-
   final message = ApiResponseParser.messageFrom(
     data,
-    fallback: fallback,
+    fallback: error.message ?? 'فشل الاتصال بالخادم',
   );
 
   String? code;
@@ -164,12 +103,17 @@ ApiException mapDioError(DioException error) {
 }
 
 String _localizedMessage(String message, int? statusCode) {
-  final lower = message.toLowerCase();
-  if (lower.contains('invalid credentials') || statusCode == 402) {
-    return 'بيانات الدخول غير صحيحة — تحقق من البريد وكلمة المرور';
+  if (statusCode == 401) {
+    return 'مفتاح API غير صالح — راجع إعدادات أمان ERP';
   }
-  if (lower.contains('token has expired') || lower.contains('token expired')) {
-    return 'انتهت الجلسة — سجّل الدخول مجدداً';
+  if (statusCode == 402) {
+    return 'انتهى الاشتراك أو الفترة التجريبية في أمان ERP';
+  }
+  if (statusCode == 403) {
+    return 'لا تملك صلاحية هذه العملية';
+  }
+  if (statusCode == 429) {
+    return 'تم تجاوز حد الطلبات — حاول بعد قليل';
   }
   return message;
 }

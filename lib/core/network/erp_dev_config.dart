@@ -1,21 +1,22 @@
-/// إعدادات مؤقتة لاستخدام Dan ERP حتى اكتمال API الخاص بالتطبيق.
+import 'api_config.dart';
+
+/// إعدادات مؤقتة لجلسة أمان ERP في وضع التطوير.
 ///
-/// عطّل [enabled] عند الانتقال لـ API مالنا أو الاعتماد على Login فقط.
+/// عطّل [enabled] عند الاعتماد على شاشة Login فقط.
 abstract final class ErpDevConfig {
   static const enabled = true;
 
-  /// حساب Admin من Dan ERP — يُستخدم لتسجيل دخول تلقائي عند الإقلاع.
+  /// حساب لوحة أمان ERP (للرجوع اليدوي عبر الويب).
   static const email = 'thoalfo8ar.s@gmail.com';
-  static const password = '550450Aa';
+  static const password = 'jabpav-vihci3-pokcaT';
 
-  /// JWT جاهز (اختياري). إذا فارغ يُستخدم [email]/[password].
-  static const accessToken = '';
+  /// مفتاح API من كولكشن Postman — يُستخدم لكل طلبات /api/v1.
+  static const accessToken = ApiConfig.apiToken;
 
-  /// refresh token اختياري لتجديد الجلسة تلقائياً.
   static const refreshToken = '';
 
-  static const userId = '1';
-  static const userName = 'DHULFIQAR SAMER ALJIYALEE';
-  static const userEmail = 'THOALFO8AR.S@GMAIL.COM';
-  static const userPhone = '07842799567';
+  static const userId = '46';
+  static const userName = 'ذوالفقار سمير';
+  static const userEmail = 'thoalfo8ar.s@gmail.com';
+  static const userPhone = '';
 }

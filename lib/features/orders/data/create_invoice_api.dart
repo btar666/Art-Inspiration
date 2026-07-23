@@ -10,7 +10,7 @@ final createInvoiceApiProvider = Provider<CreateInvoiceApi>((ref) {
   return CreateInvoiceApi(ref.watch(dioProvider));
 });
 
-/// إنشاء فاتورة مبيعات عبر POST /api/v1/invoices
+/// إنشاء فاتورة مبيعات عبر POST /sales_invoices
 class CreateInvoiceApi {
   CreateInvoiceApi(this._dio);
 
@@ -19,7 +19,7 @@ class CreateInvoiceApi {
   Future<CreatedInvoiceResult> create(Map<String, dynamic> body) async {
     final response = await safeRequest(
       () => _dio.post<Map<String, dynamic>>(
-        ApiEndpoints.createInvoice,
+        ApiEndpoints.salesInvoices,
         data: body,
       ),
     );
@@ -30,14 +30,10 @@ class CreateInvoiceApi {
         ? Map<String, dynamic>.from(dataNode)
         : root;
 
-    final id = (data['id'] ?? root['id'] ?? '').toString();
-    final elementNumber = (data['elementNumber'] ??
-            root['elementNumber'] ??
-            body['elementNumber'] ??
-            '')
-        .toString();
+    final id = (data['id'] ?? '').toString();
+    final number = (data['number'] ?? '').toString();
 
-    if (id.isEmpty && elementNumber.isEmpty) {
+    if (id.isEmpty && number.isEmpty) {
       throw ApiException(
         message: ApiResponseParser.messageFrom(
           root,
@@ -47,8 +43,8 @@ class CreateInvoiceApi {
     }
 
     return CreatedInvoiceResult(
-      id: id.isNotEmpty ? id : elementNumber,
-      elementNumber: elementNumber,
+      id: id.isNotEmpty ? id : number,
+      elementNumber: number,
       raw: data,
     );
   }

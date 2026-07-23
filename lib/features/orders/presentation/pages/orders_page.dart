@@ -62,6 +62,12 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
         .toList();
   }
 
+  Future<void> _onRefresh() async {
+    ref.invalidate(erpOrdersProvider);
+    ref.invalidate(localOrdersNotifierProvider);
+    await ref.read(erpOrdersProvider.future);
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
@@ -107,34 +113,52 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
             ),
             SizedBox(height: 16.h),
             Expanded(
-              child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : orders.isEmpty
-                      ? Center(
-                          child: Text(
-                            'لا توجد طلبات',
-                            style: TextStyle(fontSize: 16.sp),
-                          ),
-                        )
-                      : ListView.separated(
-                          padding: EdgeInsets.fromLTRB(
-                            20.w,
-                            0,
-                            20.w,
-                            100.h + bottomInset,
-                          ),
-                          itemCount: orders.length,
-                          separatorBuilder: (_, __) => SizedBox(height: 14.h),
-                          itemBuilder: (context, index) {
-                            final order = orders[index];
-                            return OrderCard(
-                              order: order,
-                              onTap: () => context.push(
-                                AppRoutes.orderDetailsPath(order.id),
+              child: RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: _onRefresh,
+                child: isLoading
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          SizedBox(height: 160.h),
+                          const Center(child: CircularProgressIndicator()),
+                        ],
+                      )
+                    : orders.isEmpty
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
+                              SizedBox(height: 160.h),
+                              Center(
+                                child: Text(
+                                  'لا توجد طلبات',
+                                  style: TextStyle(fontSize: 16.sp),
+                                ),
                               ),
-                            );
-                          },
-                        ),
+                            ],
+                          )
+                        : ListView.separated(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: EdgeInsets.fromLTRB(
+                              20.w,
+                              0,
+                              20.w,
+                              100.h + bottomInset,
+                            ),
+                            itemCount: orders.length,
+                            separatorBuilder: (_, __) =>
+                                SizedBox(height: 14.h),
+                            itemBuilder: (context, index) {
+                              final order = orders[index];
+                              return OrderCard(
+                                order: order,
+                                onTap: () => context.push(
+                                  AppRoutes.orderDetailsPath(order.id),
+                                ),
+                              );
+                            },
+                          ),
+              ),
             ),
           ],
         ),

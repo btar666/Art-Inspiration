@@ -8,42 +8,24 @@ import 'api_endpoints.dart';
 import 'api_response_parser.dart';
 import 'erp_dev_config.dart';
 
-/// تهيئة جلسة Dan ERP للتطوير — تُستدعى عند بدء التطبيق.
+/// تهيئة جلسة أمان ERP للتطوير — تُستدعى عند بدء التطبيق.
 abstract final class ErpDevSession {
   static bool get isActive => ErpDevConfig.enabled;
 
   /// بعد Onboarding انتقل مباشرة للرئيسية بدل Login.
   static bool get skipLoginToHome =>
-      isActive &&
-      (ErpDevConfig.accessToken.isNotEmpty ||
-          (ErpDevConfig.email.isNotEmpty && ErpDevConfig.password.isNotEmpty));
+      isActive && ErpDevConfig.accessToken.isNotEmpty;
 
   static Future<void> bootstrap(SharedPreferences prefs) async {
-    if (!isActive) return;
+    if (!isActive || ErpDevConfig.accessToken.isEmpty) return;
 
     final storage = AuthStorage(prefs);
-
-    if (ErpDevConfig.accessToken.isNotEmpty) {
-      await storage.saveSession(
-        AuthSession(
-          tokens: AuthTokens(
-            accessToken: ErpDevConfig.accessToken,
-            refreshToken: ErpDevConfig.refreshToken.isEmpty
-                ? null
-                : ErpDevConfig.refreshToken,
-          ),
-          user: AuthUser(
-            id: ErpDevConfig.userId,
-            name: ErpDevConfig.userName,
-            email: ErpDevConfig.userEmail,
-            phone: ErpDevConfig.userPhone,
-          ),
-        ),
-      );
-      return;
-    }
-
-    if (ErpDevConfig.email.isEmpty || ErpDevConfig.password.isEmpty) return;
+    var user = AuthUser(
+      id: ErpDevConfig.userId,
+      name: ErpDevConfig.userName,
+      email: ErpDevConfig.userEmail,
+      phone: ErpDevConfig.userPhone.isEmpty ? null : ErpDevConfig.userPhone,
+    );
 
     try {
       final dio = Dio(
@@ -53,45 +35,33 @@ abstract final class ErpDevSession {
           receiveTimeout: ApiConfig.receiveTimeout,
           headers: {
             'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'x-client': ApiConfig.clientId,
+            'Authorization': 'Bearer ${ErpDevConfig.accessToken}',
           },
         ),
       );
 
-      final response = await dio.post<Map<String, dynamic>>(
-        ApiEndpoints.login,
-        data: {
-          'email': ErpDevConfig.email,
-          'password': ErpDevConfig.password,
-        },
-      );
-
+      final response = await dio.get<Map<String, dynamic>>(ApiEndpoints.me);
       final root = ApiResponseParser.asMap(response.data);
-      final tokens = AuthTokens.fromJson(root);
-      if (tokens.accessToken.isEmpty) return;
-
-      AuthUser? user;
-      final userNode = root['user'];
-      if (userNode is Map) {
-        user = AuthUser.fromJson(Map<String, dynamic>.from(userNode));
+      final data = root['data'];
+      if (data is Map) {
+        final userNode = data['user'];
+        if (userNode is Map) {
+          user = AuthUser.fromJson(Map<String, dynamic>.from(userNode));
+        }
       }
-
-      await storage.saveSession(
-        AuthSession(
-          tokens: tokens,
-          user: user ??
-              AuthUser(
-                id: ErpDevConfig.userId,
-                name: ErpDevConfig.userName,
-                email: ErpDevConfig.userEmail,
-                phone: ErpDevConfig.userPhone,
-              ),
-        ),
-      );
     } catch (_) {
-      // فشل الدخول التلقائي — يبقى المستخدم على شاشة Login
+      // نكمل بالبيانات الافتراضية إن فشل /me
     }
+
+    await storage.saveSession(
+      AuthSession(
+        tokens: const AuthTokens(
+          accessToken: ErpDevConfig.accessToken,
+          refreshToken: null,
+        ),
+        user: user,
+      ),
+    );
   }
 
   static Future<void> apply(SharedPreferences prefs) => bootstrap(prefs);

@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/network/advanced_filter_api.dart';
+import '../../../core/network/aman_rest_api.dart';
+import '../../../core/network/api_config.dart';
+import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/api_exception.dart';
-import '../../../core/network/models/advanced_filter_models.dart';
 import '../../auth/data/auth_storage.dart';
 import '../../checkout/data/checkout_provider.dart';
 import 'create_invoice_api.dart';
@@ -13,7 +14,7 @@ import 'models/order_status.dart';
 
 final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
   return OrdersRepository(
-    api: ref.watch(advancedFilterApiProvider),
+    api: ref.watch(amanRestApiProvider),
     createInvoiceApi: ref.watch(createInvoiceApiProvider),
     authStorage: ref.watch(authStorageProvider),
   );
@@ -29,36 +30,35 @@ class OrdersFetchResult {
   final int total;
 }
 
-/// مستودع فواتير ERP — sales_invoices
+/// مستودع فواتير أمان ERP — sales_invoices
 class OrdersRepository {
   OrdersRepository({
-    required AdvancedFilterApi api,
+    required AmanRestApi api,
     required CreateInvoiceApi createInvoiceApi,
     required AuthStorage authStorage,
   })  : _api = api,
         _createInvoiceApi = createInvoiceApi,
         _authStorage = authStorage;
 
-  final AdvancedFilterApi _api;
+  final AmanRestApi _api;
   final CreateInvoiceApi _createInvoiceApi;
   final AuthStorage _authStorage;
 
+  bool get _hasToken {
+    final token = _authStorage.accessToken;
+    return (token != null && token.isNotEmpty) || ApiConfig.apiToken.isNotEmpty;
+  }
+
   Future<OrdersFetchResult> fetchOrders() async {
-    if (!_authStorage.isLoggedIn) {
+    if (!_hasToken) {
       return const OrdersFetchResult(orders: [], total: 0);
     }
 
     try {
-      final result = await _api.fetch(
-        request: const AdvancedFilterRequest(
-          tableName: ErpTables.salesInvoices,
-          filters: [],
-          sorts: [
-            AdvancedFilterSort(field: 'id', direction: 'desc'),
-          ],
-          perPage: 50,
-          page: 1,
-        ),
+      final result = await _api.list(
+        path: ApiEndpoints.salesInvoices,
+        page: 1,
+        perPage: 50,
       );
 
       return OrdersFetchResult(
@@ -71,27 +71,12 @@ class OrdersRepository {
   }
 
   Future<OrderDetailModel?> fetchOrderDetail(String orderId) async {
-    if (!_authStorage.isLoggedIn) return null;
+    if (!_hasToken) return null;
 
     try {
-      final result = await _api.fetch(
-        request: AdvancedFilterRequest(
-          tableName: ErpTables.salesInvoices,
-          filters: [
-            AdvancedFilterClause(
-              field: 'id',
-              operator: '=',
-              value: orderId,
-            ),
-          ],
-          sorts: const [],
-          perPage: 1,
-          page: 1,
-        ),
-      );
-
-      if (result.items.isEmpty) return null;
-      return ErpOrderMapper.detailFromRecord(result.items.first);
+      final record =
+          await _api.getById(ApiEndpoints.salesInvoice(orderId));
+      return ErpOrderMapper.detailFromRecord(record);
     } on ApiException {
       return null;
     }
@@ -99,9 +84,9 @@ class OrdersRepository {
 
   /// إنشاء فاتورة مبيعات من مسودة الدفع
   Future<OrderDetailModel> createInvoice(CheckoutDraft draft) async {
-    if (!_authStorage.isLoggedIn) {
+    if (!_hasToken) {
       throw const ApiException(
-        message: 'سجّل الدخول أولاً لإتمام الطلب',
+        message: 'مفتاح API غير متوفر — راجع إعدادات أمان ERP',
         statusCode: 401,
         type: ApiExceptionType.unauthorized,
       );
@@ -111,34 +96,17 @@ class OrdersRepository {
       throw const ApiException(message: 'بيانات الطلب غير مكتملة');
     }
 
-    for (final item in draft.items) {
-      final stock = item.product.stockQuantity;
-      if (stock != null && item.quantity > stock) {
-        throw ApiException(
-          message:
-              'الكمية تتجاوز المخزون المتاح للمنتج «${item.product.name}». المتاح: $stock',
-          statusCode: 422,
-        );
-      }
-    }
-
-    final body = ErpInvoiceRequestBuilder.build(
-      draft: draft,
-      user: _authStorage.user,
-    );
-
+    final body = ErpInvoiceRequestBuilder.build(draft: draft);
     final created = await _createInvoiceApi.create(body);
     final address = draft.selectedAddress!;
     final firstItem = draft.items.first.product;
-    final elementNumber = created.elementNumber.isNotEmpty
+    final number = created.elementNumber.isNotEmpty
         ? created.elementNumber
-        : body['elementNumber']?.toString() ?? '';
+        : 'طلب ${draft.totalQuantity} منتج';
 
     return OrderDetailModel(
       id: created.id,
-      orderName: elementNumber.isEmpty
-          ? 'طلب ${draft.totalQuantity} منتج'
-          : elementNumber,
+      orderName: number,
       address: address.fullAddress,
       price: draft.subtotal,
       status: OrderStatus.reviewing,

@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../home/presentation/providers/products_provider.dart';
 import '../../data/models/search_filter_state.dart';
 import '../../data/search_mock_data.dart';
 
 /// صفحة فلترة نتائج البحث
-class SearchFilterPage extends StatefulWidget {
+class SearchFilterPage extends ConsumerStatefulWidget {
   const SearchFilterPage({
     super.key,
     required this.initialFilter,
@@ -17,10 +19,10 @@ class SearchFilterPage extends StatefulWidget {
   final SearchFilterState initialFilter;
 
   @override
-  State<SearchFilterPage> createState() => _SearchFilterPageState();
+  ConsumerState<SearchFilterPage> createState() => _SearchFilterPageState();
 }
 
-class _SearchFilterPageState extends State<SearchFilterPage> {
+class _SearchFilterPageState extends ConsumerState<SearchFilterPage> {
   late RangeValues _priceRange;
   late String _selectedBrand;
   late String _selectedCategory;
@@ -54,9 +56,29 @@ class _SearchFilterPageState extends State<SearchFilterPage> {
         );
   }
 
+  List<String> _withAll(Iterable<String> values) {
+    final unique = <String>{};
+    for (final value in values) {
+      final text = value.trim();
+      if (text.isNotEmpty && text != 'الكل') unique.add(text);
+    }
+    return ['الكل', ...unique];
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final catalog = ref.watch(catalogProvider).value;
+    final brandOptions = _withAll(
+      catalog?.brands.isNotEmpty == true
+          ? catalog!.brands
+          : SearchMockData.brands,
+    );
+    final categoryOptions = _withAll(
+      catalog?.categories.isNotEmpty == true
+          ? catalog!.categories
+          : SearchMockData.categories,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -144,7 +166,7 @@ class _SearchFilterPageState extends State<SearchFilterPage> {
                     if (_brandsExpanded) ...[
                       SizedBox(height: 12.h),
                       _FilterChipGrid(
-                        options: SearchMockData.brands,
+                        options: brandOptions,
                         selected: _selectedBrand,
                         onSelected: (value) =>
                             setState(() => _selectedBrand = value),
@@ -161,7 +183,7 @@ class _SearchFilterPageState extends State<SearchFilterPage> {
                     if (_categoriesExpanded) ...[
                       SizedBox(height: 12.h),
                       _FilterChipGrid(
-                        options: SearchMockData.categories,
+                        options: categoryOptions,
                         selected: _selectedCategory,
                         onSelected: (value) =>
                             setState(() => _selectedCategory = value),

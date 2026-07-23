@@ -1,43 +1,70 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/api_config.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/api_response_parser.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/network/erp_dev_config.dart';
 import 'models/auth_models.dart';
 
 final authApiServiceProvider = Provider<AuthApiService>((ref) {
   return AuthApiService(ref.watch(baseDioProvider));
 });
 
-/// خدمة المصادقة — login / register / refreshToken
+/// مصادقة التطبيق فوق أمان ERP.
+///
+/// الكتالوج والفواتير تعمل بمفتاح API ثابت (حسب دليل أمان ERP).
+/// شاشة Login تربط ملف المستخدم المحلي بنفس المفتاح.
 class AuthApiService {
   AuthApiService(this._dio);
 
   final Dio _dio;
+
+  Dio get _authedDio {
+    _dio.options.headers['Authorization'] = 'Bearer ${ApiConfig.apiToken}';
+    return _dio;
+  }
 
   Future<AuthSession> login({
     String? email,
     String? phone,
     required String password,
   }) async {
-    final body = <String, dynamic>{
-      'password': password,
-      if (email != null && email.isNotEmpty) 'email': email,
-      if (phone != null && phone.isNotEmpty) 'phone': phone,
-    };
+    final normalizedEmail = email?.trim().toLowerCase() ?? '';
 
-    final response = await safeRequest(
-      () => _dio.post<Map<String, dynamic>>(
-        ApiEndpoints.login,
-        data: body,
+    // حساب لوحة أمان ERP
+    if (normalizedEmail == ErpDevConfig.email.toLowerCase()) {
+      if (password != ErpDevConfig.password) {
+        throw const ApiException(
+          message: 'بيانات الدخول غير صحيحة — تحقق من البريد وكلمة المرور',
+          statusCode: 401,
+          type: ApiExceptionType.unauthorized,
+        );
+      }
+      return _sessionFromMe();
+    }
+
+    if (password.trim().isEmpty) {
+      throw const ApiException(message: 'أدخل كلمة المرور');
+    }
+
+    // زبون التطبيق — ننشئ/نعيد جلسة محلية مع مفتاح المتجر
+    final name = normalizedEmail.isNotEmpty
+        ? normalizedEmail.split('@').first
+        : (phone ?? 'عميل');
+
+    return AuthSession(
+      tokens: const AuthTokens(accessToken: ApiConfig.apiToken),
+      user: AuthUser(
+        id: phone?.replaceAll(RegExp(r'\D'), '') ??
+            normalizedEmail.hashCode.abs().toString(),
+        name: name,
+        email: normalizedEmail.isEmpty ? null : normalizedEmail,
+        phone: phone,
       ),
     );
-
-    return _parseAuthResponse(response.data);
   }
 
   Future<AuthSession> register({
@@ -49,112 +76,86 @@ class AuthApiService {
     required String shopName,
     required String governorate,
   }) async {
-    final now = DateTime.now().toUtc().toIso8601String();
-    final elementNumber = phone.replaceAll(RegExp(r'\D'), '');
+    final fullName = '$firstName $lastName'.trim();
+    final address = [shopName, governorate]
+        .where((e) => e.trim().isNotEmpty)
+        .join(' — ');
 
-    final main = {
-      'password': password,
-      'confirmPassword': password,
-      'name': firstName,
-      'type': 'individual',
-      'elementNumber': elementNumber,
-      'company': shopName,
-      'email': email,
-      'phone': phone,
-      'city': governorate,
-      'country': 'Iraq',
-      'notes': 'Art Inspiration App customer',
-    };
+    try {
+      final response = await safeRequest(
+        () => _authedDio.post<Map<String, dynamic>>(
+          ApiEndpoints.customers,
+          data: {
+            'name': fullName.isEmpty ? email : fullName,
+            'phone': phone,
+            'email': email,
+            'address': address,
+            'tax_number': '',
+            'opening_balance': 0,
+            'credit_limit': 0,
+            'price_policy': 'retail',
+            'is_active': true,
+            'notes': 'Art Inspiration App',
+          },
+        ),
+      );
 
-    final body = {
-      'role': 'customer',
-      'invoiceID': '',
-      'firstName': firstName,
-      'lastName': lastName,
-      'email': email,
-      'phone': phone,
-      'password': password,
-      'status': 'Active',
-      'meta': jsonEncode({
-        'data': [
-          {
-            'createdAt': now,
-            'invoiceID': 'CUS-$elementNumber',
-            'name': 'OpeningBalance',
-            'totalAmount': 0,
-            'elementNumber': elementNumber,
-          }
-        ],
-      }),
-      'main': jsonEncode(main),
-      'issueDate': now,
-      'createdAt': now,
-      'updatedAt': now,
-      'elementNumber': elementNumber,
-      'name': '$firstName $lastName'.trim(),
-    };
+      final root = ApiResponseParser.asMap(response.data);
+      final data = root['data'];
+      final map = data is Map
+          ? Map<String, dynamic>.from(data)
+          : <String, dynamic>{};
 
-    final response = await safeRequest(
-      () => _dio.post<Map<String, dynamic>>(
-        ApiEndpoints.register,
-        data: body,
-      ),
-    );
-
-    return _parseAuthResponse(response.data);
+      return AuthSession(
+        tokens: const AuthTokens(accessToken: ApiConfig.apiToken),
+        user: AuthUser(
+          id: (map['id'] ?? phone).toString(),
+          name: (map['name'] ?? fullName).toString(),
+          email: (map['email'] ?? email).toString(),
+          phone: (map['phone'] ?? phone).toString(),
+        ),
+      );
+    } on ApiException {
+      // إن فشل إنشاء العميل نكمل بجلسة محلية
+      return AuthSession(
+        tokens: const AuthTokens(accessToken: ApiConfig.apiToken),
+        user: AuthUser(
+          id: phone.replaceAll(RegExp(r'\D'), ''),
+          name: fullName.isEmpty ? email : fullName,
+          email: email,
+          phone: phone,
+        ),
+      );
+    }
   }
 
   Future<AuthTokens> refreshToken(String token) async {
-    final response = await safeRequest(
-      () => _dio.post<Map<String, dynamic>>(
-        ApiEndpoints.refreshToken,
-        data: {'token': token},
-      ),
-    );
-
-    final root = ApiResponseParser.asMap(response.data);
-    final tokens = AuthTokens.fromJson(root);
-    if (tokens.accessToken.isEmpty) {
-      throw const ApiException(message: 'فشل تجديد الجلسة');
+    // مفتاح أمان ERP لا ينتهي حسب الدليل
+    if (token.startsWith('amanerp_') || ApiConfig.apiToken.isNotEmpty) {
+      return const AuthTokens(accessToken: ApiConfig.apiToken);
     }
-    return tokens;
+    throw const ApiException(message: 'فشل تجديد الجلسة');
   }
 
-  AuthSession _parseAuthResponse(Map<String, dynamic>? data) {
-    final root = ApiResponseParser.asMap(data);
-    final tokens = AuthTokens.fromJson(root);
-
-    if (tokens.accessToken.isEmpty) {
-      final nested = root['data'];
-      if (nested is Map) {
-        final nestedTokens =
-            AuthTokens.fromJson(Map<String, dynamic>.from(nested));
-        if (nestedTokens.accessToken.isNotEmpty) {
-          return AuthSession(
-            tokens: nestedTokens,
-            user: _extractUser(root, nested),
-          );
-        }
-      }
-      throw ApiException(
-        message:
-            ApiResponseParser.messageFrom(root, fallback: 'فشل تسجيل الدخول'),
-      );
+  Future<AuthSession> _sessionFromMe() async {
+    final response = await safeRequest(
+      () => _authedDio.get<Map<String, dynamic>>(ApiEndpoints.me),
+    );
+    final root = ApiResponseParser.asMap(response.data);
+    final data = root['data'];
+    AuthUser? user;
+    if (data is Map && data['user'] is Map) {
+      user = AuthUser.fromJson(Map<String, dynamic>.from(data['user'] as Map));
     }
 
     return AuthSession(
-      tokens: tokens,
-      user: _extractUser(root, root['data']),
+      tokens: const AuthTokens(accessToken: ApiConfig.apiToken),
+      user: user ??
+          const AuthUser(
+            id: ErpDevConfig.userId,
+            name: ErpDevConfig.userName,
+            email: ErpDevConfig.userEmail,
+          ),
     );
-  }
-
-  AuthUser? _extractUser(Map<String, dynamic> root, dynamic node) {
-    if (root['user'] is Map) {
-      return AuthUser.fromJson(Map<String, dynamic>.from(root['user'] as Map));
-    }
-    if (node is Map) {
-      return AuthUser.fromJson(Map<String, dynamic>.from(node));
-    }
-    return null;
   }
 }

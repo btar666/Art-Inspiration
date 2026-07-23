@@ -5,7 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/catalog_snapshot.dart';
 
-/// بطاقة ملخص بيانات المتجر من Dan ERP
+/// بطاقة ملخص بيانات المتجر من أمان ERP
 class ErpStoreOverviewCard extends StatelessWidget {
   const ErpStoreOverviewCard({
     super.key,
@@ -41,7 +41,7 @@ class ErpStoreOverviewCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'بيانات المتجر (Dan ERP)',
+            'بيانات المتجر (أمان ERP)',
             style: AppTextStyles.homeSectionTitle(),
             textAlign: TextAlign.right,
           ),
@@ -68,7 +68,7 @@ class ErpStoreOverviewCard extends StatelessWidget {
             label: 'الأقسام',
             value: stats.hasCategories ? '${stats.categoryCount}' : 'غير متوفرة',
             ok: stats.hasCategories,
-            detail: stats.hasCategories ? null : 'categoryId فارغ في ERP',
+            detail: stats.hasCategories ? null : 'لا توجد تصنيفات في أمان ERP',
           ),
           _Row(
             label: 'صور المنتجات',
@@ -76,7 +76,7 @@ class ErpStoreOverviewCard extends StatelessWidget {
                 ? '${stats.productsWithImages}'
                 : 'غير متوفرة',
             ok: stats.hasProductImages,
-            detail: stats.hasProductImages ? null : 'imageName فارغ في ERP',
+            detail: stats.hasProductImages ? null : 'حقل image فارغ',
           ),
           _Row(
             label: 'إعدادات المتجر',
