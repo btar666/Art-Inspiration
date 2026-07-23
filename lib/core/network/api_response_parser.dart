@@ -12,10 +12,42 @@ abstract final class ApiResponseParser {
 
   static String messageFrom(dynamic data, {String fallback = 'حدث خطأ'}) {
     if (data is Map) {
+      final errorsText = _firstValidationError(data['errors']);
+      if (errorsText != null) return errorsText;
+
       final message = data['message'] ?? data['error'];
-      if (message is String && message.isNotEmpty) return message;
+      final localized = _localizedText(message);
+      if (localized != null) return localized;
     }
     return fallback;
+  }
+
+  /// Dan ERP: message قد يكون نصاً أو {"ar":"...","en":"..."}
+  static String? _localizedText(dynamic value) {
+    if (value is String && value.trim().isNotEmpty) return value.trim();
+    if (value is Map) {
+      final ar = value['ar']?.toString().trim() ?? '';
+      if (ar.isNotEmpty) return ar;
+      final en = value['en']?.toString().trim() ?? '';
+      if (en.isNotEmpty) return en;
+    }
+    return null;
+  }
+
+  /// أول رسالة تحقق من errors (مثل items.0.stock)
+  static String? _firstValidationError(dynamic errors) {
+    if (errors is! Map || errors.isEmpty) return null;
+
+    for (final value in errors.values) {
+      final text = _localizedText(value);
+      if (text != null) return text;
+
+      if (value is List && value.isNotEmpty) {
+        final first = _localizedText(value.first) ?? value.first.toString();
+        if (first.trim().isNotEmpty) return first.trim();
+      }
+    }
+    return null;
   }
 
   static List<Map<String, dynamic>> extractItems(dynamic data) {

@@ -15,7 +15,6 @@ import '../../features/cart/presentation/providers/cart_provider.dart';
 import '../../features/cart/presentation/widgets/cart_icon_button.dart';
 import '../../features/favorites/presentation/favorites_actions.dart';
 import '../../features/favorites/presentation/providers/favorites_provider.dart';
-import '../../features/home/data/home_mock_data.dart';
 import '../../features/home/data/models/product_model.dart';
 import 'product_details_app_bar_metrics.dart';
 import 'app_back_button.dart';
@@ -60,9 +59,6 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
   }
 
   ProductModel get product => widget.product;
-
-  String get _detailsDescription =>
-      HomeMockData.detailsDescriptionFor(product);
 
   @override
   Widget build(BuildContext context) {
@@ -157,7 +153,7 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
                             ),
                             SizedBox(height: 8.h),
                             Text(
-                              _detailsDescription,
+                              product.description,
                               style: AppTextStyles.productDetailsBody(),
                               textAlign: TextAlign.right,
                             ),
@@ -318,7 +314,8 @@ class _ProductDetailsGallery extends StatelessWidget {
   int get _imageCount {
     final gallery = product.galleryImageUrls;
     if (gallery.isNotEmpty) return gallery.length;
-    return 4;
+    if (product.imageUrl != null && product.imageUrl!.isNotEmpty) return 1;
+    return 1;
   }
 
   @override
@@ -493,6 +490,23 @@ class _ProductImageContent extends StatelessWidget {
         fit: BoxFit.contain,
         width: double.infinity,
         height: double.infinity,
+        placeholder: (_, __) => Center(
+          child: SizedBox(
+            width: compact ? 16.sp : 28.sp,
+            height: compact ? 16.sp : 28.sp,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.primary.withValues(alpha: 0.4),
+            ),
+          ),
+        ),
+        errorWidget: (_, __, ___) => Center(
+          child: Icon(
+            Icons.spa_outlined,
+            size: compact ? 24.sp : 80.sp,
+            color: AppColors.primary.withValues(alpha: 0.35),
+          ),
+        ),
       );
     }
 

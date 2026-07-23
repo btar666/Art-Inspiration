@@ -111,6 +111,17 @@ class OrdersRepository {
       throw const ApiException(message: 'بيانات الطلب غير مكتملة');
     }
 
+    for (final item in draft.items) {
+      final stock = item.product.stockQuantity;
+      if (stock != null && item.quantity > stock) {
+        throw ApiException(
+          message:
+              'الكمية تتجاوز المخزون المتاح للمنتج «${item.product.name}». المتاح: $stock',
+          statusCode: 422,
+        );
+      }
+    }
+
     final body = ErpInvoiceRequestBuilder.build(
       draft: draft,
       user: _authStorage.user,

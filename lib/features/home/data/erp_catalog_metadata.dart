@@ -1,4 +1,5 @@
 import '../../../core/network/api_response_parser.dart';
+import '../../../core/network/erp_media_url.dart';
 import 'erp_product_fields.dart';
 import 'models/catalog_stats.dart';
 
@@ -27,11 +28,9 @@ abstract final class ErpCatalogMetadata {
         productsWithoutBrand++;
       }
 
-      final imageName = _firstNonEmpty([
-        main['imageName'],
-        record['imageName'],
-      ]);
-      if (imageName.isNotEmpty) productsWithImages++;
+      if (ErpMediaUrl.allUrls(record: record, main: main).isNotEmpty) {
+        productsWithImages++;
+      }
     }
 
     final sortedCategories = categories.toList()
@@ -56,14 +55,6 @@ abstract final class ErpCatalogMetadata {
         productsWithoutBrand: productsWithoutBrand,
       ),
     );
-  }
-
-  static String _firstNonEmpty(List<dynamic> values) {
-    for (final value in values) {
-      final text = value?.toString().trim() ?? '';
-      if (text.isNotEmpty) return text;
-    }
-    return '';
   }
 }
 

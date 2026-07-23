@@ -3,79 +3,131 @@ import 'api_response_parser.dart';
 
 /// بناء روابط صور منتجات Dan ERP — من بيانات ERP فقط
 abstract final class ErpMediaUrl {
+  /// أول صورة صالحة للمنتج (صورة رئيسية)
   static String? resolve({
     required Map<String, dynamic> record,
     required Map<String, dynamic> main,
   }) {
-    final direct = _firstHttpUrl([
+    final all = allUrls(record: record, main: main);
+    return all.isEmpty ? null : all.first;
+  }
+
+  /// كل روابط الصور (معرض + رئيسية) بترتيب الظهور في ERP
+  static List<String> allUrls({
+    required Map<String, dynamic> record,
+    required Map<String, dynamic> main,
+  }) {
+    final urls = <String>[];
+    final seen = <String>{};
+
+    void add(String? url) {
+      final normalized = _normalizeUrl(url);
+      if (normalized == null || !seen.add(normalized)) return;
+      urls.add(normalized);
+    }
+
+    for (final value in [
       main['image'],
       main['imageUrl'],
       main['thumbnail'],
       record['imageUrl'],
-    ]);
-    if (direct != null) return direct;
+    ]) {
+      if (_isHttpUrl(value?.toString() ?? '')) {
+        add(value.toString());
+      }
+    }
 
-    final fromAttachments = _fromAttachments(record['attachments']) ??
-        _fromAttachments(main['attachments']);
-    if (fromAttachments != null) return fromAttachments;
+    for (final url in _collectAttachmentUrls(record['attachments'])) {
+      add(url);
+    }
+    for (final url in _collectAttachmentUrls(main['attachments'])) {
+      add(url);
+    }
+
+    final galleryRaw = main['gallery'] ?? main['galleryImageUrls'] ?? main['images'];
+    for (final url in _collectAttachmentUrls(galleryRaw)) {
+      add(url);
+    }
 
     final imageName = _firstNonEmpty([
       main['imageName'],
       record['imageName'],
     ]);
     if (imageName.isNotEmpty) {
-      return _storageUrl(
-        fileName: imageName,
-        tableName: record['tableName']?.toString() ?? 'inventory_products',
+      add(
+        _storageUrl(
+          fileName: imageName,
+          tableName: record['tableName']?.toString() ?? 'inventory_products',
+        ),
       );
     }
 
-    return null;
+    return urls;
   }
 
-  static String? _fromAttachments(dynamic raw) {
-    if (raw == null) return null;
+  static List<String> _collectAttachmentUrls(dynamic raw) {
+    if (raw == null) return const [];
 
     if (raw is String && raw.trim().isNotEmpty) {
       final decoded = ApiResponseParser.decodeJsonField(raw);
       if (decoded != null) {
-        return _fromAttachmentMap(decoded);
+        return _collectAttachmentUrls(decoded);
       }
-      if (_isHttpUrl(raw)) return raw.trim();
-      return _storageUrl(fileName: raw.trim());
+      if (_isHttpUrl(raw)) return [_normalizeUrl(raw.trim())!];
+      final built = _storageUrl(fileName: raw.trim());
+      return built == null ? const [] : [built];
     }
 
     if (raw is Map) {
-      return _fromAttachmentMap(Map<String, dynamic>.from(raw));
+      final map = Map<String, dynamic>.from(raw);
+
+      // شكل Dan ERP: {"images":[{url, file_name, ...}, ...]}
+      for (final key in ['images', 'files', 'attachments', 'gallery']) {
+        final nested = map[key];
+        if (nested is List) {
+          return _collectAttachmentUrls(nested);
+        }
+      }
+
+      final single = _fromAttachmentMap(map);
+      return single == null ? const [] : [single];
     }
 
     if (raw is List) {
+      final urls = <String>[];
       for (final item in raw) {
         if (item is Map) {
           final url = _fromAttachmentMap(Map<String, dynamic>.from(item));
-          if (url != null) return url;
+          if (url != null) urls.add(url);
         } else if (item is String && item.trim().isNotEmpty) {
-          if (_isHttpUrl(item)) return item.trim();
-          final built = _storageUrl(fileName: item.trim());
-          if (built != null) return built;
+          if (_isHttpUrl(item)) {
+            final normalized = _normalizeUrl(item.trim());
+            if (normalized != null) urls.add(normalized);
+          } else {
+            final built = _storageUrl(fileName: item.trim());
+            if (built != null) urls.add(built);
+          }
         }
       }
+      return urls;
     }
 
-    return null;
+    return const [];
   }
 
   static String? _fromAttachmentMap(Map<String, dynamic> map) {
     final direct = _firstHttpUrl([
       map['url'],
       map['fileUrl'],
+      map['file_url'],
       map['path'],
       map['src'],
       map['link'],
     ]);
-    if (direct != null) return direct;
+    if (direct != null) return _normalizeUrl(direct);
 
     final fileName = _firstNonEmpty([
+      map['file_name'],
       map['fileName'],
       map['filename'],
       map['name'],
@@ -96,7 +148,7 @@ abstract final class ErpMediaUrl {
     final cleanName = fileName.trim();
     if (cleanName.isEmpty) return null;
 
-    if (_isHttpUrl(cleanName)) return cleanName;
+    if (_isHttpUrl(cleanName)) return _normalizeUrl(cleanName);
 
     final table = tableName ?? 'inventory_products';
     final encodedName = cleanName.split('/').map(Uri.encodeComponent).join('/');
@@ -104,6 +156,16 @@ abstract final class ErpMediaUrl {
     final encodedTable = Uri.encodeComponent(table);
 
     return '${ApiConfig.baseUrl}/storage/$encodedClient/$encodedTable/$encodedName';
+  }
+
+  /// ERP غالباً يرجع http — نحوّله لـ https ليتوافق مع Android
+  static String? _normalizeUrl(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return null;
+    if (text.startsWith('http://')) {
+      return 'https://${text.substring(7)}';
+    }
+    return text;
   }
 
   static String? _firstHttpUrl(List<dynamic> values) {

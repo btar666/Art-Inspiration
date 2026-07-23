@@ -140,9 +140,15 @@ ApiException mapDioError(DioException error) {
     return ApiException.network();
   }
 
+  final fallback = switch (response?.statusCode) {
+    422 => 'تعذر إتمام الطلب — تحقق من البيانات والمخزون',
+    401 || 403 => 'انتهت الجلسة — سجّل الدخول مجدداً',
+    _ => error.message ?? 'فشل الاتصال بالخادم',
+  };
+
   final message = ApiResponseParser.messageFrom(
     data,
-    fallback: error.message ?? 'فشل الاتصال بالخادم',
+    fallback: fallback,
   );
 
   String? code;

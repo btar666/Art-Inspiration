@@ -167,7 +167,8 @@ class _HomeProductImageSection extends StatelessWidget {
               ),
             ),
           ),
-          if (product.discountPercent != null)
+          if (product.discountPercent != null &&
+              product.discountPercent! > 0)
             Positioned(
               top: 6.w,
               right: 6.w,

@@ -47,10 +47,13 @@ abstract final class ErpProductMapper {
       record['description'],
     ]);
 
-    final imageUrl = ErpMediaUrl.resolve(record: record, main: main);
+    final gallery = ErpMediaUrl.allUrls(record: record, main: main);
+    final imageUrl = gallery.isEmpty ? null : gallery.first;
 
     final rating = _parseDouble(main['rating'] ?? record['rating'], fallback: 4.5);
-    final discount = _parseInt(main['discountPercent'] ?? main['discount']);
+    final rawDiscount = _parseInt(main['discountPercent'] ?? main['discount']);
+    final discount =
+        (rawDiscount != null && rawDiscount > 0) ? rawDiscount : null;
 
     return ProductModel(
       id: id,
@@ -63,43 +66,23 @@ abstract final class ErpProductMapper {
       imageUrl: imageUrl,
       imageBgColor: _colorFromSeed(id),
       brandName: brandName,
-      expiryDate: _firstNonEmpty([main['expiryDate'], main['expiry']]),
-      origin: _firstNonEmpty([main['origin'], main['country']]),
-      galleryImageUrls: _gallery(main, record),
+      expiryDate: _firstNonEmpty([
+        main['expireDate'],
+        main['expiryDate'],
+        main['expiry'],
+      ]),
+      origin: _firstNonEmpty([
+        main['origin'],
+        main['country'],
+        main['manufacture'],
+        main['company'],
+      ]),
+      galleryImageUrls: gallery,
       categoryIds: categoryIds,
+      stockQuantity: _parseInt(
+        record['stockQuantity'] ?? main['stockQuantity'] ?? main['quantity'],
+      ),
     );
-  }
-
-  static List<String> _gallery(
-    Map<String, dynamic> main,
-    Map<String, dynamic> record,
-  ) {
-    final urls = <String>{};
-    final raw = main['gallery'] ?? main['galleryImageUrls'] ?? main['images'];
-
-    if (raw is List) {
-      for (final item in raw) {
-        if (item is Map) {
-          final url = ErpMediaUrl.resolve(
-            record: record,
-            main: Map<String, dynamic>.from(item),
-          );
-          if (url != null) urls.add(url);
-        } else {
-          final text = item?.toString().trim() ?? '';
-          if (text.isEmpty) continue;
-          final url = text.startsWith('http')
-              ? text
-              : ErpMediaUrl.resolve(
-                  record: record,
-                  main: {'imageName': text},
-                );
-          if (url != null) urls.add(url);
-        }
-      }
-    }
-
-    return urls.toList();
   }
 
   static String _firstNonEmpty(List<dynamic> values) {

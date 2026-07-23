@@ -18,10 +18,6 @@ abstract final class HomeMockData {
     'التخفيضات',
   ];
 
-  static const _detailsDescription =
-      'فرشاة أسنان كهربائية مزودة بتقنية تنظيف متقدمة، تنظف بعمق بين الأسنان '
-      'وعلى طول خط اللثة. تعمل بالشحن وتوفر عدة أوضاع للتنظيف.';
-
   static const products = [
     ProductModel(
       id: '1',
@@ -72,8 +68,4 @@ abstract final class HomeMockData {
       origin: 'FRANC',
     ),
   ];
-
-  /// وصف تفصيلي للمنتج — يُعرض في صفحة التفاصيل
-  static String detailsDescriptionFor(ProductModel product) =>
-      _detailsDescription;
 }
