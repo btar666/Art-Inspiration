@@ -55,9 +55,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   bool _isShopInvalid() => _shopController.text.trim().isEmpty;
 
-  bool _isPasswordInvalid() => _passwordController.text.length < 6;
+  bool _isPasswordInvalid() => _passwordController.text.length < 5;
 
   Future<void> _onSubmit() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     _formKey.currentState!.validate();
 
     final nameInvalid = _isNameInvalid();
@@ -102,6 +103,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     if (!mounted) return;
 
     if (success) {
+      FocusManager.instance.primaryFocus?.unfocus();
       context.go(AppRoutes.requestSuccess);
       return;
     }

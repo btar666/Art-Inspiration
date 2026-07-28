@@ -52,6 +52,13 @@ class AuthStorage {
     }
   }
 
+  Future<void> saveUser(AuthUser user) async {
+    await _prefs.setString(
+      AppConstants.authUserKey,
+      jsonEncode(user.toJson()),
+    );
+  }
+
   Future<void> clear() async {
     await _prefs.remove(AppConstants.authAccessTokenKey);
     await _prefs.remove(AppConstants.authRefreshTokenKey);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,10 +7,11 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/page_back_header.dart';
+import '../../../app_api/presentation/providers/app_api_providers.dart';
 import '../widgets/info_page_widgets.dart';
 
 /// صفحة المساعدة
-class HelpPage extends StatelessWidget {
+class HelpPage extends ConsumerWidget {
   const HelpPage({super.key});
 
   static const _faqs = [
@@ -36,7 +38,7 @@ class HelpPage extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
@@ -106,6 +108,8 @@ class HelpPage extends StatelessWidget {
                               answer: faq.$2,
                             ),
                           ),
+                          SizedBox(height: 18.h),
+                          const _PrivacyPolicySection(),
                           SizedBox(height: 18.h),
                           Material(
                             color: AppColors.bottomNavBackground,
@@ -177,6 +181,37 @@ class HelpPage extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PrivacyPolicySection extends ConsumerWidget {
+  const _PrivacyPolicySection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final privacyAsync = ref.watch(privacyPolicyProvider);
+    final text = privacyAsync.value?.trim() ?? '';
+    if (text.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const InfoSectionTitle(
+          title: 'سياسة الخصوصية',
+          badge: 'قانوني',
+        ),
+        SizedBox(height: 14.h),
+        InfoGlassCard(
+          child: Text(
+            text,
+            style: AppTextStyles.settingsMenuItem(
+              color: AppColors.textSecondary,
+            ).copyWith(height: 1.7),
+            textAlign: TextAlign.right,
+          ),
+        ),
+      ],
     );
   }
 }

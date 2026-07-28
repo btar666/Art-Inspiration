@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/network/erp_dev_session.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/storage/onboarding_storage.dart';
+import '../../../auth/data/auth_storage.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/decorative_background.dart';
 import '../../../../shared/widgets/sparkle_icon.dart';
@@ -42,9 +42,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   Future<void> _completeOnboarding() async {
     await ref.read(onboardingStorageProvider).markCompleted();
     if (!mounted) return;
-    context.go(
-      ErpDevSession.skipLoginToHome ? AppRoutes.home : AppRoutes.login,
-    );
+    final isLoggedIn = ref.read(authStorageProvider).isLoggedIn;
+    context.go(isLoggedIn ? AppRoutes.home : AppRoutes.login);
   }
 
   void _onNext() {

@@ -3,7 +3,7 @@ abstract final class AppConstants {
   static const String appName = 'ART INSPIRATION';
   static const String appTagline = 'FOR GENERAL TRADING COSMETICS';
 
-  static const String onboardingCompletedKey = 'onboarding_completed';
+  static const String onboardingCompletedKey = 'onboarding_completed_v1';
   static const String cartItemsKey = 'cart_items';
   static const String favoritesKey = 'favorites';
   static const String savedAddressesKey = 'saved_addresses';
@@ -14,8 +14,8 @@ abstract final class AppConstants {
   static const String catalogOfflineCacheKey = 'catalog_offline_cache';
   static const int catalogOfflineCacheVersion = 6;
 
-  /// عرض Onboarding في كل مرة — غيّرها إلى false لاحقاً لإخفائها
-  static const bool alwaysShowOnboarding = true;
+  /// للتجربة فقط: إجبار ظهور الـ Onboarding في كل تشغيل
+  static const bool alwaysShowOnboarding = false;
 
   /// تأخير قصير بعد انتهاء دوران اللوغو قبل الانتقال
   static const Duration splashPostRotationDelay = Duration(milliseconds: 500);

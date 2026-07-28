@@ -13,6 +13,7 @@ import '../../../../shared/widgets/app_animated_logo.dart';
 import '../../../../shared/widgets/decorative_background.dart';
 import '../../../../shared/widgets/decorative_dot_grid.dart';
 import '../../../../shared/widgets/sparkle_icon.dart';
+import '../../../auth/data/auth_storage.dart';
 import '../widgets/app_logo.dart';
 
 /// شاشة السبلاش مع أنيميشن احترافي
@@ -39,17 +40,29 @@ class _SplashPageState extends ConsumerState<SplashPage> {
   }
 
   Future<void> _navigateAfterRotation() async {
-    await _rotationComplete.future;
+    // لا نبقى عالقين على السبلاش إذا لم يكتمل الأنيميشن
+    await Future.any<void>([
+      _rotationComplete.future,
+      Future<void>.delayed(const Duration(milliseconds: 2500)),
+    ]);
     await Future<void>.delayed(AppConstants.splashPostRotationDelay);
     if (!mounted) return;
 
-    final nextRoute = AppConstants.alwaysShowOnboarding
-        ? AppRoutes.onboarding
-        : (ref.read(onboardingStorageProvider).isCompleted
-            ? AppRoutes.login
-            : AppRoutes.onboarding);
+    context.go(_resolveStartRoute());
+  }
 
-    context.go(nextRoute);
+  /// أول فتح → Onboarding | بعده → الرئيسية أو تسجيل الدخول
+  String _resolveStartRoute() {
+    if (AppConstants.alwaysShowOnboarding ||
+        !ref.read(onboardingStorageProvider).isCompleted) {
+      return AppRoutes.onboarding;
+    }
+
+    if (ref.read(authStorageProvider).isLoggedIn) {
+      return AppRoutes.home;
+    }
+
+    return AppRoutes.login;
   }
 
   @override

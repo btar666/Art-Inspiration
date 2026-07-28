@@ -28,6 +28,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _notificationsEnabled = true;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authNotifierProvider.notifier).refreshProfile();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final catalog = ref.watch(catalogProvider).value;
@@ -140,6 +148,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           title: 'حذف الحساب',
           message: 'هل أنت متأكد من حذف حسابك؟ لا يمكن التراجع عن هذا الإجراء.',
           isDanger: true,
+          onConfirm: _deleteAccount,
         );
       default:
         break;
@@ -150,6 +159,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     await ref.read(authNotifierProvider.notifier).logout();
     if (!mounted) return;
     context.go(AppRoutes.login);
+  }
+
+  Future<void> _deleteAccount() async {
+    final ok = await ref.read(authNotifierProvider.notifier).deleteAccount();
+    if (!mounted) return;
+    if (ok) {
+      context.go(AppRoutes.login);
+      return;
+    }
+    final error = ref.read(authNotifierProvider).errorMessage;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(error ?? 'تعذر حذف الحساب')),
+    );
   }
 
   Future<void> _showConfirmDialog({

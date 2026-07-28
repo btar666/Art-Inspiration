@@ -2,13 +2,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../features/auth/data/auth_storage.dart';
 import 'api_config.dart';
 import 'api_exception.dart';
 import 'api_response_parser.dart';
 import 'retry_interceptor.dart';
 
-/// Dio بدون Bearer — نادر الاستخدام مع أمان ERP
+/// Dio بدون Bearer — نادر الاستخدام
 final baseDioProvider = Provider<Dio>((ref) {
   final dio = _createDio();
   dio.interceptors.add(RetryInterceptor(dio: dio));
@@ -16,13 +15,11 @@ final baseDioProvider = Provider<Dio>((ref) {
   return dio;
 });
 
-/// Dio لطلبات أمان ERP — Bearer API key
+/// Dio لطلبات أمان ERP — مفتاح API ثابت (منفصل عن توكن الزبون)
 final dioProvider = Provider<Dio>((ref) {
-  final authStorage = ref.watch(authStorageProvider);
-
   final dio = _createDio();
   dio.interceptors.add(RetryInterceptor(dio: dio));
-  dio.interceptors.add(_AmanAuthInterceptor(authStorage: authStorage));
+  dio.interceptors.add(const _AmanAuthInterceptor());
 
   if (kDebugMode) {
     dio.interceptors.add(
@@ -54,16 +51,11 @@ Dio _createDio() {
 }
 
 class _AmanAuthInterceptor extends Interceptor {
-  _AmanAuthInterceptor({required this.authStorage});
-
-  final AuthStorage authStorage;
+  const _AmanAuthInterceptor();
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    final stored = authStorage.accessToken;
-    final token = (stored != null && stored.isNotEmpty)
-        ? stored
-        : ApiConfig.apiToken;
+    final token = ApiConfig.apiToken;
     if (token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
     }
@@ -104,7 +96,7 @@ ApiException mapDioError(DioException error) {
 
 String _localizedMessage(String message, int? statusCode) {
   if (statusCode == 401) {
-    return 'مفتاح API غير صالح — راجع إعدادات أمان ERP';
+    return 'انتهت الجلسة أو بيانات الدخول غير صحيحة';
   }
   if (statusCode == 402) {
     return 'انتهى الاشتراك أو الفترة التجريبية في أمان ERP';

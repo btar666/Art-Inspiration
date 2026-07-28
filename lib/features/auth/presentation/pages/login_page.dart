@@ -4,9 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/network/erp_dev_session.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../../core/storage/onboarding_storage.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/auth_footer_link.dart';
@@ -14,7 +12,6 @@ import '../../../../shared/widgets/auth_header.dart';
 import '../../../../shared/widgets/decorative_background.dart';
 import '../../../../shared/widgets/form_error_animator.dart';
 import '../providers/auth_provider.dart';
-import '../../../home/presentation/providers/products_provider.dart';
 import '../widgets/auth_message_dialog.dart';
 
 /// صفحة تسجيل الدخول
@@ -42,7 +39,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   bool _isUsernameInvalid() => _usernameController.text.trim().isEmpty;
 
-  bool _isPasswordInvalid() => _passwordController.text.length < 6;
+  bool _isPasswordInvalid() => _passwordController.text.length < 5;
 
   Future<void> _onLogin() async {
     _formKey.currentState!.validate();
@@ -59,7 +56,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
       final issues = <String>[
         if (usernameInvalid) 'يرجى إدخال البريد الإلكتروني أو رقم الهاتف',
-        if (passwordInvalid) 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
+        if (passwordInvalid) 'كلمة المرور يجب أن تكون 5 أحرف على الأقل',
       ];
       await AuthMessageDialog.showValidation(context, issues: issues);
       return;
@@ -87,19 +84,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
   }
 
-  Future<void> _onErpDevContinue() async {
-    final prefs = ref.read(sharedPreferencesProvider);
-    await ErpDevSession.apply(prefs);
-    ref.invalidate(authNotifierProvider);
-    ref.invalidate(catalogProvider);
-    if (!mounted) return;
-    context.go(AppRoutes.home);
-  }
-
   @override
   Widget build(BuildContext context) {
     final isLoading = ref.watch(authNotifierProvider).isLoading;
-    final showErpBypass = ErpDevSession.isActive;
 
     return Scaffold(
       body: DecorativeBackground(
@@ -172,15 +159,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           duration: 450.ms,
                           delay: 300.ms,
                         ),
-                    if (showErpBypass) ...[
-                      SizedBox(height: 12.h),
-                      TextButton(
-                        onPressed: isLoading ? null : _onErpDevContinue,
-                        child: const Text(
-                          'متابعة وعرض المنتجات (ERP مؤقت)',
-                        ),
-                      ),
-                    ],
                     AuthFooterLink(
                       prefix: 'ليس لديك حساب ؟',
                       linkText: 'أطلب الأنضمام',

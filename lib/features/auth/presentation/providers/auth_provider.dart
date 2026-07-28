@@ -56,7 +56,8 @@ class AuthRepository {
     final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : firstName;
     final email = '${phone.replaceAll(RegExp(r'\D'), '')}@customer.art-inspiration.app';
 
-    final session = await _api.register(
+    // طلب انضمام — لا نحفظ الجلسة حتى تتم الموافقة وتسجيل الدخول
+    return _api.register(
       firstName: firstName,
       lastName: lastName,
       email: email,
@@ -65,9 +66,6 @@ class AuthRepository {
       shopName: shopName.trim(),
       governorate: governorate,
     );
-
-    await _storage.saveSession(session);
-    return session;
   }
 
   Future<void> logout() => _storage.clear();
@@ -151,17 +149,14 @@ class AuthNotifier extends Notifier<AuthState> {
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final session = await _repo.register(
+      await _repo.register(
         fullName: fullName,
         phone: phone,
         password: password,
         shopName: shopName,
         governorate: governorate,
       );
-      state = AuthState(
-        isLoggedIn: true,
-        user: session.user ?? _repo.currentUser,
-      );
+      state = const AuthState();
       return true;
     } on ApiException catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.message);
@@ -179,6 +174,68 @@ class AuthNotifier extends Notifier<AuthState> {
     await _repo.logout();
     await ref.read(productsRepositoryProvider).clearCache();
     state = const AuthState();
+  }
+
+  Future<bool> updateProfile({
+    required String name,
+    required String phone,
+    required String password,
+    required String city,
+    required String cosmeticName,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final user = await ref.read(authApiServiceProvider).updateProfile(
+            name: name,
+            phone: phone,
+            password: password,
+            city: city,
+            cosmeticName: cosmeticName,
+          );
+      await ref.read(authStorageProvider).saveUser(user);
+      state = AuthState(isLoggedIn: true, user: user);
+      return true;
+    } on ApiException catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.message);
+      return false;
+    } catch (_) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'تعذر حفظ التعديلات',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> refreshProfile() async {
+    try {
+      final user = await ref.read(authApiServiceProvider).fetchProfile();
+      await ref.read(authStorageProvider).saveUser(user);
+      state = AuthState(isLoggedIn: true, user: user);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> deleteAccount() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await ref.read(authApiServiceProvider).deleteAccount();
+      await _repo.logout();
+      await ref.read(productsRepositoryProvider).clearCache();
+      state = const AuthState();
+      return true;
+    } on ApiException catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.message);
+      return false;
+    } catch (_) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'تعذر حذف الحساب',
+      );
+      return false;
+    }
   }
 }
 

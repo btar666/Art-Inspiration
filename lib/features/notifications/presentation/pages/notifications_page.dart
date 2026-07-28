@@ -30,7 +30,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final notifications = ref.watch(notificationsProvider);
+    final async = ref.watch(notificationsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -43,20 +43,55 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
               onBack: () => context.pop(),
             ),
             Expanded(
-              child: ListView(
-                padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 24.h + bottomInset),
-                children: [
-                  for (final group in NotificationGroup.values) ...[
-                    _GroupHeader(label: group.label),
-                    SizedBox(height: 12.h),
-                    for (final notification
-                        in notifications.where((item) => item.group == group)) ...[
-                      NotificationCard(notification: notification),
-                      SizedBox(height: 10.h),
-                    ],
-                    SizedBox(height: 8.h),
-                  ],
-                ],
+              child: async.when(
+                loading: () =>
+                    const Center(child: CircularProgressIndicator()),
+                error: (_, __) => Center(
+                  child: TextButton(
+                    onPressed: () =>
+                        ref.read(notificationsProvider.notifier).refresh(),
+                    child: const Text('إعادة المحاولة'),
+                  ),
+                ),
+                data: (notifications) {
+                  if (notifications.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'لا توجد إشعارات',
+                        style: AppTextStyles.notificationGroupTitle(),
+                      ),
+                    );
+                  }
+
+                  return RefreshIndicator(
+                    color: AppColors.primary,
+                    onRefresh: () =>
+                        ref.read(notificationsProvider.notifier).refresh(),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(
+                        20.w,
+                        0,
+                        20.w,
+                        24.h + bottomInset,
+                      ),
+                      children: [
+                        for (final group in NotificationGroup.values) ...[
+                          if (notifications.any((n) => n.group == group)) ...[
+                            _GroupHeader(label: group.label),
+                            SizedBox(height: 12.h),
+                            for (final notification in notifications
+                                .where((item) => item.group == group)) ...[
+                              NotificationCard(notification: notification),
+                              SizedBox(height: 10.h),
+                            ],
+                            SizedBox(height: 8.h),
+                          ],
+                        ],
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ],
