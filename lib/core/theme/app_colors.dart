@@ -33,6 +33,7 @@ abstract final class AppColors {
   static const Color homeNavInactive = Color(0xFF9AA8E8);
   static const Color homeHeart = Color(0xFF7B8FE8);
   static const Color notificationDot = Color(0xFFFF3B30);
+  static const Color fieldError = Color(0xFFE85D4A);
 
   // ── Orders ────────────────────────────────────────────────
   static const Color orderLabel = Color(0x800000FF);

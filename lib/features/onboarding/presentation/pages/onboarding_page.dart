@@ -1,3 +1,4 @@
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,19 +26,7 @@ class OnboardingPage extends ConsumerStatefulWidget {
 }
 
 class _OnboardingPageState extends ConsumerState<OnboardingPage> {
-  late final PageController _pageController;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(viewportFraction: 0.72);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
+  final _carouselController = CarouselSliderController();
 
   Future<void> _completeOnboarding() async {
     await ref.read(onboardingStorageProvider).markCompleted();
@@ -49,7 +38,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   void _onNext() {
     final currentIndex = ref.read(onboardingPageIndexProvider);
     if (currentIndex < OnboardingContent.items.length - 1) {
-      _pageController.nextPage(
+      _carouselController.nextPage(
         duration: const Duration(milliseconds: 450),
         curve: Curves.easeOutCubic,
       );
@@ -119,8 +108,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   ),
                   SizedBox(height: 56.h),
                   OnboardingCarousel(
-                    pageController: _pageController,
-                    currentIndex: currentIndex,
+                    carouselController: _carouselController,
                     onPageChanged: (index) {
                       ref.read(onboardingPageIndexProvider.notifier).state =
                           index;
@@ -128,14 +116,16 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   ),
                   SizedBox(height: 24.h),
                   OnboardingPageIndicator(
-                    pageController: _pageController,
+                    activeIndex: currentIndex,
                     count: OnboardingContent.items.length,
+                    onDotClicked: (index) =>
+                        _carouselController.animateToPage(index),
                   ),
                   const Spacer(),
                   Padding(
                     padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h),
                     child: OnboardingActionBar(
-                      nextLabel: isLast ? 'ابدئي الآن' : 'التالي',
+                      nextLabel: isLast ? 'ابدأ الآن' : 'التالي',
                       onNext: _onNext,
                       onSkip: _completeOnboarding,
                     ),

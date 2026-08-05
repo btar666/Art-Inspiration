@@ -51,7 +51,7 @@ class CartPageHeader extends StatelessWidget {
               ),
             )
           else
-            SizedBox(width: AppBackButtonMetrics.size()),
+            SizedBox(width: AppBackButtonMetrics.width()),
         ],
       ),
     );

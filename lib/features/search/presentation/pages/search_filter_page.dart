@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_back_button.dart';
 import '../../../home/presentation/providers/products_provider.dart';
 import '../../data/models/search_filter_state.dart';
 import '../../data/search_mock_data.dart';
@@ -91,14 +92,7 @@ class _SearchFilterPageState extends ConsumerState<SearchFilterPage> {
               child: Row(
                 textDirection: TextDirection.ltr,
                 children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: Icon(
-                      Icons.close_rounded,
-                      size: 24.sp,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
+                  AppBackButton(onTap: () => context.pop()),
                   Expanded(
                     child: Text(
                       'فلترة نتائج البحث',
@@ -106,7 +100,7 @@ class _SearchFilterPageState extends ConsumerState<SearchFilterPage> {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  SizedBox(width: 48.w),
+                  SizedBox(width: AppBackButtonMetrics.width()),
                 ],
               ),
             ),

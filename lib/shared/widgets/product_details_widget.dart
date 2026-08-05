@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -11,15 +10,15 @@ import '../../core/router/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../features/cart/presentation/cart_actions.dart';
-import '../../features/cart/presentation/providers/cart_provider.dart';
-import '../../features/cart/presentation/widgets/cart_icon_button.dart';
 import '../../features/favorites/presentation/favorites_actions.dart';
 import '../../features/favorites/presentation/providers/favorites_provider.dart';
 import '../../features/home/data/models/product_model.dart';
+import '../../features/home/presentation/widgets/floating_cart_button.dart';
 import 'product_details_app_bar_metrics.dart';
 import 'app_back_button.dart';
 import 'product_details_bottom_bar_metrics.dart';
 import 'product_details_gallery_metrics.dart';
+import 'product_image_fullscreen_viewer.dart';
 
 /// صفحة تفاصيل المنتج — ويدجت قابل لإعادة الاستخدام من أي مكان
 class ProductDetailsWidget extends ConsumerStatefulWidget {
@@ -50,6 +49,7 @@ class ProductDetailsWidget extends ConsumerStatefulWidget {
 class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
   late int _quantity;
   late int _selectedImageIndex;
+  bool _showFloatingCart = false;
 
   @override
   void initState() {
@@ -62,20 +62,18 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final whiteHeight =
-        screenHeight * ProductDetailsBottomBarMetrics.whiteContainerHeightFraction;
     final bottomRadius =
         ProductDetailsBottomBarMetrics.whiteContainerBottomRadius();
     final isFavorite = ref.watch(isProductFavoriteProvider(product.id));
 
     return Scaffold(
       backgroundColor: ProductDetailsBottomBarMetrics.pageBackground,
-      body: Column(
+      body: Stack(
         children: [
-          SizedBox(
-            height: whiteHeight,
-            child: DecoratedBox(
+          Column(
+            children: [
+              Expanded(
+                child: DecoratedBox(
               decoration: BoxDecoration(
                 color: AppColors.background,
                 borderRadius: BorderRadius.only(
@@ -113,34 +111,10 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
                                   setState(() => _selectedImageIndex = i),
                             ),
                             SizedBox(height: 20.h),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    product.name,
-                                    style: AppTextStyles.productDetailsName(),
-                                    textAlign: TextAlign.right,
-                                  ),
-                                ),
-                                SizedBox(width: 8.w),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      product.rating.toStringAsFixed(1),
-                                      style:
-                                          AppTextStyles.productDetailsRating(),
-                                    ),
-                                    SizedBox(width: 3.w),
-                                    Icon(
-                                      Icons.star_rounded,
-                                      color: AppColors.homeRating,
-                                      size: 16.sp,
-                                    ),
-                                  ],
-                                ),
-                              ],
+                            Text(
+                              product.name,
+                              style: AppTextStyles.productDetailsName(),
+                              textAlign: TextAlign.right,
                             ),
                             SizedBox(height: 14.h),
                             _ProductDetailsDivider(),
@@ -157,18 +131,6 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
                               style: AppTextStyles.productDetailsBody(),
                               textAlign: TextAlign.right,
                             ),
-                            SizedBox(height: 16.h),
-                            _ProductDetailsDivider(),
-                            SizedBox(height: 14.h),
-                            _ProductDetailsMetaRow(
-                              label: 'تاريخ الأنتهاء :',
-                              value: product.expiryDate,
-                            ),
-                            SizedBox(height: 10.h),
-                            _ProductDetailsMetaRow(
-                              label: 'المنشأ :',
-                              value: product.origin,
-                            ),
                             SizedBox(height: 24.h),
                           ],
                         ),
@@ -179,41 +141,50 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
               ),
             ),
           ),
-          Expanded(
-            child: ColoredBox(
-              color: ProductDetailsBottomBarMetrics.pageBackground,
-              child: SafeArea(
-                top: false,
-                child: _ProductDetailsBottomBar(
-                  price: product.formattedPrice,
-                  quantity: _quantity,
-                  onDecrement: () {
-                    if (_quantity > 1) setState(() => _quantity--);
-                  },
-                  onIncrement: () => setState(() => _quantity++),
-                  onAddToCart: () {
-                    if (widget.onAddToCart != null) {
-                      widget.onAddToCart!.call(_quantity);
-                      return;
-                    }
-                    addProductToCart(
-                      context,
-                      ref,
-                      product,
-                      quantity: _quantity,
-                    );
-                  },
-                ),
+          ColoredBox(
+            color: ProductDetailsBottomBarMetrics.pageBackground,
+            child: SafeArea(
+              top: false,
+              child: _ProductDetailsBottomBar(
+                price: product.formattedPrice,
+                quantity: _quantity,
+                onDecrement: () {
+                  if (_quantity > 1) setState(() => _quantity--);
+                },
+                onIncrement: () => setState(() => _quantity++),
+                onAddToCart: _handleAddToCart,
               ),
             ),
           ),
+            ],
+          ),
+          if (_showFloatingCart)
+            DraggableFloatingCartButton(
+              onTap: () => context.push(AppRoutes.cart),
+              bottomReservedHeight:
+                  ProductDetailsBottomBarMetrics.floatingCartReservedHeight,
+            ),
         ],
       ),
     );
   }
+
+  void _handleAddToCart() {
+    if (widget.onAddToCart != null) {
+      widget.onAddToCart!.call(_quantity);
+    } else {
+      addProductToCart(
+        context,
+        ref,
+        product,
+        quantity: _quantity,
+      );
+    }
+    setState(() => _showFloatingCart = true);
+  }
 }
 
-class _ProductDetailsAppBar extends ConsumerWidget {
+class _ProductDetailsAppBar extends StatelessWidget {
   const _ProductDetailsAppBar({
     required this.isFavorite,
     required this.onBack,
@@ -225,19 +196,13 @@ class _ProductDetailsAppBar extends ConsumerWidget {
   final VoidCallback onFavoriteTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cartCount = ref.watch(cartItemCountProvider);
-    final animationTick = ref.watch(cartAnimationTickProvider);
-
+  Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
       child: Row(
+        textDirection: TextDirection.ltr,
         children: [
-          ProductDetailsCartButton(
-            itemCount: cartCount,
-            animationTick: animationTick,
-            onTap: () => context.push(AppRoutes.cart),
-          ),
+          AppBackButton(onTap: onBack),
           Expanded(
             child: Text(
               'صفحة المنتج',
@@ -248,16 +213,6 @@ class _ProductDetailsAppBar extends ConsumerWidget {
           _ProductDetailsFavoriteButton(
             isFavorite: isFavorite,
             onTap: onFavoriteTap,
-          ),
-          SizedBox(width: 8.w),
-          _ShapeIconButton(
-            size: AppBackButtonMetrics.size(),
-            color: AppColors.primary,
-            icon: Icons.arrow_back_ios_new_rounded,
-            iconColor: AppColors.textOnPrimary,
-            iconSize: AppBackButtonMetrics.iconSize(),
-            iconRotation: math.pi,
-            onTap: onBack,
           ),
         ],
       ),
@@ -400,18 +355,25 @@ class _ProductDetailsMainImage extends StatelessWidget {
         Positioned(
           right: 10.w,
           bottom: 10.h,
-          child: Container(
-            width: 28.w,
-            height: 28.w,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.75),
-              shape: BoxShape.circle,
+          child: GestureDetector(
+            onTap: () => ProductImageFullscreenViewer.open(
+              context,
+              product: product,
+              initialIndex: imageIndex,
             ),
-            alignment: Alignment.center,
-            child: Icon(
-              Icons.open_in_full_rounded,
-              size: 14.sp,
-              color: AppColors.textSecondary,
+            child: Container(
+              width: 28.w,
+              height: 28.w,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.75),
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.open_in_full_rounded,
+                size: 14.sp,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
         ),
@@ -531,33 +493,6 @@ class _ProductDetailsDivider extends StatelessWidget {
   }
 }
 
-class _ProductDetailsMetaRow extends StatelessWidget {
-  const _ProductDetailsMetaRow({
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return RichText(
-      textAlign: TextAlign.right,
-      text: TextSpan(
-        style: AppTextStyles.productDetailsMeta(),
-        children: [
-          TextSpan(text: '$label '),
-          TextSpan(
-            text: value,
-            style: AppTextStyles.productDetailsMetaValue(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ProductDetailsBottomBar extends StatelessWidget {
   const _ProductDetailsBottomBar({
     required this.price,
@@ -619,24 +554,24 @@ class _ProductDetailsBottomBar extends StatelessWidget {
             ),
           ),
           SizedBox(height: ProductDetailsBottomBarMetrics.gapBetweenRows()),
-          Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(
-              ProductDetailsBottomBarMetrics.addToCartRadius(),
-            ),
-            child: InkWell(
-              onTap: onAddToCart,
+          Container(
+            width: ProductDetailsBottomBarMetrics.addToCartWidth(),
+            height: ProductDetailsBottomBarMetrics.addToCartHeight(),
+            decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(
                 ProductDetailsBottomBarMetrics.addToCartRadius(),
               ),
-              child: Ink(
-                width: ProductDetailsBottomBarMetrics.addToCartWidth(),
-                height: ProductDetailsBottomBarMetrics.addToCartHeight(),
-                decoration: BoxDecoration(
-                  color: ProductDetailsBottomBarMetrics.addToCartBackground(),
-                  borderRadius: BorderRadius.circular(
-                    ProductDetailsBottomBarMetrics.addToCartRadius(),
-                  ),
+              boxShadow: ProductDetailsBottomBarMetrics.addToCartShadow(),
+            ),
+            child: Material(
+              color: ProductDetailsBottomBarMetrics.addToCartBackground(),
+              borderRadius: BorderRadius.circular(
+                ProductDetailsBottomBarMetrics.addToCartRadius(),
+              ),
+              child: InkWell(
+                onTap: onAddToCart,
+                borderRadius: BorderRadius.circular(
+                  ProductDetailsBottomBarMetrics.addToCartRadius(),
                 ),
                 child: Center(
                   child: Text(

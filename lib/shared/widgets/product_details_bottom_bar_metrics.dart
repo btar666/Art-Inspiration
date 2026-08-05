@@ -6,13 +6,12 @@ abstract final class ProductDetailsBottomBarMetrics {
   static const Color pageBackground = Color(0xFFEAECFC);
   static const Color background = pageBackground;
 
-  static const double whiteContainerHeightFraction = 0.80;
   static double whiteContainerBottomRadius() => 50.r;
 
-  static EdgeInsets padding() => EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 4.h);
+  static EdgeInsets padding() => EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 8.h);
 
   static double priceRowWidth() => 352.09.w;
-  static double priceRowHeight() => 51.87.h;
+  static double priceRowHeight() => 46.h;
   static double priceRowRadius() => 20.95.r;
   static Color priceRowBackground() =>
       const Color(0xFFFFFFFF).withValues(alpha: 0.3);
@@ -23,7 +22,7 @@ abstract final class ProductDetailsBottomBarMetrics {
   static EdgeInsets priceRowPadding() =>
       EdgeInsets.symmetric(horizontal: 14.w);
 
-  static double gapBetweenRows() => 7.98.h;
+  static double gapBetweenRows() => 6.h;
 
   static double quantityButtonWidth() => 27.86.w;
   static double quantityButtonHeight() => 24.58.h;
@@ -36,8 +35,29 @@ abstract final class ProductDetailsBottomBarMetrics {
   static double quantityUnderlineHeight() => 1.2.h;
   static Color quantityUnderlineColor() => const Color(0xFFFFFFFF);
 
+  /// ارتفاع محجوز فوق الذيل لزر السلة العائم
+  static const double floatingCartReservedHeight = 130;
+
   static double addToCartWidth() => 352.09.w;
-  static double addToCartHeight() => 51.87.h;
+  static double addToCartHeight() => 46.h;
   static double addToCartRadius() => 20.95.r;
   static Color addToCartBackground() => const Color(0xFFFFFFFF);
+  static Color addToCartShadowColor() =>
+      const Color(0xFF3A3F41).withValues(alpha: 0.16);
+
+  /// طبقتان من الظل — حسب Figma
+  static List<BoxShadow> addToCartShadow() => [
+        BoxShadow(
+          color: addToCartShadowColor(),
+          offset: Offset(0, 21.94.h),
+          blurRadius: 87.77.r,
+          spreadRadius: -3.99.r,
+        ),
+        BoxShadow(
+          color: addToCartShadowColor(),
+          offset: Offset(0, 9.97.h),
+          blurRadius: 27.93.r,
+          spreadRadius: -5.98.r,
+        ),
+      ];
 }

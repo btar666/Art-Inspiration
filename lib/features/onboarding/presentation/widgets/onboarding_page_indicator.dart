@@ -8,17 +8,19 @@ import '../../../../core/theme/app_colors.dart';
 class OnboardingPageIndicator extends StatelessWidget {
   const OnboardingPageIndicator({
     super.key,
-    required this.pageController,
+    required this.activeIndex,
     required this.count,
+    this.onDotClicked,
   });
 
-  final PageController pageController;
+  final int activeIndex;
   final int count;
+  final ValueChanged<int>? onDotClicked;
 
   @override
   Widget build(BuildContext context) {
-    return SmoothPageIndicator(
-      controller: pageController,
+    return AnimatedSmoothIndicator(
+      activeIndex: activeIndex.clamp(0, count - 1),
       count: count,
       effect: ExpandingDotsEffect(
         activeDotColor: AppColors.primary,
@@ -29,6 +31,7 @@ class OnboardingPageIndicator extends StatelessWidget {
         spacing: 8.w,
         radius: 4.r,
       ),
+      onDotClicked: onDotClicked,
     );
   }
 }

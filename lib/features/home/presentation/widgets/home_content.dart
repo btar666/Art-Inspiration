@@ -5,10 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/product_details_widget.dart';
 import '../../../cart/presentation/cart_actions.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../orders/presentation/providers/orders_provider.dart';
 import '../providers/products_provider.dart';
-import 'erp_store_overview_card.dart';
 import 'home_category_chips.dart';
 import 'home_product_card.dart';
 import 'home_product_card_metrics.dart';
@@ -56,8 +53,6 @@ class _HomeContentState extends ConsumerState<HomeContent> {
     final topInset = MediaQuery.paddingOf(context).top;
     final logoSpacerHeight = topInset + HomeScrollMetrics.logoBarHeight();
     final catalogAsync = ref.watch(catalogProvider);
-    final auth = ref.watch(authNotifierProvider);
-    final ordersTotal = ref.watch(erpOrdersTotalProvider).value;
 
     return catalogAsync.when(
       loading: () => CustomScrollView(
@@ -109,11 +104,6 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                       padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 0),
                       child: _CatalogWarningBanner(message: catalog.warningMessage!),
                     ),
-                  ErpStoreOverviewCard(
-                    catalog: catalog,
-                    ordersTotal: ordersTotal,
-                    userName: auth.user?.name,
-                  ),
                   HomeCategoryChips(
                     categories: categories,
                     selectedIndex:

@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import 'app_field_error_hint.dart';
 
 /// حقل إدخال موحد لصفحات المصادقة
 class AppTextField extends StatefulWidget {
@@ -20,6 +21,8 @@ class AppTextField extends StatefulWidget {
     this.suffix,
     this.height,
     this.borderRadius,
+    this.errorText,
+    this.showErrorBorder = false,
   });
 
   final String hint;
@@ -34,6 +37,8 @@ class AppTextField extends StatefulWidget {
   final Widget? suffix;
   final double? height;
   final double? borderRadius;
+  final String? errorText;
+  final bool showErrorBorder;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -56,6 +61,10 @@ class _AppTextFieldState extends State<AppTextField> {
     final fieldBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(radius),
     );
+    final hasError = widget.showErrorBorder ||
+        (widget.errorText != null && widget.errorText!.isNotEmpty);
+    const errorSide = BorderSide(color: AppColors.fieldError, width: 1.2);
+    const focusedErrorSide = BorderSide(color: AppColors.fieldError, width: 1.5);
 
     final field = TextFormField(
       controller: widget.controller,
@@ -87,25 +96,28 @@ class _AppTextFieldState extends State<AppTextField> {
                   )
                 : null),
         enabledBorder: fieldBorder.copyWith(
-          borderSide: const BorderSide(color: AppColors.dotGrid, width: 1.2),
+          borderSide: hasError ? errorSide : const BorderSide(color: AppColors.dotGrid, width: 1.2),
         ),
         focusedBorder: fieldBorder.copyWith(
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: hasError ? focusedErrorSide : const BorderSide(color: AppColors.primary, width: 1.5),
         ),
-        errorBorder: fieldBorder.copyWith(
-          borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
-        ),
-        focusedErrorBorder: fieldBorder.copyWith(
-          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
-        ),
+        errorBorder: fieldBorder.copyWith(borderSide: errorSide),
+        focusedErrorBorder: fieldBorder.copyWith(borderSide: focusedErrorSide),
+        errorStyle: const TextStyle(height: 0, fontSize: 0),
       ),
     );
 
-    if (fieldHeight == null) return field;
+    final fieldWidget = fieldHeight == null
+        ? field
+        : SizedBox(height: fieldHeight, child: field);
 
-    return SizedBox(
-      height: fieldHeight,
-      child: field,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        fieldWidget,
+        if (hasError && widget.errorText != null && widget.errorText!.isNotEmpty)
+          AppFieldErrorHint(message: widget.errorText!),
+      ],
     );
   }
 }

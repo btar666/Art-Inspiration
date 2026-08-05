@@ -1,3 +1,4 @@
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -5,54 +6,36 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/onboarding_content.dart';
 
-/// كاروسيل صور الـ Onboarding مع تأثير التكبير
-class OnboardingCarousel extends StatefulWidget {
+/// كاروسيل صور الـ Onboarding — يعرض الشرائح المجاورة على الجانبين (RTL)
+class OnboardingCarousel extends StatelessWidget {
   const OnboardingCarousel({
     super.key,
-    required this.pageController,
-    required this.currentIndex,
+    required this.carouselController,
     required this.onPageChanged,
   });
 
-  final PageController pageController;
-  final int currentIndex;
+  final CarouselSliderController carouselController;
   final ValueChanged<int> onPageChanged;
 
   @override
-  State<OnboardingCarousel> createState() => _OnboardingCarouselState();
-}
-
-class _OnboardingCarouselState extends State<OnboardingCarousel> {
-  @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 340.h,
-      child: PageView.builder(
-        controller: widget.pageController,
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: CarouselSlider.builder(
+        carouselController: carouselController,
         itemCount: OnboardingContent.items.length,
-        onPageChanged: widget.onPageChanged,
-        itemBuilder: (context, index) {
-          return AnimatedBuilder(
-            animation: widget.pageController,
-            builder: (context, child) {
-              double value = 1;
-              if (widget.pageController.position.haveDimensions) {
-                value = (widget.pageController.page ?? index.toDouble()) - index;
-                value = (1 - (value.abs() * 0.25)).clamp(0.75, 1.0);
-              }
-
-              return Center(
-                child: Transform.scale(
-                  scale: value,
-                  child: Opacity(
-                    opacity: value.clamp(0.6, 1.0),
-                    child: child,
-                  ),
-                ),
-              );
-            },
-            child: _CarouselCard(item: OnboardingContent.items[index]),
-          );
+        options: CarouselOptions(
+          height: 340.h,
+          viewportFraction: 0.62,
+          enlargeCenterPage: true,
+          enlargeFactor: 0.22,
+          enableInfiniteScroll: false,
+          padEnds: true,
+          clipBehavior: Clip.none,
+          onPageChanged: (index, _) => onPageChanged(index),
+        ),
+        itemBuilder: (context, index, _) {
+          return _CarouselCard(item: OnboardingContent.items[index]);
         },
       ),
     );
@@ -67,9 +50,9 @@ class _CarouselCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 220.w,
+      width: double.infinity,
       height: 300.h,
-      margin: EdgeInsets.symmetric(horizontal: 8.w),
+      margin: EdgeInsets.symmetric(horizontal: 6.w),
       decoration: BoxDecoration(
         color: item.accentColor,
         borderRadius: BorderRadius.circular(24.r),
@@ -85,14 +68,13 @@ class _CarouselCard extends StatelessWidget {
       child: item.imageAsset != null
           ? Image.asset(
               item.imageAsset!,
-              width: 220.w,
+              width: double.infinity,
               height: 300.h,
               fit: BoxFit.cover,
             )
           : Stack(
               alignment: Alignment.center,
               children: [
-                // تأثير دائري خلفي
                 Container(
                   width: 120.w,
                   height: 120.w,

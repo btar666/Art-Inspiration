@@ -1,6 +1,7 @@
 /// مسارات الأصول
 abstract final class AppAssets {
   static const String logo = 'assets/images/logo.png';
+  static const String backIcon = 'assets/images/backicon.png';
   static const String shoppingCartIcon = 'assets/icons/Shopping_Cart_02.png';
   static const String filterIcon = 'assets/icons/filter.png';
 

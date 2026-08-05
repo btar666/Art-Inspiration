@@ -30,7 +30,7 @@ class PageBackHeader extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ),
-          SizedBox(width: AppBackButtonMetrics.size()),
+          SizedBox(width: AppBackButtonMetrics.width()),
         ],
       ),
     );
