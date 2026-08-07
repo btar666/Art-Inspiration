@@ -87,7 +87,7 @@ Map<String, dynamic> orderDetailToJson(OrderDetailModel order) => {
       'phone': order.phone,
       'altPhone': order.altPhone,
       'deliveryAddress': order.deliveryAddress,
-      'orderDate': order.orderDate.toIso8601String(),
+      'orderDate': order.detailOrderDate.toIso8601String(),
       'deliveryPrice': order.deliveryPrice,
       'items': order.items.map(orderLineItemToJson).toList(),
     };

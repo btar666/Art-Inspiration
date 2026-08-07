@@ -21,6 +21,7 @@ abstract final class ErpOrderMapper {
       address: '—',
       price: price,
       status: _mapStatus(statusRaw),
+      orderDate: _parseDate(record['date'] ?? record['created_at']),
     );
   }
 
@@ -40,7 +41,7 @@ abstract final class ErpOrderMapper {
       customerName: '—',
       phone: '—',
       deliveryAddress: notes.isEmpty ? base.address : notes,
-      orderDate: _parseDate(record['date'] ?? record['created_at']),
+      orderDate: base.orderDate ?? _parseDate(record['date'] ?? record['created_at']),
       items: items,
       deliveryPrice: 0,
     );

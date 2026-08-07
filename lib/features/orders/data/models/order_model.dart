@@ -37,6 +37,7 @@ class OrderModel {
     required this.address,
     required this.price,
     required this.status,
+    this.orderDate,
     this.imageUrl,
     this.imageBgColor = const Color(0xFFE9E4F5),
   });
@@ -46,10 +47,20 @@ class OrderModel {
   final String address;
   final int price;
   final OrderStatus status;
+  final DateTime? orderDate;
   final String? imageUrl;
   final Color imageBgColor;
 
   String get formattedPrice => OrderLineItem._formatPrice(price);
+
+  String get formattedOrderDate {
+    final date = orderDate;
+    if (date == null) return '';
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year.toString();
+    return '$day/$month/$year';
+  }
 }
 
 /// تفاصيل الطلب الكاملة
@@ -60,24 +71,25 @@ class OrderDetailModel extends OrderModel {
     required super.address,
     required super.price,
     required super.status,
+    required DateTime orderDate,
     super.imageUrl,
     super.imageBgColor,
     required this.customerName,
     required this.phone,
     required this.deliveryAddress,
-    required this.orderDate,
     required this.items,
     this.altPhone,
     this.deliveryPrice = 0,
-  });
+  }) : super(orderDate: orderDate);
 
   final String customerName;
   final String phone;
   final String? altPhone;
   final String deliveryAddress;
-  final DateTime orderDate;
   final List<OrderLineItem> items;
   final int deliveryPrice;
+
+  DateTime get detailOrderDate => orderDate ?? DateTime.now();
 
   int get totalPrice => price + deliveryPrice;
 
@@ -86,6 +98,9 @@ class OrderDetailModel extends OrderModel {
   String get formattedDeliveryPrice =>
       deliveryPrice == 0 ? 'مجاني' : OrderLineItem._formatPrice(deliveryPrice);
 
-  String get formattedOrderDate =>
-      '${orderDate.year} - ${orderDate.month} - ${orderDate.day}';
+  @override
+  String get formattedOrderDate {
+    final date = detailOrderDate;
+    return '${date.year} - ${date.month} - ${date.day}';
+  }
 }
