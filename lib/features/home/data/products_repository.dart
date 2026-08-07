@@ -433,41 +433,46 @@ class ProductsRepository {
     );
   }
 
-  /// بحث مقسّم عبر أمان ERP
+  /// بحث مقسّم عبر أمان ERP — `q` + `category_id` + `brand_id` + `sku` + `barcode` + `is_active`
   Future<ProductPageResult> searchProductsPage({
     required int page,
-    required String query,
+    String query = '',
     String category = 'الكل',
     String brand = 'الكل',
-    double minPrice = 0,
-    double maxPrice = 500000,
+    String sku = '',
+    String barcode = '',
+    bool onlyActive = true,
   }) async {
     if (!_hasToken) {
-      final q = query.trim().toLowerCase();
-      final products = HomeMockData.products.where((p) {
-        final matchesQuery = p.name.toLowerCase().contains(q) ||
-            p.categoryName.toLowerCase().contains(q) ||
-            p.brandName.toLowerCase().contains(q);
-        final matchesPrice =
-            p.price >= minPrice.round() && p.price <= maxPrice.round();
-        return matchesQuery && matchesPrice;
-      }).toList();
-      return ProductPageResult(
-        products: products,
-        currentPage: 1,
-        lastPage: 1,
-        total: products.length,
+      return _mockSearchPage(
+        query: query,
+        category: category,
+        brand: brand,
+        sku: sku,
+        barcode: barcode,
+        onlyActive: onlyActive,
       );
     }
 
     final lookups = _lookups ?? await _fetchLookups();
     _lookups = lookups;
 
-    final params = <String, dynamic>{'is_active': true};
+    final params = <String, dynamic>{};
+    if (onlyActive) params['is_active'] = true;
 
-    final trimmed = query.trim();
-    if (trimmed.isNotEmpty) {
-      params['q'] = trimmed;
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isNotEmpty) {
+      params['q'] = trimmedQuery;
+    }
+
+    final trimmedSku = sku.trim();
+    if (trimmedSku.isNotEmpty) {
+      params['sku'] = trimmedSku;
+    }
+
+    final trimmedBarcode = barcode.trim();
+    if (trimmedBarcode.isNotEmpty) {
+      params['barcode'] = trimmedBarcode;
     }
 
     if (category != 'الكل') {
@@ -491,10 +496,7 @@ class ProductsRepository {
       result.items,
       categoryNames: lookups.categoryNames,
       brandNames: lookups.brandNames,
-    ).where((product) {
-      return product.price >= minPrice.round() &&
-          product.price <= maxPrice.round();
-    }).toList();
+    );
 
     return ProductPageResult(
       products: products,
@@ -504,21 +506,65 @@ class ProductsRepository {
     );
   }
 
-  /// بحث عبر أمان ERP — يدعم `q` + تصنيف/ماركة (الصفحة الأولى فقط)
-  Future<List<ProductModel>> searchProducts({
+  ProductPageResult _mockSearchPage({
     required String query,
+    required String category,
+    required String brand,
+    required String sku,
+    required String barcode,
+    required bool onlyActive,
+  }) {
+    final q = query.trim().toLowerCase();
+    final skuFilter = sku.trim().toLowerCase();
+    final barcodeFilter = barcode.trim().toLowerCase();
+
+    final products = HomeMockData.products.where((p) {
+      if (onlyActive && !p.isActive) return false;
+      if (category != 'الكل' && !p.matchesCategoryOrBrand(category)) {
+        return false;
+      }
+      if (brand != 'الكل' && !p.matchesCategoryOrBrand(brand)) return false;
+      if (skuFilter.isNotEmpty &&
+          !(p.sku?.toLowerCase() == skuFilter)) {
+        return false;
+      }
+      if (barcodeFilter.isNotEmpty &&
+          !(p.barcode?.toLowerCase() == barcodeFilter)) {
+        return false;
+      }
+      if (q.isEmpty) return true;
+      return p.name.toLowerCase().contains(q) ||
+          (p.sku?.toLowerCase().contains(q) ?? false) ||
+          (p.barcode?.toLowerCase().contains(q) ?? false) ||
+          p.categoryName.toLowerCase().contains(q) ||
+          p.brandName.toLowerCase().contains(q);
+    }).toList();
+
+    return ProductPageResult(
+      products: products,
+      currentPage: 1,
+      lastPage: 1,
+      total: products.length,
+    );
+  }
+
+  /// بحث عبر أمان ERP — الصفحة الأولى فقط
+  Future<List<ProductModel>> searchProducts({
+    String query = '',
     String category = 'الكل',
     String brand = 'الكل',
-    double minPrice = 0,
-    double maxPrice = 500000,
+    String sku = '',
+    String barcode = '',
+    bool onlyActive = true,
   }) async {
     final result = await searchProductsPage(
       page: 1,
       query: query,
       category: category,
       brand: brand,
-      minPrice: minPrice,
-      maxPrice: maxPrice,
+      sku: sku,
+      barcode: barcode,
+      onlyActive: onlyActive,
     );
     return result.products;
   }

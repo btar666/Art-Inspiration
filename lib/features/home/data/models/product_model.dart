@@ -18,6 +18,9 @@ class ProductModel {
     this.galleryImageUrls = const [],
     this.categoryIds = const [],
     this.stockQuantity,
+    this.sku,
+    this.barcode,
+    this.isActive = true,
   });
 
   final String id;
@@ -36,6 +39,9 @@ class ProductModel {
   final List<String> categoryIds;
   /// الكمية المتوفرة في المخزن — null إذا غير معروفة
   final int? stockQuantity;
+  final String? sku;
+  final String? barcode;
+  final bool isActive;
 
   bool matchesCategoryOrBrand(String selected) {
     if (selected == 'الكل') return true;
@@ -67,6 +73,9 @@ class ProductModel {
         'galleryImageUrls': galleryImageUrls,
         'categoryIds': categoryIds,
         'stockQuantity': stockQuantity,
+        'sku': sku,
+        'barcode': barcode,
+        'isActive': isActive,
       };
 
   factory ProductModel.fromJson(Map<String, dynamic> json) => ProductModel(
@@ -91,5 +100,8 @@ class ProductModel {
                 .toList() ??
             const [],
         stockQuantity: json['stockQuantity'] as int?,
+        sku: json['sku'] as String?,
+        barcode: json['barcode'] as String?,
+        isActive: json['isActive'] as bool? ?? true,
       );
 }

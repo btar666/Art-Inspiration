@@ -54,6 +54,10 @@ abstract final class ErpProductMapper {
             ? image
             : null;
 
+    final sku = record['sku']?.toString().trim();
+    final barcode = record['barcode']?.toString().trim();
+    final isActive = record['is_active'] != false;
+
     final matchKeys = <String>{
       categoryName,
       if (categoryId != null) categoryId.toString(),
@@ -72,6 +76,9 @@ abstract final class ErpProductMapper {
       imageBgColor: _colorFromSeed(id),
       brandName: brandName,
       categoryIds: matchKeys.toList(),
+      sku: sku != null && sku.isNotEmpty ? sku : null,
+      barcode: barcode != null && barcode.isNotEmpty ? barcode : null,
+      isActive: isActive,
     );
   }
 
