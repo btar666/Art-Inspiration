@@ -7,7 +7,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../checkout/data/local_orders_storage.dart';
 import '../../data/models/order_model.dart';
-import '../../data/orders_mock_data.dart';
 import '../providers/orders_provider.dart';
 import '../widgets/order_details_action_bar.dart';
 
@@ -57,11 +56,51 @@ class OrderDetailsPage extends ConsumerWidget {
         backgroundColor: OrderDetailsPageMetrics.pageBackground,
         body: Center(child: CircularProgressIndicator()),
       ),
-      error: (_, __) => _OrderDetailsView(
-        order: OrdersMockData.detailFor(orderId),
+      error: (_, __) => const _OrderDetailsMissing(
+        message: 'تعذر جلب تفاصيل الطلب',
       ),
-      data: (OrderDetailModel? order) => _OrderDetailsView(
-        order: order ?? OrdersMockData.detailFor(orderId),
+      data: (OrderDetailModel? order) {
+        if (order == null) {
+          return const _OrderDetailsMissing(
+            message: 'الطلب غير موجود',
+          );
+        }
+        return _OrderDetailsView(order: order);
+      },
+    );
+  }
+}
+
+class _OrderDetailsMissing extends StatelessWidget {
+  const _OrderDetailsMissing({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: OrderDetailsPageMetrics.pageBackground,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                onPressed: () => context.pop(),
+                icon: const Icon(Icons.arrow_forward_ios_rounded),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Text(
+                  message,
+                  style: AppTextStyles.ordersDetailValue(),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

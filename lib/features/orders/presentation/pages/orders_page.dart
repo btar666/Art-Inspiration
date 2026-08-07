@@ -9,7 +9,6 @@ import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../checkout/data/local_orders_storage.dart';
 import '../../data/models/order_model.dart';
-import '../../data/orders_mock_data.dart';
 import '../../data/models/orders_list_state.dart';
 import '../providers/orders_provider.dart';
 import '../widgets/order_card.dart';
@@ -62,10 +61,6 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
       }
     }
 
-    if (merged.isEmpty) {
-      return OrdersMockData.orders;
-    }
-
     return merged;
   }
 
@@ -99,10 +94,12 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
         const [],
         isLoading: true,
       ),
-      error: (_, __) {
-        final orders = _allOrders(const []);
-        return _buildScaffold(context, bottomInset, _filteredOrders(orders));
-      },
+      error: (_, __) => _buildScaffold(
+        context,
+        bottomInset,
+        const [],
+        errorMessage: 'تعذر جلب الفواتير',
+      ),
       data: (listState) {
         final orders = _allOrders(listState.orders);
         return _buildScaffold(
@@ -120,6 +117,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
     double bottomInset,
     List<OrderModel> orders, {
     bool isLoading = false,
+    String? errorMessage,
     OrdersListState? listState,
   }) {
     final hasMore = listState?.hasMore ?? false;
@@ -142,7 +140,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
               onSearchTap: () => _showSearchSheet(context),
               onFilterTap: () {},
             ),
-            if (total > 0 && !isLoading)
+            if (total > 0 && !isLoading && errorMessage == null)
               Padding(
                 padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 8.h),
                 child: Align(
@@ -165,54 +163,67 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                           const Center(child: CircularProgressIndicator()),
                         ],
                       )
-                    : orders.isEmpty
+                    : errorMessage != null
                         ? ListView(
                             physics: const AlwaysScrollableScrollPhysics(),
                             children: [
                               SizedBox(height: 160.h),
                               Center(
                                 child: Text(
-                                  'لا توجد طلبات',
+                                  errorMessage,
                                   style: TextStyle(fontSize: 16.sp),
                                 ),
                               ),
                             ],
                           )
-                        : ListView.separated(
-                            controller: _scrollController,
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: EdgeInsets.fromLTRB(
-                              20.w,
-                              0,
-                              20.w,
-                              100.h + bottomInset,
-                            ),
-                            itemCount:
-                                orders.length + (hasMore || isLoadingMore ? 1 : 0),
-                            separatorBuilder: (_, __) =>
-                                SizedBox(height: 14.h),
-                            itemBuilder: (context, index) {
-                              if (index >= orders.length) {
-                                return PaginationFooter(
-                                  currentPage: currentPage,
-                                  lastPage: lastPage,
-                                  hasMore: hasMore,
-                                  isLoadingMore: isLoadingMore,
-                                  onLoadMore: () => ref
-                                      .read(ordersListProvider.notifier)
-                                      .loadMore(),
-                                );
-                              }
-
-                              final order = orders[index];
-                              return OrderCard(
-                                order: order,
-                                onTap: () => context.push(
-                                  AppRoutes.orderDetailsPath(order.id),
+                        : orders.isEmpty
+                            ? ListView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                children: [
+                                  SizedBox(height: 160.h),
+                                  Center(
+                                    child: Text(
+                                      'لا توجد طلبات',
+                                      style: TextStyle(fontSize: 16.sp),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : ListView.separated(
+                                controller: _scrollController,
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: EdgeInsets.fromLTRB(
+                                  20.w,
+                                  0,
+                                  20.w,
+                                  100.h + bottomInset,
                                 ),
-                              );
-                            },
-                          ),
+                                itemCount: orders.length +
+                                    (hasMore || isLoadingMore ? 1 : 0),
+                                separatorBuilder: (_, __) =>
+                                    SizedBox(height: 14.h),
+                                itemBuilder: (context, index) {
+                                  if (index >= orders.length) {
+                                    return PaginationFooter(
+                                      currentPage: currentPage,
+                                      lastPage: lastPage,
+                                      hasMore: hasMore,
+                                      isLoadingMore: isLoadingMore,
+                                      onLoadMore: () => ref
+                                          .read(ordersListProvider.notifier)
+                                          .loadMore(),
+                                    );
+                                  }
+
+                                  final order = orders[index];
+                                  return OrderCard(
+                                    order: order,
+                                    onTap: () => context.push(
+                                      AppRoutes.orderDetailsPath(order.id),
+                                    ),
+                                  );
+                                },
+                              ),
               ),
             ),
           ],
