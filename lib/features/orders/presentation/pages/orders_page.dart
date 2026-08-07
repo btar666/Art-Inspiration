@@ -7,7 +7,6 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../checkout/data/local_orders_storage.dart';
 import '../../data/models/order_model.dart';
-import '../../data/orders_mock_data.dart';
 import '../providers/orders_provider.dart';
 import '../widgets/order_card.dart';
 import '../widgets/orders_page_header.dart';
@@ -40,10 +39,6 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
       if (seenIds.add(order.id)) {
         merged.add(order);
       }
-    }
-
-    if (merged.isEmpty) {
-      return OrdersMockData.orders;
     }
 
     return merged;
@@ -80,10 +75,12 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
         const [],
         isLoading: true,
       ),
-      error: (_, __) {
-        final orders = _allOrders(const []);
-        return _buildScaffold(context, bottomInset, _filteredOrders(orders));
-      },
+      error: (error, _) => _buildScaffold(
+        context,
+        bottomInset,
+        const [],
+        errorMessage: 'تعذر جلب الفواتير',
+      ),
       data: (erpOrders) {
         final orders = _allOrders(erpOrders);
         return _buildScaffold(context, bottomInset, _filteredOrders(orders));
@@ -96,6 +93,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
     double bottomInset,
     List<OrderModel> orders, {
     bool isLoading = false,
+    String? errorMessage,
   }) {
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -124,6 +122,19 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                           const Center(child: CircularProgressIndicator()),
                         ],
                       )
+                    : errorMessage != null
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
+                              SizedBox(height: 160.h),
+                              Center(
+                                child: Text(
+                                  errorMessage,
+                                  style: TextStyle(fontSize: 16.sp),
+                                ),
+                              ),
+                            ],
+                          )
                     : orders.isEmpty
                         ? ListView(
                             physics: const AlwaysScrollableScrollPhysics(),

@@ -51,35 +51,36 @@ class OrdersRepository {
 
   Future<OrdersFetchResult> fetchOrders() async {
     if (!_hasToken) {
-      return const OrdersFetchResult(orders: [], total: 0);
+      throw const ApiException(
+        message: 'مفتاح API غير متوفر — راجع إعدادات أمان ERP',
+        statusCode: 401,
+        type: ApiExceptionType.unauthorized,
+      );
     }
 
-    try {
-      final result = await _api.list(
-        path: ApiEndpoints.salesInvoices,
-        page: 1,
-        perPage: 50,
-      );
+    final result = await _api.list(
+      path: ApiEndpoints.salesInvoices,
+      page: 1,
+      perPage: 50,
+    );
 
-      return OrdersFetchResult(
-        orders: ErpOrderMapper.fromRecords(result.items),
-        total: result.total,
-      );
-    } on ApiException {
-      return const OrdersFetchResult(orders: [], total: 0);
-    }
+    return OrdersFetchResult(
+      orders: ErpOrderMapper.fromRecords(result.items),
+      total: result.total,
+    );
   }
 
   Future<OrderDetailModel?> fetchOrderDetail(String orderId) async {
-    if (!_hasToken) return null;
-
-    try {
-      final record =
-          await _api.getById(ApiEndpoints.salesInvoice(orderId));
-      return ErpOrderMapper.detailFromRecord(record);
-    } on ApiException {
-      return null;
+    if (!_hasToken) {
+      throw const ApiException(
+        message: 'مفتاح API غير متوفر — راجع إعدادات أمان ERP',
+        statusCode: 401,
+        type: ApiExceptionType.unauthorized,
+      );
     }
+
+    final record = await _api.getById(ApiEndpoints.salesInvoice(orderId));
+    return ErpOrderMapper.detailFromRecord(record);
   }
 
   /// إنشاء فاتورة مبيعات من مسودة الدفع
