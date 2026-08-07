@@ -88,49 +88,58 @@ class _SliderBanner extends StatelessWidget {
               final item = items[index];
               return ClipRRect(
                 borderRadius: BorderRadius.circular(20.r),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    CachedNetworkImage(
-                      imageUrl: item.imageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) => ColoredBox(
-                        color: AppColors.homeBannerBg,
-                        child: const Center(
+                child: ColoredBox(
+                  color: AppColors.homeBannerBg,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CachedNetworkImage(
+                        imageUrl: item.imageUrl,
+                        fit: BoxFit.contain,
+                        width: double.infinity,
+                        height: double.infinity,
+                        memCacheWidth:
+                            (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context))
+                                .round()
+                                .clamp(1, 2048),
+                        memCacheHeight:
+                            (150.h * MediaQuery.devicePixelRatioOf(context))
+                                .round()
+                                .clamp(1, 2048),
+                        fadeInDuration: const Duration(milliseconds: 120),
+                        fadeOutDuration: Duration.zero,
+                        placeholder: (_, __) => const Center(
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
-                      ),
-                      errorWidget: (_, __, ___) => ColoredBox(
-                        color: AppColors.homeBannerBg,
-                        child: Icon(
+                        errorWidget: (_, __, ___) => Icon(
                           Icons.image_outlined,
                           size: 40.sp,
                           color: AppColors.primary.withValues(alpha: 0.35),
                         ),
                       ),
-                    ),
-                    if (item.title.trim().isNotEmpty)
-                      Positioned(
-                        left: 12.w,
-                        right: 12.w,
-                        bottom: 12.h,
-                        child: Text(
-                          item.title,
-                          style: AppTextStyles.homeLogoTitle().copyWith(
-                            fontSize: 13.sp,
-                            color: Colors.white,
-                            shadows: const [
-                              Shadow(
-                                blurRadius: 8,
-                                color: Colors.black54,
-                              ),
-                            ],
+                      if (item.title.trim().isNotEmpty)
+                        Positioned(
+                          left: 12.w,
+                          right: 12.w,
+                          bottom: 12.h,
+                          child: Text(
+                            item.title,
+                            style: AppTextStyles.homeLogoTitle().copyWith(
+                              fontSize: 13.sp,
+                              color: Colors.white,
+                              shadows: const [
+                                Shadow(
+                                  blurRadius: 8,
+                                  color: Colors.black54,
+                                ),
+                              ],
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },

@@ -34,68 +34,77 @@ class _HomeProductCardState extends ConsumerState<HomeProductCard> {
     final product = widget.product;
     final isFavorite = ref.watch(isProductFavoriteProvider(product.id));
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: SizedBox(
-        width: HomeProductCardMetrics.width(),
-        height: HomeProductCardMetrics.height(),
-        child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.circular(HomeProductCardMetrics.radius()),
-          boxShadow: [
-            BoxShadow(
-              color: HomeProductCardMetrics.shadowColor.withValues(alpha: 0.38),
-              blurRadius: HomeProductCardMetrics.shadowBlur(),
-              offset: Offset.zero,
-              spreadRadius: 0,
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: SizedBox(
+          width: HomeProductCardMetrics.width(),
+          height: HomeProductCardMetrics.height(),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius:
+                  BorderRadius.circular(HomeProductCardMetrics.radius()),
+              boxShadow: [
+                BoxShadow(
+                  color: HomeProductCardMetrics.shadowColor
+                      .withValues(alpha: 0.22),
+                  blurRadius: HomeProductCardMetrics.shadowBlur(),
+                  offset: Offset.zero,
+                  spreadRadius: 0,
+                ),
+              ],
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(HomeProductCardMetrics.radius()),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: HomeProductCardMetrics.imagePadding(),
-                child: _HomeProductImageSection(
-                  product: product,
-                  isFavorite: isFavorite,
-                  onFavoriteTap: () =>
-                      toggleProductFavorite(ref, product),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: HomeProductCardMetrics.padding().left,
+            child: ClipRRect(
+              borderRadius:
+                  BorderRadius.circular(HomeProductCardMetrics.radius()),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: HomeProductCardMetrics.imagePadding(),
+                    child: _HomeProductImageSection(
+                      product: product,
+                      isFavorite: isFavorite,
+                      onFavoriteTap: () =>
+                          toggleProductFavorite(ref, product),
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SizedBox(height: HomeProductCardMetrics.imageToNameGap()),
-                      Expanded(
-                        child: _HomeProductInfoSection(product: product),
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: HomeProductCardMetrics.padding().left,
                       ),
-                    ],
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          SizedBox(
+                            height: HomeProductCardMetrics.imageToNameGap(),
+                          ),
+                          Expanded(
+                            child: _HomeProductInfoSection(product: product),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                  SizedBox(
+                    height: HomeProductCardMetrics.descriptionToPriceGap(),
+                  ),
+                  Padding(
+                    padding: HomeProductCardMetrics.priceBarMargin(),
+                    child: _HomeProductPriceBar(
+                      price: product.formattedPrice,
+                      onAddToCart: widget.onAddToCart,
+                    ),
+                  ),
+                  SizedBox(height: HomeProductCardMetrics.padding().bottom),
+                ],
               ),
-              SizedBox(height: HomeProductCardMetrics.descriptionToPriceGap()),
-              Padding(
-                padding: HomeProductCardMetrics.priceBarMargin(),
-                child: _HomeProductPriceBar(
-                  price: product.formattedPrice,
-                  onAddToCart: widget.onAddToCart,
-                ),
-              ),
-              SizedBox(height: HomeProductCardMetrics.padding().bottom),
-            ],
+            ),
           ),
         ),
       ),
-    ),
     );
   }
 }
@@ -203,11 +212,21 @@ class _HomeProductImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (product.imageUrl != null && product.imageUrl!.isNotEmpty) {
+      final dpr = MediaQuery.devicePixelRatioOf(context);
+      final cacheW =
+          (HomeProductCardMetrics.width() * dpr).round().clamp(1, 2048);
+      final cacheH =
+          (HomeProductCardMetrics.imageHeight() * dpr).round().clamp(1, 2048);
+
       return CachedNetworkImage(
         imageUrl: product.imageUrl!,
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.contain,
+        memCacheWidth: cacheW,
+        memCacheHeight: cacheH,
+        fadeInDuration: const Duration(milliseconds: 120),
+        fadeOutDuration: Duration.zero,
         placeholder: (_, __) => Center(
           child: Icon(
             Icons.image_outlined,

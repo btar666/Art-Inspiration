@@ -29,14 +29,19 @@ class ExploreSectionModel {
   const ExploreSectionModel({
     required this.id,
     required this.name,
-    required this.iconAsset,
-    required this.bgColor,
+    this.iconAsset,
+    this.bgColor = Colors.white,
+    this.imageUrl,
     this.filters = const ['كل المنتجات'],
   });
 
   final String id;
   final String name;
-  final String iconAsset;
+  final String? iconAsset;
   final Color bgColor;
+  final String? imageUrl;
   final List<String> filters;
+
+  bool get hasNetworkImage =>
+      imageUrl != null && imageUrl!.trim().isNotEmpty;
 }

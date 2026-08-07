@@ -32,6 +32,8 @@ class CatalogNotifier extends AsyncNotifier<CatalogSnapshot> {
     final category = state.value?.activeCategory ?? 'الكل';
     final previous = state.value;
 
+    ref.read(productsRepositoryProvider).invalidateMemoryCache();
+
     final result = await AsyncValue.guard(() async {
       final base = await ref
           .read(productsRepositoryProvider)

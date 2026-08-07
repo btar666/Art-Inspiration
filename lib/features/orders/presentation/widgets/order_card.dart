@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/order_model.dart';
-import 'order_status_badge.dart';
 
 /// كارد طلب في قائمة الفواتير
 class OrderCard extends StatelessWidget {
@@ -22,7 +21,7 @@ class OrderCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 135.h,
+        height: 120.h,
         padding: EdgeInsets.fromLTRB(14.w, 12.h, 14.w, 12.h),
         decoration: BoxDecoration(
           color: AppColors.background,
@@ -44,38 +43,30 @@ class OrderCard extends StatelessWidget {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          order.orderName,
-                          style: AppTextStyles.ordersCardTitle(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(height: 3.h),
-                        Text(
-                          order.address,
-                          style: AppTextStyles.ordersCardSubtitle(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(height: 5.h),
-                        const _DottedDivider(),
-                        SizedBox(height: 5.h),
-                        Text(
-                          'السعر : ${order.formattedPrice}',
-                          style: AppTextStyles.ordersCardPrice(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
+                  Text(
+                    order.orderName,
+                    style: AppTextStyles.ordersCardTitle(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  OrderStatusBadge(status: order.status, compact: true),
+                  SizedBox(height: 3.h),
+                  Text(
+                    order.address,
+                    style: AppTextStyles.ordersCardSubtitle(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 5.h),
+                  const _DottedDivider(),
+                  SizedBox(height: 5.h),
+                  Text(
+                    'السعر : ${order.formattedPrice}',
+                    style: AppTextStyles.ordersCardPrice(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             ),

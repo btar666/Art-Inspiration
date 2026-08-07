@@ -32,7 +32,7 @@ abstract final class ErpInvoiceRequestBuilder {
     }).toList();
 
     return {
-      'party_id': partyId,
+      if (partyId != null) 'party_id': partyId,
       'date': date,
       'price_policy': 'retail',
       'discount': 0,

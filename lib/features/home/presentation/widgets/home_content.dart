@@ -8,6 +8,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../../shared/widgets/product_details_widget.dart';
+import '../../../app_api/presentation/providers/app_api_providers.dart';
 import '../../data/models/catalog_snapshot.dart';
 import '../../../cart/presentation/cart_actions.dart';
 import '../../../search/presentation/providers/search_filter_provider.dart';
@@ -63,6 +64,12 @@ class _HomeContentState extends ConsumerState<HomeContent> {
   }
 
   Future<void> _onRefresh() async {
+    // العودة للأعلى حتى يظهر التحديث بعد تحميل صفحات كثيرة
+    if (widget.scrollController.hasClients) {
+      widget.scrollController.jumpTo(0);
+    }
+
+    ref.invalidate(sliderProvider);
     await ref.read(catalogProvider.notifier).refresh();
   }
 

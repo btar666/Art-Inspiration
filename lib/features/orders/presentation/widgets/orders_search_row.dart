@@ -3,16 +3,16 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../shared/widgets/unified_search_bar.dart';
 
-/// شريط بحث الفواتير — نفس تصميم الصفحة الرئيسية
+/// شريط بحث الفواتير — بحث مباشر داخل الشريط
 class OrdersSearchRow extends StatelessWidget {
   const OrdersSearchRow({
     super.key,
-    this.onFilterTap,
-    this.onSearchTap,
+    required this.controller,
+    required this.onChanged,
   });
 
-  final VoidCallback? onFilterTap;
-  final VoidCallback? onSearchTap;
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -21,8 +21,9 @@ class OrdersSearchRow extends StatelessWidget {
       child: UnifiedSearchBar(
         hintText: 'أبحث عن طلب ..',
         showScanner: false,
-        onFilterTap: onFilterTap,
-        onSearchTap: onSearchTap,
+        showFilter: false,
+        controller: controller,
+        onChanged: onChanged,
       ),
     );
   }

@@ -43,12 +43,14 @@ class _LookupMaps {
     required this.brandNames,
     required this.categoryIdByName,
     required this.brandIdByName,
+    this.categoryImages = const {},
   });
 
   final Map<int, String> categoryNames;
   final Map<int, String> brandNames;
   final Map<String, int> categoryIdByName;
   final Map<String, int> brandIdByName;
+  final Map<String, String> categoryImages;
 }
 
 /// مستودع المنتجات عبر أمان ERP REST
@@ -98,7 +100,18 @@ class ProductsRepository {
     await _offlineStorage.clear();
   }
 
+  /// إبطال كاش الذاكرة فقط — يُستخدم مع السحب للتحديث
+  void invalidateMemoryCache() {
+    _memoryCache = null;
+    _cachedAt = null;
+    _lookups = null;
+  }
+
   Future<CatalogSnapshot> fetchCatalog({bool forceRefresh = false}) async {
+    if (forceRefresh) {
+      invalidateMemoryCache();
+    }
+
     if (!forceRefresh && _isMemoryCacheValid()) {
       return _memoryCache!.copyWith(source: CatalogDataSource.cache);
     }
@@ -131,6 +144,7 @@ class ProductsRepository {
         currentPage: pageResult.currentPage,
         lastPage: pageResult.lastPage,
         activeCategory: 'الكل',
+        categoryImages: lookups.categoryImages,
         warning: pageResult.products.isEmpty
             ? 'لا توجد منتجات — عرض بيانات تجريبية'
             : null,
@@ -253,6 +267,7 @@ class ProductsRepository {
     required int currentPage,
     required int lastPage,
     String activeCategory = 'الكل',
+    Map<String, String> categoryImages = const {},
     String? warning,
   }) {
     final useMockProducts = products.isEmpty;
@@ -271,6 +286,7 @@ class ProductsRepository {
       activeCategory: activeCategory,
       currentPage: currentPage,
       lastPage: lastPage,
+      categoryImages: categoryImages,
     );
   }
 
@@ -324,6 +340,7 @@ class ProductsRepository {
 
     final categoryNames = <int, String>{};
     final categoryIdByName = <String, int>{};
+    final categoryImages = <String, String>{};
     for (final row in categories.items) {
       final id = _asInt(row['id']);
       final name = row['name']?.toString().trim() ?? '';
@@ -331,6 +348,10 @@ class ProductsRepository {
       if (row['is_active'] == false) continue;
       categoryNames[id] = name;
       categoryIdByName[name] = id;
+      final image = _normalizeCategoryImage(row['image']);
+      if (image != null) {
+        categoryImages[name] = image;
+      }
     }
 
     final brandNames = <int, String>{};
@@ -349,7 +370,21 @@ class ProductsRepository {
       brandNames: brandNames,
       categoryIdByName: categoryIdByName,
       brandIdByName: brandIdByName,
+      categoryImages: categoryImages,
     );
+  }
+
+  String? _normalizeCategoryImage(dynamic raw) {
+    var text = raw?.toString().trim() ?? '';
+    if (text.isEmpty || text == 'null') return null;
+    if (text.startsWith('http://')) {
+      text = 'https://${text.substring(7)}';
+    }
+    if (text.startsWith('https://')) return text;
+    if (text.startsWith('/')) {
+      return 'https://aman-erp.com$text';
+    }
+    return 'https://aman-erp.com/storage/categories/$text';
   }
 
   Future<_ProductsPageResult> _fetchProductsPage(

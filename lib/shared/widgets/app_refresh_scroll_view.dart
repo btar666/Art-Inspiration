@@ -45,6 +45,7 @@ class AppRefreshScrollView extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
+        cacheExtent: 480,
         slivers: slivers,
       ),
     );

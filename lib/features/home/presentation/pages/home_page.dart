@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../widgets/floating_cart_button.dart';
 import '../widgets/home_content.dart';
 import '../widgets/home_logo_header_overlay.dart';
+import '../widgets/home_scroll_metrics.dart';
 import '../widgets/main_bottom_nav.dart';
 
 /// الصفحة الرئيسية
@@ -19,7 +20,8 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   final _scrollController = ScrollController();
-  double _scrollOffset = 0;
+  final _scrollOffset = ValueNotifier<double>(0);
+  bool _logoFullyHidden = false;
 
   @override
   void initState() {
@@ -29,8 +31,22 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _onScroll() {
     final offset = _scrollController.offset;
-    if ((offset - _scrollOffset).abs() < 0.5) return;
-    setState(() => _scrollOffset = offset);
+    if ((offset - _scrollOffset.value).abs() < 1) return;
+
+    final hideEnd = HomeScrollMetrics.logoHideStartOffset() +
+        HomeScrollMetrics.logoHideAnimationRange();
+
+    // بعد اختفاء الشعار بالكامل لا نحدّث الـ overlay أثناء السكرول السريع
+    if (offset >= hideEnd) {
+      if (!_logoFullyHidden) {
+        _logoFullyHidden = true;
+        _scrollOffset.value = hideEnd;
+      }
+      return;
+    }
+
+    _logoFullyHidden = false;
+    _scrollOffset.value = offset;
   }
 
   @override
@@ -38,6 +54,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
+    _scrollOffset.dispose();
     super.dispose();
   }
 
@@ -49,7 +66,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         children: [
           HomeContent(scrollController: _scrollController),
           HomeLogoHeaderOverlay(
-            scrollOffset: _scrollOffset,
+            scrollOffsetListenable: _scrollOffset,
             onNotificationTap: () => context.push(AppRoutes.notifications),
           ),
           DraggableFloatingCartButton(

@@ -10,7 +10,6 @@ import '../../../home/data/models/product_model.dart';
 import '../../../home/presentation/widgets/home_product_card.dart';
 import '../../../home/presentation/widgets/home_product_card_metrics.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
-import '../../data/explore_mock_data.dart';
 import '../../data/models/explore_models.dart';
 import 'explore_brand_card.dart';
 import 'explore_brand_card_metrics.dart';
@@ -38,7 +37,7 @@ abstract final class ExploreTabSlivers {
           onLoadMore,
         ),
       ExploreTab.brands => _brandsGrid(bottomInset, brands),
-      ExploreTab.sections => _sectionsGrid(bottomInset, categories),
+      ExploreTab.sections => _sectionsGrid(bottomInset, categories, catalog),
     };
   }
 
@@ -157,7 +156,11 @@ abstract final class ExploreTabSlivers {
     );
   }
 
-  static Widget _sectionsGrid(double bottomInset, List<String> categories) {
+  static Widget _sectionsGrid(
+    double bottomInset,
+    List<String> categories,
+    CatalogSnapshot? catalog,
+  ) {
     final sections = categories.where((c) => c != 'الكل').toList();
     if (sections.isEmpty) {
       return SliverFillRemaining(
@@ -188,13 +191,10 @@ abstract final class ExploreTabSlivers {
         delegate: SliverChildBuilderDelegate(
           (context, index) {
             final name = sections[index];
-            final template =
-                ExploreMockData.sections[index % ExploreMockData.sections.length];
             final section = ExploreSectionModel(
               id: name,
               name: name,
-              iconAsset: template.iconAsset,
-              bgColor: template.bgColor,
+              imageUrl: catalog?.imageForCategory(name),
             );
             return ExploreSectionCard(
               section: section,

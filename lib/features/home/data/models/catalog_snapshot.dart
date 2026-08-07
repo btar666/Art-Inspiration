@@ -24,6 +24,7 @@ class CatalogSnapshot {
     this.currentPage = 1,
     this.lastPage = 1,
     this.isLoadingMore = false,
+    this.categoryImages = const {},
   });
 
   final List<ProductModel> products;
@@ -38,12 +39,20 @@ class CatalogSnapshot {
   final int lastPage;
   final bool isLoadingMore;
 
+  /// صور الأقسام من ERP — مفتاحها اسم القسم
+  final Map<String, String> categoryImages;
+
   bool get hasWarning => warningMessage != null && warningMessage!.isNotEmpty;
   bool get hasMore => currentPage < lastPage;
 
   /// أقسام حقيقية من ERP (بدون «الكل»)
   List<String> get sectionNames =>
       categories.where((c) => c != 'الكل').toList();
+
+  String? imageForCategory(String name) {
+    final url = categoryImages[name]?.trim() ?? '';
+    return url.isEmpty ? null : url;
+  }
 
   CatalogSnapshot copyWith({
     List<ProductModel>? products,
@@ -58,6 +67,7 @@ class CatalogSnapshot {
     int? currentPage,
     int? lastPage,
     bool? isLoadingMore,
+    Map<String, String>? categoryImages,
   }) {
     return CatalogSnapshot(
       products: products ?? this.products,
@@ -66,11 +76,13 @@ class CatalogSnapshot {
       stats: stats ?? this.stats,
       storeSettings: storeSettings ?? this.storeSettings,
       source: source ?? this.source,
-      warningMessage: clearWarning ? null : (warningMessage ?? this.warningMessage),
+      warningMessage:
+          clearWarning ? null : (warningMessage ?? this.warningMessage),
       activeCategory: activeCategory ?? this.activeCategory,
       currentPage: currentPage ?? this.currentPage,
       lastPage: lastPage ?? this.lastPage,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      categoryImages: categoryImages ?? this.categoryImages,
     );
   }
 }

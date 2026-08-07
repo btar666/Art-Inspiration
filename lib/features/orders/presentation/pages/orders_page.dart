@@ -7,7 +7,6 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
-import '../../../checkout/data/local_orders_storage.dart';
 import '../../data/models/order_model.dart';
 import '../../data/models/orders_list_state.dart';
 import '../providers/orders_provider.dart';
@@ -50,35 +49,17 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
     ref.read(ordersListProvider.notifier).loadMore();
   }
 
-  List<OrderModel> _allOrders(List<OrderModel> erpOrders) {
-    final local = ref.watch(localOrdersNotifierProvider);
-    final seenIds = <String>{};
-    final merged = <OrderModel>[];
-
-    for (final order in [...local, ...erpOrders]) {
-      if (seenIds.add(order.id)) {
-        merged.add(order);
-      }
-    }
-
-    return merged;
-  }
-
   List<OrderModel> _filteredOrders(List<OrderModel> orders) {
     if (_query.trim().isEmpty) return orders;
     final q = _query.trim();
     return orders
         .where(
-          (o) =>
-              o.orderName.contains(q) ||
-              o.address.contains(q) ||
-              o.status.label.contains(q),
+          (o) => o.orderName.contains(q) || o.address.contains(q),
         )
         .toList();
   }
 
   Future<void> _onRefresh() async {
-    ref.invalidate(localOrdersNotifierProvider);
     await ref.read(ordersListProvider.notifier).refresh();
   }
 
@@ -101,11 +82,10 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
         errorMessage: 'تعذر جلب الفواتير',
       ),
       data: (listState) {
-        final orders = _allOrders(listState.orders);
         return _buildScaffold(
           context,
           bottomInset,
-          _filteredOrders(orders),
+          _filteredOrders(listState.orders),
           listState: listState,
         );
       },
@@ -137,8 +117,8 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
               onNotificationTap: () => context.push(AppRoutes.notifications),
             ),
             OrdersSearchRow(
-              onSearchTap: () => _showSearchSheet(context),
-              onFilterTap: () {},
+              controller: _searchController,
+              onChanged: (value) => setState(() => _query = value),
             ),
             if (total > 0 && !isLoading && errorMessage == null)
               Padding(
@@ -229,42 +209,6 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
           ],
         ),
       ),
-    );
-  }
-
-  void _showSearchSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.background,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            20.w,
-            20.h,
-            20.w,
-            20.h + MediaQuery.paddingOf(context).bottom,
-          ),
-          child: TextField(
-            controller: _searchController,
-            autofocus: true,
-            textDirection: TextDirection.rtl,
-            decoration: InputDecoration(
-              hintText: 'أبحث عن طلب ..',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16.r),
-              ),
-            ),
-            onChanged: (value) {
-              setState(() => _query = value);
-            },
-          ),
-        );
-      },
     );
   }
 }

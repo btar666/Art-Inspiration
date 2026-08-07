@@ -27,6 +27,7 @@ class CatalogOfflineStorage {
       'products': snapshot.products.map((p) => p.toJson()).toList(),
       'categories': snapshot.categories,
       'brands': snapshot.brands,
+      'categoryImages': snapshot.categoryImages,
       'stats': {
         'totalProducts': snapshot.stats.totalProducts,
         'brandCount': snapshot.stats.brandCount,
@@ -68,6 +69,17 @@ class CatalogOfflineStorage {
               .toList() ??
           const [];
 
+      final categoryImagesRaw = map['categoryImages'];
+      final categoryImages = <String, String>{};
+      if (categoryImagesRaw is Map) {
+        categoryImagesRaw.forEach((key, value) {
+          final url = value?.toString().trim() ?? '';
+          if (url.isNotEmpty) {
+            categoryImages[key.toString()] = url;
+          }
+        });
+      }
+
       final statsMap = map['stats'] as Map<String, dynamic>?;
       final stats = CatalogStats(
         totalProducts: statsMap?['totalProducts'] as int? ?? products.length,
@@ -97,6 +109,7 @@ class CatalogOfflineStorage {
         products: products,
         categories: categories,
         brands: brands,
+        categoryImages: categoryImages,
         stats: stats,
         storeSettings: storeSettings,
         source: CatalogDataSource.offline,

@@ -76,6 +76,28 @@ class AuthUser {
         'id_erp': erpId,
         'uuid': uuid,
       };
+
+  AuthUser copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? phone,
+    String? city,
+    String? cosmeticName,
+    String? erpId,
+    String? uuid,
+  }) {
+    return AuthUser(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      city: city ?? this.city,
+      cosmeticName: cosmeticName ?? this.cosmeticName,
+      erpId: erpId ?? this.erpId,
+      uuid: uuid ?? this.uuid,
+    );
+  }
 }
 
 /// نتيجة تسجيل الدخول
