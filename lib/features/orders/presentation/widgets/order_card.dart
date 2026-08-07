@@ -18,6 +18,9 @@ class OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final address = order.address.trim();
+    final hasAddress = address.isNotEmpty && address != '—';
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -51,13 +54,24 @@ class OrderCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 3.h),
-                  Text(
-                    order.address,
-                    style: AppTextStyles.ordersCardSubtitle(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  if (order.formattedOrderDate.isNotEmpty) ...[
+                    SizedBox(height: 3.h),
+                    Text(
+                      order.formattedOrderDate,
+                      style: AppTextStyles.ordersCardSubtitle(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (hasAddress) ...[
+                    SizedBox(height: 3.h),
+                    Text(
+                      address,
+                      style: AppTextStyles.ordersCardSubtitle(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                   SizedBox(height: 5.h),
                   const _DottedDivider(),
                   SizedBox(height: 5.h),

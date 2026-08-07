@@ -87,9 +87,8 @@ class CheckoutSuccessPage extends StatelessWidget {
                   child: Transform.translate(
                     offset: CartPageMetrics.footerButtonOffset(),
                     child: CartCheckoutFooter(
-                      label: 'تتبع الطلب',
-                      onTap: () =>
-                          context.go(AppRoutes.orderTrackingPath(orderId)),
+                      label: 'العودة للطلبات',
+                      onTap: () => context.go(AppRoutes.orders),
                     ),
                   ),
                 ),

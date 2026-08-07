@@ -5,7 +5,6 @@ import '../../features/cart/presentation/pages/cart_page.dart';
 import '../../features/checkout/presentation/pages/checkout_page.dart';
 import '../../features/checkout/presentation/pages/checkout_review_page.dart';
 import '../../features/checkout/presentation/pages/checkout_success_page.dart';
-import '../../features/checkout/presentation/pages/order_tracking_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/request_success_page.dart';
@@ -242,18 +241,12 @@ GoRouter createAppRouter() {
           transitionsBuilder: _slideTransition,
         ),
       ),
+      // تتبع الطلب معلّق مؤقتاً — أي دخول يُحوَّل لصفحة الطلبات
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.orderTracking,
         name: 'order-tracking',
-        pageBuilder: (context, state) {
-          final orderId = state.pathParameters['orderId']!;
-          return CustomTransitionPage(
-            key: state.pageKey,
-            child: OrderTrackingPage(orderId: orderId),
-            transitionsBuilder: _slideTransition,
-          );
-        },
+        redirect: (context, state) => AppRoutes.orders,
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
