@@ -6,3 +6,6 @@ import '../../data/models/search_filter_state.dart';
 final appliedSearchFilterProvider = StateProvider<SearchFilterState?>(
   (ref) => null,
 );
+
+/// فتح صفحة الفلترة تلقائياً عند الانتقال لصفحة البحث (مثلاً من الرئيسية)
+final openSearchFilterOnLoadProvider = StateProvider<bool>((ref) => false);

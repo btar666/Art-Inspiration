@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../../shared/widgets/product_details_widget.dart';
 import '../../data/models/catalog_snapshot.dart';
 import '../../../cart/presentation/cart_actions.dart';
+import '../../../search/presentation/providers/search_filter_provider.dart';
 import '../providers/products_provider.dart';
 import 'home_category_chips.dart';
 import 'home_product_card.dart';
@@ -63,6 +66,13 @@ class _HomeContentState extends ConsumerState<HomeContent> {
     await ref.read(catalogProvider.notifier).refresh();
   }
 
+  void _openSearchPage() => context.go(AppRoutes.search);
+
+  void _openSearchFilterFromHome() {
+    ref.read(openSearchFilterOnLoadProvider.notifier).state = true;
+    context.go(AppRoutes.search);
+  }
+
   List<Widget> _catalogSlivers({
     required double logoSpacerHeight,
     required CatalogSnapshot catalog,
@@ -72,8 +82,11 @@ class _HomeContentState extends ConsumerState<HomeContent> {
             SliverToBoxAdapter(
               child: SizedBox(height: logoSpacerHeight),
             ),
-            const SliverToBoxAdapter(
-              child: HomeSearchBar(),
+            SliverToBoxAdapter(
+              child: HomeSearchBar(
+                onSearchTap: _openSearchPage,
+                onFilterTap: _openSearchFilterFromHome,
+              ),
             ),
             SliverToBoxAdapter(
               child: Column(
