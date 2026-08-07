@@ -35,6 +35,43 @@ class OrdersListNotifier extends AsyncNotifier<OrdersListState> {
     state = result;
   }
 
+  /// تحديث صامت في الخلفية — بدون مؤشر تحميل كامل
+  Future<void> refreshInBackground() async {
+    final previous = state.value;
+    if (previous == null) return;
+
+    try {
+      final fresh =
+          await ref.read(ordersRepositoryProvider).fetchOrdersPage(1);
+      state = AsyncData(_mergeBackgroundRefresh(previous, fresh));
+    } catch (_) {
+      // الإبقاء على البيانات الحالية عند فشل التحديث الصامت
+    }
+  }
+
+  OrdersListState _mergeBackgroundRefresh(
+    OrdersListState previous,
+    OrdersListState fresh,
+  ) {
+    if (previous.currentPage <= 1) return fresh;
+
+    final existingIds = previous.orders.map((o) => o.id).toSet();
+    final newOrders =
+        fresh.orders.where((o) => !existingIds.contains(o.id)).toList();
+
+    if (newOrders.isEmpty &&
+        fresh.total == previous.total &&
+        fresh.lastPage == previous.lastPage) {
+      return previous;
+    }
+
+    return previous.copyWith(
+      orders: [...newOrders, ...previous.orders],
+      total: fresh.total,
+      lastPage: fresh.lastPage,
+    );
+  }
+
   Future<void> loadMore() async {
     final current = state.value;
     if (current == null || !current.hasMore || _isLoadingMore) return;

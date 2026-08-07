@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/add_to_cart_snackbar.dart';
 import '../../home/data/models/product_model.dart';
 import 'providers/cart_provider.dart';
 
@@ -17,13 +18,5 @@ void addProductToCart(
       );
 
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text('تمت إضافة "${product.name}" إلى السلة'),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+  showAddToCartSnackBar(context, product.name);
 }

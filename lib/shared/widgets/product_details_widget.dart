@@ -13,7 +13,6 @@ import '../../features/cart/presentation/cart_actions.dart';
 import '../../features/favorites/presentation/favorites_actions.dart';
 import '../../features/favorites/presentation/providers/favorites_provider.dart';
 import '../../features/home/data/models/product_model.dart';
-import '../../features/home/presentation/widgets/floating_cart_button.dart';
 import 'product_details_app_bar_metrics.dart';
 import 'app_back_button.dart';
 import 'product_details_bottom_bar_metrics.dart';
@@ -49,7 +48,6 @@ class ProductDetailsWidget extends ConsumerStatefulWidget {
 class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
   late int _quantity;
   late int _selectedImageIndex;
-  bool _showFloatingCart = false;
 
   @override
   void initState() {
@@ -158,12 +156,6 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
           ),
             ],
           ),
-          if (_showFloatingCart)
-            DraggableFloatingCartButton(
-              onTap: () => context.push(AppRoutes.cart),
-              bottomReservedHeight:
-                  ProductDetailsBottomBarMetrics.floatingCartReservedHeight,
-            ),
         ],
       ),
     );
@@ -180,7 +172,6 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
         quantity: _quantity,
       );
     }
-    setState(() => _showFloatingCart = true);
   }
 }
 

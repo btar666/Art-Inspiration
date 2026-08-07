@@ -60,6 +60,14 @@ class _DraggableFloatingCartButtonState
   }
 
   @override
+  void didUpdateWidget(DraggableFloatingCartButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.bottomReservedHeight != widget.bottomReservedHeight) {
+      _position = null;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.sizeOf(context);
     final padding = MediaQuery.paddingOf(context);
@@ -67,20 +75,22 @@ class _DraggableFloatingCartButtonState
     final itemCount = ref.watch(cartItemCountProvider);
     final animationTick = ref.watch(cartAnimationTickProvider);
 
-    return Positioned(
-      left: position.dx,
-      top: position.dy,
-      child: GestureDetector(
-        onPanUpdate: (d) => _onPanUpdate(d, screenSize, padding),
-        child: CartCircleIconButton(
-          itemCount: itemCount,
-          animationTick: animationTick,
-          onTap: widget.onTap,
-          size: 50.w,
-          iconSize: 40.w,
-          blurred: true,
-          showBadge: false,
-          showDot: true,
+    return RepaintBoundary(
+      child: Positioned(
+        left: position.dx,
+        top: position.dy,
+        child: GestureDetector(
+          onPanUpdate: (d) => _onPanUpdate(d, screenSize, padding),
+          child: CartCircleIconButton(
+            itemCount: itemCount,
+            animationTick: animationTick,
+            onTap: widget.onTap,
+            size: 50.w,
+            iconSize: 40.w,
+            blurred: true,
+            showBadge: false,
+            showDot: true,
+          ),
         ),
       ),
     );

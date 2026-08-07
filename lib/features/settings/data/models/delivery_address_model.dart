@@ -20,6 +20,12 @@ class DeliveryAddressModel {
 
   String get fullAddress => '$governorate، $area${landmark.isNotEmpty ? ' — $landmark' : ''}';
 
+  /// العنوان الحالي أو أول عنوان محفوظ
+  static DeliveryAddressModel? currentFrom(List<DeliveryAddressModel> addresses) {
+    if (addresses.isEmpty) return null;
+    return addresses.where((a) => a.isCurrent).firstOrNull ?? addresses.first;
+  }
+
   DeliveryAddressModel copyWith({
     String? governorate,
     String? area,
