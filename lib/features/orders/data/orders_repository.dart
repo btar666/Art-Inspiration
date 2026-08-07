@@ -9,15 +9,22 @@ import '../../checkout/data/checkout_provider.dart';
 import 'create_invoice_api.dart';
 import 'erp_invoice_request_builder.dart';
 import 'erp_order_mapper.dart';
+import 'erp_party_resolver.dart';
 import 'models/order_model.dart';
 import 'models/orders_list_state.dart';
 import 'models/order_status.dart';
 
 final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
+  final api = ref.watch(amanRestApiProvider);
+  final authStorage = ref.watch(authStorageProvider);
   return OrdersRepository(
-    api: ref.watch(amanRestApiProvider),
+    api: api,
     createInvoiceApi: ref.watch(createInvoiceApiProvider),
-    authStorage: ref.watch(authStorageProvider),
+    authStorage: authStorage,
+    partyResolver: ErpPartyResolver(
+      api: api,
+      authStorage: authStorage,
+    ),
   );
 });
 
@@ -43,13 +50,16 @@ class OrdersRepository {
     required AmanRestApi api,
     required CreateInvoiceApi createInvoiceApi,
     required AuthStorage authStorage,
+    required ErpPartyResolver partyResolver,
   })  : _api = api,
         _createInvoiceApi = createInvoiceApi,
-        _authStorage = authStorage;
+        _authStorage = authStorage,
+        _partyResolver = partyResolver;
 
   final AmanRestApi _api;
   final CreateInvoiceApi _createInvoiceApi;
   final AuthStorage _authStorage;
+  final ErpPartyResolver _partyResolver;
 
   bool get _hasToken {
     final token = _authStorage.accessToken;
@@ -65,10 +75,23 @@ class OrdersRepository {
       );
     }
 
+    final int partyId;
+    try {
+      partyId = await _partyResolver.resolve(
+        phone: _authStorage.user?.phone,
+        name: _authStorage.user?.name,
+        createIfMissing: false,
+      );
+    } on ApiException {
+      // لم يُنشأ طلب بعد — لا فواتير لهذا الحساب
+      return const OrdersFetchResult(orders: [], total: 0);
+    }
+
     final result = await _api.list(
       path: ApiEndpoints.salesInvoices,
       page: page,
       perPage: 50,
+      query: {'party_id': partyId},
     );
 
     return OrdersFetchResult(
@@ -140,7 +163,17 @@ class OrdersRepository {
       throw const ApiException(message: 'بيانات الطلب غير مكتملة');
     }
 
-    final body = ErpInvoiceRequestBuilder.build(draft: draft);
+    final partyId = await _partyResolver.resolve(
+      phone: draft.phone.isNotEmpty ? draft.phone : _authStorage.user?.phone,
+      name: draft.customerName.isNotEmpty
+          ? draft.customerName
+          : _authStorage.user?.name,
+    );
+
+    final body = ErpInvoiceRequestBuilder.build(
+      draft: draft,
+      partyId: partyId,
+    );
     final created = await _createInvoiceApi.create(body);
     final address = draft.selectedAddress!;
     final firstItem = draft.items.first.product;
