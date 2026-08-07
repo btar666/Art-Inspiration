@@ -42,6 +42,31 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     super.initState();
     _history = ref.read(searchHistoryStorageProvider).load();
     _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _consumePendingFilterOpen();
+    });
+  }
+
+  void _consumePendingFilterOpen() {
+    if (!ref.read(openSearchFilterOnLoadProvider)) return;
+    ref.read(openSearchFilterOnLoadProvider.notifier).state = false;
+
+    _queryController.clear();
+    setState(() {
+      _query = '';
+      _showResults = false;
+      _loading = false;
+      _isLoadingMore = false;
+      _results = const [];
+      _currentPage = 1;
+      _lastPage = 1;
+      _total = 0;
+      _filter = const SearchFilterState();
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _openFilter();
+    });
   }
 
   Future<void> _persistHistory() {
@@ -291,6 +316,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<bool>(openSearchFilterOnLoadProvider, (previous, next) {
+      if (next) _consumePendingFilterOpen();
+    });
+
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final showCancel = _isShowingResults ||
         _query.trim().isNotEmpty ||
