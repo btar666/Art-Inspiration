@@ -98,7 +98,18 @@ class ProductsRepository {
     await _offlineStorage.clear();
   }
 
+  /// إبطال كاش الذاكرة فقط — يُستخدم مع السحب للتحديث
+  void invalidateMemoryCache() {
+    _memoryCache = null;
+    _cachedAt = null;
+    _lookups = null;
+  }
+
   Future<CatalogSnapshot> fetchCatalog({bool forceRefresh = false}) async {
+    if (forceRefresh) {
+      invalidateMemoryCache();
+    }
+
     if (!forceRefresh && _isMemoryCacheValid()) {
       return _memoryCache!.copyWith(source: CatalogDataSource.cache);
     }
