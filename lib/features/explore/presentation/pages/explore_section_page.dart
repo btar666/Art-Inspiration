@@ -6,12 +6,14 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../cart/presentation/cart_actions.dart';
 import '../../../home/presentation/widgets/home_product_card.dart';
 import '../../../home/presentation/widgets/home_product_card_metrics.dart';
 import '../../data/explore_mock_data.dart';
 import '../../data/models/explore_models.dart';
+import '../../data/models/section_products_state.dart';
 import '../providers/section_products_provider.dart';
 import '../widgets/section_filter_chips.dart';
 import '../widgets/section_page_header.dart';
@@ -51,6 +53,10 @@ class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
     ref.read(sectionProductsProvider(widget.sectionId).notifier).loadMore();
   }
 
+  Future<void> _onRefresh() async {
+    await ref.read(sectionProductsProvider(widget.sectionId).notifier).refresh();
+  }
+
   ExploreSectionModel _resolveSection() {
     for (final section in ExploreMockData.sections) {
       if (section.id == widget.sectionId || section.name == widget.sectionId) {
@@ -65,6 +71,80 @@ class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
       bgColor: AppColors.background,
       filters: const ['كل المنتجات'],
     );
+  }
+
+  List<Widget> _productSlivers({
+    required SectionProductsState state,
+    required ExploreSectionModel section,
+    required double bottomInset,
+  }) {
+    if (state.products.isEmpty) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Text(
+              'لا توجد منتجات لهذا القسم',
+              style: TextStyle(fontSize: 15.sp),
+            ),
+          ),
+        ),
+      ];
+    }
+
+    final countLabel = state.total > 0
+        ? '${state.products.length} من ${state.total}'
+        : '${state.products.length}';
+
+    return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              countLabel,
+              style: AppTextStyles.settingsMenuItem(),
+            ),
+          ),
+        ),
+      ),
+      SliverPadding(
+        padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 0),
+        sliver: SliverGrid(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 14.h,
+            crossAxisSpacing: 14.w,
+            childAspectRatio: HomeProductCardMetrics.aspectRatio(),
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              final product = state.products[index];
+              return HomeProductCard(
+                key: ValueKey('section_${section.id}_${product.id}_$index'),
+                product: product,
+                onAddToCart: () => addProductToCart(context, ref, product),
+              );
+            },
+            childCount: state.products.length,
+          ),
+        ),
+      ),
+      if (state.hasMore || state.isLoadingMore)
+        SliverToBoxAdapter(
+          child: PaginationFooter(
+            currentPage: state.currentPage,
+            lastPage: state.lastPage,
+            hasMore: state.hasMore,
+            isLoadingMore: state.isLoadingMore,
+            onLoadMore: () => ref
+                .read(sectionProductsProvider(widget.sectionId).notifier)
+                .loadMore(),
+          ),
+        ),
+      SliverToBoxAdapter(child: SizedBox(height: 24.h + bottomInset)),
+    ];
   }
 
   @override
@@ -93,85 +173,33 @@ class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
             SizedBox(height: 16.h),
             Expanded(
               child: productsAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, _) => Center(child: Text(error.toString())),
-                data: (state) {
-                  if (state.products.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'لا توجد منتجات لهذا القسم',
-                        style: TextStyle(fontSize: 15.sp),
-                      ),
-                    );
-                  }
-
-                  final countLabel = state.total > 0
-                      ? '${state.products.length} من ${state.total}'
-                      : '${state.products.length}';
-
-                  return CustomScrollView(
-                    controller: _scrollController,
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              countLabel,
-                              style: AppTextStyles.settingsMenuItem(),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SliverPadding(
-                        padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 0),
-                        sliver: SliverGrid(
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 14.h,
-                            crossAxisSpacing: 14.w,
-                            childAspectRatio:
-                                HomeProductCardMetrics.aspectRatio(),
-                          ),
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final product = state.products[index];
-                              return HomeProductCard(
-                                key: ValueKey(
-                                  'section_${section.id}_${product.id}_$index',
-                                ),
-                                product: product,
-                                onAddToCart: () =>
-                                    addProductToCart(context, ref, product),
-                              );
-                            },
-                            childCount: state.products.length,
-                          ),
-                        ),
-                      ),
-                      if (state.hasMore || state.isLoadingMore)
-                        SliverToBoxAdapter(
-                          child: PaginationFooter(
-                            currentPage: state.currentPage,
-                            lastPage: state.lastPage,
-                            hasMore: state.hasMore,
-                            isLoadingMore: state.isLoadingMore,
-                            onLoadMore: () => ref
-                                .read(
-                                  sectionProductsProvider(widget.sectionId)
-                                      .notifier,
-                                )
-                                .loadMore(),
-                          ),
-                        ),
-                      SliverToBoxAdapter(
-                        child: SizedBox(height: 24.h + bottomInset),
-                      ),
-                    ],
-                  );
-                },
+                loading: () => AppRefreshScrollView(
+                  onRefresh: _onRefresh,
+                  controller: _scrollController,
+                  slivers: const [
+                    SliverFillRemaining(
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ],
+                ),
+                error: (error, _) => AppRefreshScrollView(
+                  onRefresh: _onRefresh,
+                  controller: _scrollController,
+                  slivers: [
+                    SliverFillRemaining(
+                      child: Center(child: Text(error.toString())),
+                    ),
+                  ],
+                ),
+                data: (state) => AppRefreshScrollView(
+                  onRefresh: _onRefresh,
+                  controller: _scrollController,
+                  slivers: _productSlivers(
+                    state: state,
+                    section: section,
+                    bottomInset: bottomInset,
+                  ),
+                ),
               ),
             ),
           ],

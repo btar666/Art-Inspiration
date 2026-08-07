@@ -63,6 +63,10 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
     state = items;
     _persist();
   }
+
+  Future<void> reload() async {
+    state = ref.read(cartStorageProvider).loadItems();
+  }
 }
 
 final cartNotifierProvider =

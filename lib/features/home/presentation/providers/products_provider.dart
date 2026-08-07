@@ -29,10 +29,25 @@ class CatalogNotifier extends AsyncNotifier<CatalogSnapshot> {
   }
 
   Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => ref.read(productsRepositoryProvider).fetchCatalog(forceRefresh: true),
-    );
+    final category = state.value?.activeCategory ?? 'الكل';
+    final previous = state.value;
+
+    final result = await AsyncValue.guard(() async {
+      final base = await ref
+          .read(productsRepositoryProvider)
+          .fetchCatalog(forceRefresh: true);
+      if (category == 'الكل') return base;
+      return ref
+          .read(productsRepositoryProvider)
+          .fetchProductsForCategory(category, base);
+    });
+
+    if (result.hasError && previous != null) {
+      state = AsyncData(previous);
+      return;
+    }
+
+    state = result;
   }
 
   Future<void> loadMore() async {

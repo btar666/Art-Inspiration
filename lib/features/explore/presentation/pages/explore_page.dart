@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../cart/presentation/cart_actions.dart';
 import '../../../home/data/home_mock_data.dart';
 import '../../../home/data/models/catalog_snapshot.dart';
@@ -66,6 +67,10 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
     }
   }
 
+  Future<void> _onRefresh() async {
+    await ref.read(catalogProvider.notifier).refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;
@@ -83,7 +88,8 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          CustomScrollView(
+          AppRefreshScrollView(
+            onRefresh: _onRefresh,
             controller: _scrollController,
             slivers: [
               SliverToBoxAdapter(child: SizedBox(height: headerSpacer)),

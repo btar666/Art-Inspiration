@@ -61,4 +61,28 @@ class SectionProductsNotifier
       _isLoadingMore = false;
     }
   }
+
+  Future<void> refresh() async {
+    final previous = state.value;
+
+    final result = await AsyncValue.guard(() async {
+      final page = await ref
+          .read(productsRepositoryProvider)
+          .fetchSectionProductsPage(1, arg);
+      return SectionProductsState.fromResult(
+        arg,
+        page.products,
+        currentPage: page.currentPage,
+        lastPage: page.lastPage,
+        total: page.total,
+      );
+    });
+
+    if (result.hasError && previous != null) {
+      state = AsyncData(previous);
+      return;
+    }
+
+    state = result;
+  }
 }

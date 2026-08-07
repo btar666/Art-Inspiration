@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/page_back_header.dart';
 import '../../../../shared/widgets/product_details_widget.dart';
 import '../../../cart/presentation/cart_actions.dart';
@@ -21,6 +22,9 @@ class FavoritesPage extends ConsumerWidget {
     final favorites = ref.watch(favoritesNotifierProvider);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
+    Future<void> onRefresh() =>
+        ref.read(favoritesNotifierProvider.notifier).reload();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -34,36 +38,53 @@ class FavoritesPage extends ConsumerWidget {
             ),
             Expanded(
               child: favorites.isEmpty
-                  ? const SettingsEmptyState(
-                      title: 'لا توجد منتجات في المفضلة',
-                      icon: Icons.favorite_border_rounded,
+                  ? AppRefreshIndicator(
+                      onRefresh: onRefresh,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        children: const [
+                          SettingsEmptyState(
+                            title: 'لا توجد منتجات في المفضلة',
+                            icon: Icons.favorite_border_rounded,
+                          ),
+                        ],
+                      ),
                     )
-                  : GridView.builder(
-                      padding: EdgeInsets.fromLTRB(
-                        20.w,
-                        0,
-                        20.w,
-                        24.h + bottomInset,
+                  : AppRefreshIndicator(
+                      onRefresh: onRefresh,
+                      child: GridView.builder(
+                        padding: EdgeInsets.fromLTRB(
+                          20.w,
+                          0,
+                          20.w,
+                          24.h + bottomInset,
+                        ),
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        gridDelegate:
+                            SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 14.h,
+                          crossAxisSpacing: 14.w,
+                          childAspectRatio:
+                              HomeProductCardMetrics.aspectRatio(),
+                        ),
+                        itemCount: favorites.length,
+                        itemBuilder: (context, index) {
+                          final product = favorites[index];
+                          return HomeProductCard(
+                            key: ValueKey(product.id),
+                            product: product,
+                            onTap: () =>
+                                ProductDetailsWidget.open(context, product),
+                            onAddToCart: () =>
+                                addProductToCart(context, ref, product),
+                          );
+                        },
                       ),
-                      physics: const BouncingScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 14.h,
-                        crossAxisSpacing: 14.w,
-                        childAspectRatio: HomeProductCardMetrics.aspectRatio(),
-                      ),
-                      itemCount: favorites.length,
-                      itemBuilder: (context, index) {
-                        final product = favorites[index];
-                        return HomeProductCard(
-                          key: ValueKey(product.id),
-                          product: product,
-                          onTap: () =>
-                              ProductDetailsWidget.open(context, product),
-                          onAddToCart: () =>
-                              addProductToCart(context, ref, product),
-                        );
-                      },
                     ),
             ),
           ],

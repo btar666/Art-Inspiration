@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../checkout/data/checkout_provider.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/cart_checkout_footer.dart';
@@ -71,6 +72,8 @@ class CartPage extends ConsumerWidget {
     final footerHeight = screenHeight * CartPageMetrics.footerHeightFraction;
     final bottomRadius = CartPageMetrics.whiteContainerBottomRadius();
 
+    Future<void> onRefresh() => cart.reload();
+
     return Scaffold(
       backgroundColor: CartPageMetrics.pageBackground,
       body: Column(
@@ -92,14 +95,19 @@ class CartPage extends ConsumerWidget {
                 child: SafeArea(
                   bottom: false,
                   child: isEmpty
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            CartPageHeader(
-                              onBack: () => context.pop(),
+                      ? AppRefreshIndicator(
+                          onRefresh: onRefresh,
+                          child: ListView(
+                            physics: const AlwaysScrollableScrollPhysics(
+                              parent: BouncingScrollPhysics(),
                             ),
-                            const Expanded(child: CartEmptyState()),
-                          ],
+                            children: [
+                              CartPageHeader(
+                                onBack: () => context.pop(),
+                              ),
+                              const CartEmptyState(),
+                            ],
+                          ),
                         )
                       : Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -111,14 +119,19 @@ class CartPage extends ConsumerWidget {
                                   _confirmClearAll(context, ref),
                             ),
                             Expanded(
-                              child: ListView(
-                                padding: EdgeInsets.fromLTRB(
-                                  20.w,
-                                  12.h,
-                                  20.w,
-                                  16.h,
-                                ),
-                                children: [
+                              child: AppRefreshIndicator(
+                                onRefresh: onRefresh,
+                                child: ListView(
+                                  physics: const AlwaysScrollableScrollPhysics(
+                                    parent: BouncingScrollPhysics(),
+                                  ),
+                                  padding: EdgeInsets.fromLTRB(
+                                    20.w,
+                                    12.h,
+                                    20.w,
+                                    16.h,
+                                  ),
+                                  children: [
                                   Align(
                                     alignment: Alignment.centerRight,
                                     child: Text(
@@ -155,6 +168,7 @@ class CartPage extends ConsumerWidget {
                                   ),
                                 ],
                               ),
+                            ),
                             ),
                           ],
                         ),

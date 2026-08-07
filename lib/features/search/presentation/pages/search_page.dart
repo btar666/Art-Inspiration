@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../cart/presentation/cart_actions.dart';
 import '../../../home/data/models/product_model.dart';
@@ -172,6 +173,35 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     }
   }
 
+  Future<void> _refreshResults() async {
+    final trimmed = _query.trim();
+    if (trimmed.isEmpty) return;
+
+    try {
+      final result =
+          await ref.read(productsRepositoryProvider).searchProductsPage(
+                page: 1,
+                query: trimmed,
+                category: _filter.selectedCategory,
+                brand: _filter.selectedBrand,
+                minPrice: _filter.minPrice,
+                maxPrice: _filter.maxPrice,
+              );
+
+      if (!mounted) return;
+      setState(() {
+        _results = result.products;
+        _currentPage = result.currentPage;
+        _lastPage = result.lastPage;
+        _total = result.total;
+        _loading = false;
+        _isLoadingMore = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+    }
+  }
+
   void _onQueryChanged(String value) {
     setState(() {
       _query = value;
@@ -246,15 +276,32 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   Widget _buildResults(double bottomInset) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return AppRefreshScrollView(
+        onRefresh: _refreshResults,
+        controller: _scrollController,
+        slivers: const [
+          SliverFillRemaining(
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        ],
+      );
     }
 
     if (_results.isEmpty) {
-      return Center(
-        child: Text(
-          'لا توجد نتائج',
-          style: AppTextStyles.searchEmptyState(),
-        ),
+      return AppRefreshScrollView(
+        onRefresh: _refreshResults,
+        controller: _scrollController,
+        slivers: [
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Text(
+                'لا توجد نتائج',
+                style: AppTextStyles.searchEmptyState(),
+              ),
+            ),
+          ),
+        ],
       );
     }
 
@@ -262,7 +309,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         ? '${_results.length} من $_total'
         : '${_results.length}';
 
-    return CustomScrollView(
+    return AppRefreshScrollView(
+      onRefresh: _refreshResults,
       controller: _scrollController,
       slivers: [
         SliverToBoxAdapter(

@@ -30,6 +30,10 @@ class FavoritesNotifier extends Notifier<List<ProductModel>> {
     state = state.where((p) => p.id != productId).toList();
     _persist();
   }
+
+  Future<void> reload() async {
+    state = ref.read(favoritesStorageProvider).loadProducts();
+  }
 }
 
 final favoritesNotifierProvider =

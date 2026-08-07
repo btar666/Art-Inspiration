@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../../shared/widgets/product_details_widget.dart';
 import '../../data/models/catalog_snapshot.dart';
@@ -58,44 +59,16 @@ class _HomeContentState extends ConsumerState<HomeContent> {
     return index >= 0 ? index : 0;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final topInset = MediaQuery.paddingOf(context).top;
-    final logoSpacerHeight = topInset + HomeScrollMetrics.logoBarHeight();
-    final catalogAsync = ref.watch(catalogProvider);
+  Future<void> _onRefresh() async {
+    await ref.read(catalogProvider.notifier).refresh();
+  }
 
-    return catalogAsync.when(
-      loading: () => CustomScrollView(
-        controller: widget.scrollController,
-        slivers: [
-          SliverToBoxAdapter(child: SizedBox(height: logoSpacerHeight)),
-          const SliverFillRemaining(
-            child: Center(child: CircularProgressIndicator()),
-          ),
-        ],
-      ),
-      error: (error, _) => CustomScrollView(
-        controller: widget.scrollController,
-        slivers: [
-          SliverToBoxAdapter(child: SizedBox(height: logoSpacerHeight)),
-          SliverFillRemaining(
-            child: _CatalogError(
-              message: error.toString(),
-              onRetry: () => ref.read(catalogProvider.notifier).refresh(),
-            ),
-          ),
-        ],
-      ),
-      data: (catalog) {
-        final categories = catalog.categories;
-        final selectedIndex = _selectedCategoryIndex(catalog, categories);
-        final products = catalog.products;
-        final totalProducts = catalog.stats.totalProducts;
-        final loadedCount = products.length;
-
-        return CustomScrollView(
-          controller: widget.scrollController,
-          slivers: [
+  List<Widget> _catalogSlivers({
+    required double logoSpacerHeight,
+    required CatalogSnapshot catalog,
+    required BuildContext context,
+  }) {
+    return [
             SliverToBoxAdapter(
               child: SizedBox(height: logoSpacerHeight),
             ),
@@ -112,9 +85,11 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                       child: _CatalogWarningBanner(message: catalog.warningMessage!),
                     ),
                   HomeCategoryChips(
-                    categories: categories,
-                    selectedIndex: selectedIndex,
-                    onSelected: (i) => _onCategorySelected(i, categories),
+                    categories: catalog.categories,
+                    selectedIndex:
+                        _selectedCategoryIndex(catalog, catalog.categories),
+                    onSelected: (i) =>
+                        _onCategorySelected(i, catalog.categories),
                   ),
                   const HomePromoBanner(),
                   Padding(
@@ -127,9 +102,9 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                             style: AppTextStyles.homeSectionTitle(),
                           ),
                         ),
-                        if (totalProducts > 0)
+                        if (catalog.stats.totalProducts > 0)
                           Text(
-                            '$loadedCount من $totalProducts',
+                            '${catalog.products.length} من ${catalog.stats.totalProducts}',
                             style: AppTextStyles.settingsMenuItem(),
                           ),
                       ],
@@ -138,11 +113,11 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                 ],
               ),
             ),
-            if (catalog.isLoadingMore && products.isEmpty)
+            if (catalog.isLoadingMore && catalog.products.isEmpty)
               const SliverFillRemaining(
                 child: Center(child: CircularProgressIndicator()),
               )
-            else if (products.isEmpty)
+            else if (catalog.products.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: Center(
@@ -169,7 +144,7 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      final product = products[index];
+                      final product = catalog.products[index];
                       return HomeProductCard(
                         key: ValueKey(product.id),
                         product: product,
@@ -178,11 +153,12 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                             addProductToCart(context, ref, product),
                       );
                     },
-                    childCount: products.length,
+                    childCount: catalog.products.length,
                   ),
                 ),
               ),
-            if (products.isNotEmpty && (catalog.hasMore || catalog.isLoadingMore))
+            if (catalog.products.isNotEmpty &&
+                (catalog.hasMore || catalog.isLoadingMore))
               SliverToBoxAdapter(
                 child: PaginationFooter(
                   currentPage: catalog.currentPage,
@@ -193,9 +169,48 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                       ref.read(catalogProvider.notifier).loadMore(),
                 ),
               ),
-          ],
-        );
-      },
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final topInset = MediaQuery.paddingOf(context).top;
+    final logoSpacerHeight = topInset + HomeScrollMetrics.logoBarHeight();
+    final catalogAsync = ref.watch(catalogProvider);
+
+    return catalogAsync.when(
+      loading: () => AppRefreshScrollView(
+        onRefresh: _onRefresh,
+        controller: widget.scrollController,
+        slivers: [
+          SliverToBoxAdapter(child: SizedBox(height: logoSpacerHeight)),
+          const SliverFillRemaining(
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        ],
+      ),
+      error: (error, _) => AppRefreshScrollView(
+        onRefresh: _onRefresh,
+        controller: widget.scrollController,
+        slivers: [
+          SliverToBoxAdapter(child: SizedBox(height: logoSpacerHeight)),
+          SliverFillRemaining(
+            child: _CatalogError(
+              message: error.toString(),
+              onRetry: _onRefresh,
+            ),
+          ),
+        ],
+      ),
+      data: (catalog) => AppRefreshScrollView(
+        onRefresh: _onRefresh,
+        controller: widget.scrollController,
+        slivers: _catalogSlivers(
+          logoSpacerHeight: logoSpacerHeight,
+          catalog: catalog,
+          context: context,
+        ),
+      ),
     );
   }
 }

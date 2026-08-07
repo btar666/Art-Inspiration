@@ -20,10 +20,19 @@ class OrdersListNotifier extends AsyncNotifier<OrdersListState> {
   }
 
   Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => ref.read(ordersRepositoryProvider).fetchOrdersPage(1),
-    );
+    final previous = state.value;
+
+    final result = await AsyncValue.guard(() async {
+      final page = await ref.read(ordersRepositoryProvider).fetchOrdersPage(1);
+      return page;
+    });
+
+    if (result.hasError && previous != null) {
+      state = AsyncData(previous);
+      return;
+    }
+
+    state = result;
   }
 
   Future<void> loadMore() async {

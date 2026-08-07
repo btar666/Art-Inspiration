@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
+import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../checkout/data/local_orders_storage.dart';
 import '../../data/models/order_model.dart';
 import '../../data/orders_mock_data.dart';
@@ -154,8 +155,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
               ),
             SizedBox(height: 8.h),
             Expanded(
-              child: RefreshIndicator(
-                color: AppColors.primary,
+              child: AppRefreshIndicator(
                 onRefresh: _onRefresh,
                 child: isLoading
                     ? ListView(
