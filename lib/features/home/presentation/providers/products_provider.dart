@@ -50,6 +50,25 @@ class CatalogNotifier extends AsyncNotifier<CatalogSnapshot> {
       _isLoadingMore = false;
     }
   }
+
+  Future<void> selectCategory(String category) async {
+    final current = state.value;
+    if (current == null || current.activeCategory == category) return;
+
+    _isLoadingMore = true;
+    state = AsyncData(
+      current.copyWith(isLoadingMore: true, products: const []),
+    );
+
+    try {
+      final updated = await ref
+          .read(productsRepositoryProvider)
+          .fetchProductsForCategory(category, current);
+      state = AsyncData(updated);
+    } finally {
+      _isLoadingMore = false;
+    }
+  }
 }
 
 extension CatalogSnapshotX on CatalogSnapshot {

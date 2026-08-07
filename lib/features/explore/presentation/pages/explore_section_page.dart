@@ -5,18 +5,18 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../cart/presentation/cart_actions.dart';
-import '../../../home/data/home_mock_data.dart';
-import '../../../home/data/models/product_model.dart';
-import '../../../home/presentation/providers/products_provider.dart';
 import '../../../home/presentation/widgets/home_product_card.dart';
 import '../../../home/presentation/widgets/home_product_card_metrics.dart';
 import '../../data/explore_mock_data.dart';
 import '../../data/models/explore_models.dart';
+import '../providers/section_products_provider.dart';
 import '../widgets/section_filter_chips.dart';
 import '../widgets/section_page_header.dart';
 
-/// صفحة منتجات القسم أو البراند
+/// صفحة منتجات القسم أو البراند — تصفح من الخادم
 class ExploreSectionPage extends ConsumerStatefulWidget {
   const ExploreSectionPage({super.key, required this.sectionId});
 
@@ -27,7 +27,29 @@ class ExploreSectionPage extends ConsumerStatefulWidget {
 }
 
 class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
+  final _scrollController = ScrollController();
   int _selectedFilterIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.pixels < position.maxScrollExtent - 320) return;
+    ref.read(sectionProductsProvider(widget.sectionId).notifier).loadMore();
+  }
 
   ExploreSectionModel _resolveSection() {
     for (final section in ExploreMockData.sections) {
@@ -45,19 +67,11 @@ class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
     );
   }
 
-  List<ProductModel> _filterProducts(List<ProductModel> products) {
-    final sectionName = widget.sectionId;
-    return products
-        .where((p) => p.matchesCategoryOrBrand(sectionName))
-        .toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     final section = _resolveSection();
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final allProducts = ref.watch(productsProvider).value ?? HomeMockData.products;
-    final products = _filterProducts(allProducts);
+    final productsAsync = ref.watch(sectionProductsProvider(widget.sectionId));
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -78,37 +92,87 @@ class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
             ),
             SizedBox(height: 16.h),
             Expanded(
-              child: products.isEmpty
-                  ? Center(
+              child: productsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Center(child: Text(error.toString())),
+                data: (state) {
+                  if (state.products.isEmpty) {
+                    return Center(
                       child: Text(
                         'لا توجد منتجات لهذا القسم',
                         style: TextStyle(fontSize: 15.sp),
                       ),
-                    )
-                  : GridView.builder(
-                      padding: EdgeInsets.fromLTRB(
-                        20.w,
-                        0,
-                        20.w,
-                        24.h + bottomInset,
+                    );
+                  }
+
+                  final countLabel = state.total > 0
+                      ? '${state.products.length} من ${state.total}'
+                      : '${state.products.length}';
+
+                  return CustomScrollView(
+                    controller: _scrollController,
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              countLabel,
+                              style: AppTextStyles.settingsMenuItem(),
+                            ),
+                          ),
+                        ),
                       ),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 14.h,
-                        crossAxisSpacing: 14.w,
-                        childAspectRatio: HomeProductCardMetrics.aspectRatio(),
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 0),
+                        sliver: SliverGrid(
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 14.h,
+                            crossAxisSpacing: 14.w,
+                            childAspectRatio:
+                                HomeProductCardMetrics.aspectRatio(),
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final product = state.products[index];
+                              return HomeProductCard(
+                                key: ValueKey(
+                                  'section_${section.id}_${product.id}_$index',
+                                ),
+                                product: product,
+                                onAddToCart: () =>
+                                    addProductToCart(context, ref, product),
+                              );
+                            },
+                            childCount: state.products.length,
+                          ),
+                        ),
                       ),
-                      itemCount: products.length,
-                      itemBuilder: (context, index) {
-                        final product = products[index];
-                        return HomeProductCard(
-                          key: ValueKey('section_${section.id}_${product.id}_$index'),
-                          product: product,
-                          onAddToCart: () =>
-                              addProductToCart(context, ref, product),
-                        );
-                      },
-                    ),
+                      if (state.hasMore || state.isLoadingMore)
+                        SliverToBoxAdapter(
+                          child: PaginationFooter(
+                            currentPage: state.currentPage,
+                            lastPage: state.lastPage,
+                            hasMore: state.hasMore,
+                            isLoadingMore: state.isLoadingMore,
+                            onLoadMore: () => ref
+                                .read(
+                                  sectionProductsProvider(widget.sectionId)
+                                      .notifier,
+                                )
+                                .loadMore(),
+                          ),
+                        ),
+                      SliverToBoxAdapter(
+                        child: SizedBox(height: 24.h + bottomInset),
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
           ],
         ),

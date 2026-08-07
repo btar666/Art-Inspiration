@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../checkout/data/local_orders_storage.dart';
 import '../../data/models/order_model.dart';
 import '../../data/orders_mock_data.dart';
+import '../../data/models/orders_list_state.dart';
 import '../providers/orders_provider.dart';
 import '../widgets/order_card.dart';
 import '../widgets/orders_page_header.dart';
@@ -23,12 +25,29 @@ class OrdersPage extends ConsumerStatefulWidget {
 
 class _OrdersPageState extends ConsumerState<OrdersPage> {
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
   String _query = '';
 
   @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
   void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.pixels < position.maxScrollExtent - 320) return;
+    ref.read(ordersListProvider.notifier).loadMore();
   }
 
   List<OrderModel> _allOrders(List<OrderModel> erpOrders) {
@@ -63,17 +82,16 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
   }
 
   Future<void> _onRefresh() async {
-    ref.invalidate(erpOrdersProvider);
     ref.invalidate(localOrdersNotifierProvider);
-    await ref.read(erpOrdersProvider.future);
+    await ref.read(ordersListProvider.notifier).refresh();
   }
 
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final erpAsync = ref.watch(erpOrdersListProvider);
+    final ordersAsync = ref.watch(ordersListProvider);
 
-    return erpAsync.when(
+    return ordersAsync.when(
       loading: () => _buildScaffold(
         context,
         bottomInset,
@@ -84,9 +102,14 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
         final orders = _allOrders(const []);
         return _buildScaffold(context, bottomInset, _filteredOrders(orders));
       },
-      data: (erpOrders) {
-        final orders = _allOrders(erpOrders);
-        return _buildScaffold(context, bottomInset, _filteredOrders(orders));
+      data: (listState) {
+        final orders = _allOrders(listState.orders);
+        return _buildScaffold(
+          context,
+          bottomInset,
+          _filteredOrders(orders),
+          listState: listState,
+        );
       },
     );
   }
@@ -96,7 +119,14 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
     double bottomInset,
     List<OrderModel> orders, {
     bool isLoading = false,
+    OrdersListState? listState,
   }) {
+    final hasMore = listState?.hasMore ?? false;
+    final isLoadingMore = listState?.isLoadingMore ?? false;
+    final currentPage = listState?.currentPage ?? 1;
+    final lastPage = listState?.lastPage ?? 1;
+    final total = listState?.total ?? orders.length;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -111,7 +141,18 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
               onSearchTap: () => _showSearchSheet(context),
               onFilterTap: () {},
             ),
-            SizedBox(height: 16.h),
+            if (total > 0 && !isLoading)
+              Padding(
+                padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 8.h),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '${orders.length} من $total',
+                    style: TextStyle(fontSize: 13.sp, color: Colors.grey.shade700),
+                  ),
+                ),
+              ),
+            SizedBox(height: 8.h),
             Expanded(
               child: RefreshIndicator(
                 color: AppColors.primary,
@@ -138,6 +179,7 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                             ],
                           )
                         : ListView.separated(
+                            controller: _scrollController,
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding: EdgeInsets.fromLTRB(
                               20.w,
@@ -145,10 +187,23 @@ class _OrdersPageState extends ConsumerState<OrdersPage> {
                               20.w,
                               100.h + bottomInset,
                             ),
-                            itemCount: orders.length,
+                            itemCount:
+                                orders.length + (hasMore || isLoadingMore ? 1 : 0),
                             separatorBuilder: (_, __) =>
                                 SizedBox(height: 14.h),
                             itemBuilder: (context, index) {
+                              if (index >= orders.length) {
+                                return PaginationFooter(
+                                  currentPage: currentPage,
+                                  lastPage: lastPage,
+                                  hasMore: hasMore,
+                                  isLoadingMore: isLoadingMore,
+                                  onLoadMore: () => ref
+                                      .read(ordersListProvider.notifier)
+                                      .loadMore(),
+                                );
+                              }
+
                               final order = orders[index];
                               return OrderCard(
                                 order: order,

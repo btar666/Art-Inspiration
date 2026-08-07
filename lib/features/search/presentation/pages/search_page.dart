@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../cart/presentation/cart_actions.dart';
 import '../../../home/data/models/product_model.dart';
 import '../../../home/data/products_repository.dart';
@@ -18,7 +19,7 @@ import '../widgets/search_history_section.dart';
 import '../widgets/search_input_bar.dart';
 import '../widgets/search_page_header.dart';
 
-/// صفحة البحث — مربوطة بـ أمان ERP (`q` + فلاتر)
+/// صفحة البحث — مربوطة بـ أمان ERP (`q` + فلاتر) مع تصفح
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
 
@@ -29,20 +30,43 @@ class SearchPage extends ConsumerStatefulWidget {
 class _SearchPageState extends ConsumerState<SearchPage> {
   final _queryController = TextEditingController();
   final _focusNode = FocusNode();
+  final _scrollController = ScrollController();
 
   List<String> _history = List.of(SearchMockData.defaultHistory);
   SearchFilterState _filter = const SearchFilterState();
   String _query = '';
   bool _showResults = false;
   bool _loading = false;
+  bool _isLoadingMore = false;
   List<ProductModel> _results = const [];
+  int _currentPage = 1;
+  int _lastPage = 1;
+  int _total = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
     _queryController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients || _loading || _isLoadingMore) return;
+    final position = _scrollController.position;
+    if (position.pixels < position.maxScrollExtent - 320) return;
+    _loadMore();
+  }
+
+  bool get _hasMore => _currentPage < _lastPage;
 
   void _onCancel() {
     _queryController.clear();
@@ -50,7 +74,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       _query = '';
       _showResults = false;
       _loading = false;
+      _isLoadingMore = false;
       _results = const [];
+      _currentPage = 1;
+      _lastPage = 1;
+      _total = 0;
     });
     _focusNode.unfocus();
   }
@@ -63,6 +91,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       _query = trimmed;
       _showResults = true;
       _loading = true;
+      _isLoadingMore = false;
+      _results = const [];
+      _currentPage = 1;
+      _lastPage = 1;
+      _total = 0;
       _history.remove(trimmed);
       _history.insert(0, trimmed);
       if (_history.length > 8) {
@@ -71,8 +104,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     });
 
     try {
-      final results =
-          await ref.read(productsRepositoryProvider).searchProducts(
+      final result =
+          await ref.read(productsRepositoryProvider).searchProductsPage(
+                page: 1,
                 query: trimmed,
                 category: _filter.selectedCategory,
                 brand: _filter.selectedBrand,
@@ -82,7 +116,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
       if (!mounted) return;
       setState(() {
-        _results = results;
+        _results = result.products;
+        _currentPage = result.currentPage;
+        _lastPage = result.lastPage;
+        _total = result.total;
         _loading = false;
       });
     } catch (_) {
@@ -94,12 +131,56 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     }
   }
 
+  Future<void> _loadMore() async {
+    if (!_hasMore || _isLoadingMore || _loading) return;
+
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final nextPage = _currentPage + 1;
+      final result =
+          await ref.read(productsRepositoryProvider).searchProductsPage(
+                page: nextPage,
+                query: _query,
+                category: _filter.selectedCategory,
+                brand: _filter.selectedBrand,
+                minPrice: _filter.minPrice,
+                maxPrice: _filter.maxPrice,
+              );
+
+      if (!mounted) return;
+
+      final ids = _results.map((p) => p.id).toSet();
+      final merged = [..._results];
+      for (final product in result.products) {
+        if (!ids.contains(product.id)) {
+          merged.add(product);
+          ids.add(product.id);
+        }
+      }
+
+      setState(() {
+        _results = merged;
+        _currentPage = result.currentPage;
+        _lastPage = result.lastPage;
+        _total = result.total;
+        _isLoadingMore = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoadingMore = false);
+    }
+  }
+
   void _onQueryChanged(String value) {
     setState(() {
       _query = value;
       if (value.trim().isEmpty) {
         _showResults = false;
         _results = const [];
+        _currentPage = 1;
+        _lastPage = 1;
+        _total = 0;
       }
     });
   }
@@ -177,7 +258,12 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       );
     }
 
+    final countLabel = _total > 0
+        ? '${_results.length} من $_total'
+        : '${_results.length}';
+
     return CustomScrollView(
+      controller: _scrollController,
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
@@ -185,19 +271,14 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             child: Align(
               alignment: Alignment.centerRight,
               child: Text(
-                'نتائج البحث (${_results.length})',
+                'نتائج البحث ($countLabel)',
                 style: AppTextStyles.searchSectionTitle(),
               ),
             ),
           ),
         ),
         SliverPadding(
-          padding: EdgeInsets.fromLTRB(
-            20.w,
-            0,
-            20.w,
-            100.h + bottomInset,
-          ),
+          padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 0),
           sliver: SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -218,6 +299,17 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ),
           ),
         ),
+        if (_hasMore || _isLoadingMore)
+          SliverToBoxAdapter(
+            child: PaginationFooter(
+              currentPage: _currentPage,
+              lastPage: _lastPage,
+              hasMore: _hasMore,
+              isLoadingMore: _isLoadingMore,
+              onLoadMore: _loadMore,
+            ),
+          ),
+        SliverToBoxAdapter(child: SizedBox(height: 100.h + bottomInset)),
       ],
     );
   }

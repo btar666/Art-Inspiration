@@ -42,8 +42,20 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
 
   void _onScroll() {
     final offset = _scrollController.offset;
-    if ((offset - _scrollOffset).abs() < 0.5) return;
+    if ((offset - _scrollOffset).abs() < 0.5) {
+      _maybeLoadMore();
+      return;
+    }
     setState(() => _scrollOffset = offset);
+    _maybeLoadMore();
+  }
+
+  void _maybeLoadMore() {
+    if (_selectedTab != ExploreTab.general) return;
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.pixels < position.maxScrollExtent - 320) return;
+    ref.read(catalogProvider.notifier).loadMore();
   }
 
   void _onTabSelected(ExploreTab tab) {
@@ -59,7 +71,8 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
     final topInset = MediaQuery.paddingOf(context).top;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final headerSpacer = ExploreScrollMetrics.pinnedHeaderHeight(topInset);
-    final catalog = ref.watch(catalogProvider).value;
+    final catalogAsync = ref.watch(catalogProvider);
+    final catalog = catalogAsync.value;
     final products = ref.watch(productsProvider).value ?? HomeMockData.products;
     final brands = catalog?.brands ?? const [];
     final categories = catalog != null && catalog.source != CatalogDataSource.mock
@@ -80,8 +93,10 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
                 products: products,
                 brands: brands,
                 categories: categories,
+                catalog: catalog,
                 onAddToCart: (product) =>
                     addProductToCart(context, ref, product),
+                onLoadMore: () => ref.read(catalogProvider.notifier).loadMore(),
               ),
             ],
           ),

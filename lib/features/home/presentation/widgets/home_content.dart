@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../../shared/widgets/product_details_widget.dart';
+import '../../data/models/catalog_snapshot.dart';
 import '../../../cart/presentation/cart_actions.dart';
 import '../providers/products_provider.dart';
 import 'home_category_chips.dart';
@@ -27,8 +29,6 @@ class HomeContent extends ConsumerStatefulWidget {
 }
 
 class _HomeContentState extends ConsumerState<HomeContent> {
-  int _selectedCategoryIndex = 0;
-
   @override
   void initState() {
     super.initState();
@@ -46,6 +46,16 @@ class _HomeContentState extends ConsumerState<HomeContent> {
     final position = widget.scrollController.position;
     if (position.pixels < position.maxScrollExtent - 320) return;
     ref.read(catalogProvider.notifier).loadMore();
+  }
+
+  void _onCategorySelected(int index, List<String> categories) {
+    final category = categories[index.clamp(0, categories.length - 1)];
+    ref.read(catalogProvider.notifier).selectCategory(category);
+  }
+
+  int _selectedCategoryIndex(CatalogSnapshot catalog, List<String> categories) {
+    final index = categories.indexOf(catalog.activeCategory);
+    return index >= 0 ? index : 0;
   }
 
   @override
@@ -78,13 +88,10 @@ class _HomeContentState extends ConsumerState<HomeContent> {
       ),
       data: (catalog) {
         final categories = catalog.categories;
-        final selectedCategory = categories[
-            _selectedCategoryIndex.clamp(0, categories.length - 1)];
-        final visibleProducts = selectedCategory == 'الكل'
-            ? catalog.products
-            : catalog.products
-                .where((p) => p.matchesCategoryOrBrand(selectedCategory))
-                .toList();
+        final selectedIndex = _selectedCategoryIndex(catalog, categories);
+        final products = catalog.products;
+        final totalProducts = catalog.stats.totalProducts;
+        final loadedCount = products.length;
 
         return CustomScrollView(
           controller: widget.scrollController,
@@ -106,59 +113,84 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                     ),
                   HomeCategoryChips(
                     categories: categories,
-                    selectedIndex:
-                        _selectedCategoryIndex.clamp(0, categories.length - 1),
-                    onSelected: (i) => setState(() => _selectedCategoryIndex = i),
+                    selectedIndex: selectedIndex,
+                    onSelected: (i) => _onCategorySelected(i, categories),
                   ),
                   const HomePromoBanner(),
                   Padding(
                     padding: EdgeInsets.fromLTRB(20.w, 6.h, 20.w, 12.h),
-                    child: Text(
-                      'جميع المنتجات',
-                      style: AppTextStyles.homeSectionTitle(),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'جميع المنتجات',
+                            style: AppTextStyles.homeSectionTitle(),
+                          ),
+                        ),
+                        if (totalProducts > 0)
+                          Text(
+                            '$loadedCount من $totalProducts',
+                            style: AppTextStyles.settingsMenuItem(),
+                          ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                20.w,
-                0,
-                20.w,
-                120.h + MediaQuery.paddingOf(context).bottom,
-              ),
-              sliver: SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 14.h,
-                  crossAxisSpacing: 14.w,
-                  childAspectRatio: HomeProductCardMetrics.aspectRatio(),
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final product = visibleProducts[index];
-                    return HomeProductCard(
-                      key: ValueKey(product.id),
-                      product: product,
-                      onTap: () => ProductDetailsWidget.open(context, product),
-                      onAddToCart: () =>
-                          addProductToCart(context, ref, product),
-                    );
-                  },
-                  childCount: visibleProducts.length,
-                ),
-              ),
-            ),
-            if (catalog.hasMore || catalog.isLoadingMore)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: 16.h),
-                  child: Center(
-                    child: catalog.isLoadingMore
-                        ? const CircularProgressIndicator()
-                        : const SizedBox.shrink(),
+            if (catalog.isLoadingMore && products.isEmpty)
+              const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (products.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Text(
+                    'لا توجد منتجات في هذا القسم',
+                    style: AppTextStyles.settingsMenuItem(),
                   ),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  20.w,
+                  0,
+                  20.w,
+                  120.h + MediaQuery.paddingOf(context).bottom,
+                ),
+                sliver: SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 14.h,
+                    crossAxisSpacing: 14.w,
+                    childAspectRatio: HomeProductCardMetrics.aspectRatio(),
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final product = products[index];
+                      return HomeProductCard(
+                        key: ValueKey(product.id),
+                        product: product,
+                        onTap: () => ProductDetailsWidget.open(context, product),
+                        onAddToCart: () =>
+                            addProductToCart(context, ref, product),
+                      );
+                    },
+                    childCount: products.length,
+                  ),
+                ),
+              ),
+            if (products.isNotEmpty && (catalog.hasMore || catalog.isLoadingMore))
+              SliverToBoxAdapter(
+                child: PaginationFooter(
+                  currentPage: catalog.currentPage,
+                  lastPage: catalog.lastPage,
+                  hasMore: catalog.hasMore,
+                  isLoadingMore: catalog.isLoadingMore,
+                  onLoadMore: () =>
+                      ref.read(catalogProvider.notifier).loadMore(),
                 ),
               ),
           ],
