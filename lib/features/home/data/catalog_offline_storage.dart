@@ -43,6 +43,7 @@ class CatalogOfflineStorage {
       },
       'currentPage': snapshot.currentPage,
       'lastPage': snapshot.lastPage,
+      'activeCategory': snapshot.activeCategory,
     });
     await _prefs.setString(AppConstants.catalogOfflineCacheKey, payload);
   }
@@ -101,6 +102,7 @@ class CatalogOfflineStorage {
         source: CatalogDataSource.offline,
         currentPage: map['currentPage'] as int? ?? 1,
         lastPage: map['lastPage'] as int? ?? 1,
+        activeCategory: map['activeCategory'] as String? ?? 'الكل',
         warningMessage: 'عرض بيانات محفوظة — تحقق من الاتصال',
       );
     } catch (_) {

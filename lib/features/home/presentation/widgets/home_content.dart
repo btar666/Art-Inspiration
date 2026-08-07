@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_refresh_scroll_view.dart';
+import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../../shared/widgets/product_details_widget.dart';
+import '../../data/models/catalog_snapshot.dart';
 import '../../../cart/presentation/cart_actions.dart';
 import '../providers/products_provider.dart';
 import 'home_category_chips.dart';
@@ -27,8 +30,6 @@ class HomeContent extends ConsumerStatefulWidget {
 }
 
 class _HomeContentState extends ConsumerState<HomeContent> {
-  int _selectedCategoryIndex = 0;
-
   @override
   void initState() {
     super.initState();
@@ -48,47 +49,26 @@ class _HomeContentState extends ConsumerState<HomeContent> {
     ref.read(catalogProvider.notifier).loadMore();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final topInset = MediaQuery.paddingOf(context).top;
-    final logoSpacerHeight = topInset + HomeScrollMetrics.logoBarHeight();
-    final catalogAsync = ref.watch(catalogProvider);
+  void _onCategorySelected(int index, List<String> categories) {
+    final category = categories[index.clamp(0, categories.length - 1)];
+    ref.read(catalogProvider.notifier).selectCategory(category);
+  }
 
-    return catalogAsync.when(
-      loading: () => CustomScrollView(
-        controller: widget.scrollController,
-        slivers: [
-          SliverToBoxAdapter(child: SizedBox(height: logoSpacerHeight)),
-          const SliverFillRemaining(
-            child: Center(child: CircularProgressIndicator()),
-          ),
-        ],
-      ),
-      error: (error, _) => CustomScrollView(
-        controller: widget.scrollController,
-        slivers: [
-          SliverToBoxAdapter(child: SizedBox(height: logoSpacerHeight)),
-          SliverFillRemaining(
-            child: _CatalogError(
-              message: error.toString(),
-              onRetry: () => ref.read(catalogProvider.notifier).refresh(),
-            ),
-          ),
-        ],
-      ),
-      data: (catalog) {
-        final categories = catalog.categories;
-        final selectedCategory = categories[
-            _selectedCategoryIndex.clamp(0, categories.length - 1)];
-        final visibleProducts = selectedCategory == 'الكل'
-            ? catalog.products
-            : catalog.products
-                .where((p) => p.matchesCategoryOrBrand(selectedCategory))
-                .toList();
+  int _selectedCategoryIndex(CatalogSnapshot catalog, List<String> categories) {
+    final index = categories.indexOf(catalog.activeCategory);
+    return index >= 0 ? index : 0;
+  }
 
-        return CustomScrollView(
-          controller: widget.scrollController,
-          slivers: [
+  Future<void> _onRefresh() async {
+    await ref.read(catalogProvider.notifier).refresh();
+  }
+
+  List<Widget> _catalogSlivers({
+    required double logoSpacerHeight,
+    required CatalogSnapshot catalog,
+    required BuildContext context,
+  }) {
+    return [
             SliverToBoxAdapter(
               child: SizedBox(height: logoSpacerHeight),
             ),
@@ -105,65 +85,132 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                       child: _CatalogWarningBanner(message: catalog.warningMessage!),
                     ),
                   HomeCategoryChips(
-                    categories: categories,
+                    categories: catalog.categories,
                     selectedIndex:
-                        _selectedCategoryIndex.clamp(0, categories.length - 1),
-                    onSelected: (i) => setState(() => _selectedCategoryIndex = i),
+                        _selectedCategoryIndex(catalog, catalog.categories),
+                    onSelected: (i) =>
+                        _onCategorySelected(i, catalog.categories),
                   ),
                   const HomePromoBanner(),
                   Padding(
                     padding: EdgeInsets.fromLTRB(20.w, 6.h, 20.w, 12.h),
-                    child: Text(
-                      'جميع المنتجات',
-                      style: AppTextStyles.homeSectionTitle(),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'جميع المنتجات',
+                            style: AppTextStyles.homeSectionTitle(),
+                          ),
+                        ),
+                        if (catalog.stats.totalProducts > 0)
+                          Text(
+                            '${catalog.products.length} من ${catalog.stats.totalProducts}',
+                            style: AppTextStyles.settingsMenuItem(),
+                          ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                20.w,
-                0,
-                20.w,
-                120.h + MediaQuery.paddingOf(context).bottom,
-              ),
-              sliver: SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 14.h,
-                  crossAxisSpacing: 14.w,
-                  childAspectRatio: HomeProductCardMetrics.aspectRatio(),
+            if (catalog.isLoadingMore && catalog.products.isEmpty)
+              const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (catalog.products.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Text(
+                    'لا توجد منتجات في هذا القسم',
+                    style: AppTextStyles.settingsMenuItem(),
+                  ),
                 ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final product = visibleProducts[index];
-                    return HomeProductCard(
-                      key: ValueKey(product.id),
-                      product: product,
-                      onTap: () => ProductDetailsWidget.open(context, product),
-                      onAddToCart: () =>
-                          addProductToCart(context, ref, product),
-                    );
-                  },
-                  childCount: visibleProducts.length,
+              )
+            else
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  20.w,
+                  0,
+                  20.w,
+                  120.h + MediaQuery.paddingOf(context).bottom,
                 ),
-              ),
-            ),
-            if (catalog.hasMore || catalog.isLoadingMore)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: 16.h),
-                  child: Center(
-                    child: catalog.isLoadingMore
-                        ? const CircularProgressIndicator()
-                        : const SizedBox.shrink(),
+                sliver: SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 14.h,
+                    crossAxisSpacing: 14.w,
+                    childAspectRatio: HomeProductCardMetrics.aspectRatio(),
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final product = catalog.products[index];
+                      return HomeProductCard(
+                        key: ValueKey(product.id),
+                        product: product,
+                        onTap: () => ProductDetailsWidget.open(context, product),
+                        onAddToCart: () =>
+                            addProductToCart(context, ref, product),
+                      );
+                    },
+                    childCount: catalog.products.length,
                   ),
                 ),
               ),
-          ],
-        );
-      },
+            if (catalog.products.isNotEmpty &&
+                (catalog.hasMore || catalog.isLoadingMore))
+              SliverToBoxAdapter(
+                child: PaginationFooter(
+                  currentPage: catalog.currentPage,
+                  lastPage: catalog.lastPage,
+                  hasMore: catalog.hasMore,
+                  isLoadingMore: catalog.isLoadingMore,
+                  onLoadMore: () =>
+                      ref.read(catalogProvider.notifier).loadMore(),
+                ),
+              ),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final topInset = MediaQuery.paddingOf(context).top;
+    final logoSpacerHeight = topInset + HomeScrollMetrics.logoBarHeight();
+    final catalogAsync = ref.watch(catalogProvider);
+
+    return catalogAsync.when(
+      loading: () => AppRefreshScrollView(
+        onRefresh: _onRefresh,
+        controller: widget.scrollController,
+        slivers: [
+          SliverToBoxAdapter(child: SizedBox(height: logoSpacerHeight)),
+          const SliverFillRemaining(
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        ],
+      ),
+      error: (error, _) => AppRefreshScrollView(
+        onRefresh: _onRefresh,
+        controller: widget.scrollController,
+        slivers: [
+          SliverToBoxAdapter(child: SizedBox(height: logoSpacerHeight)),
+          SliverFillRemaining(
+            child: _CatalogError(
+              message: error.toString(),
+              onRetry: _onRefresh,
+            ),
+          ),
+        ],
+      ),
+      data: (catalog) => AppRefreshScrollView(
+        onRefresh: _onRefresh,
+        controller: widget.scrollController,
+        slivers: _catalogSlivers(
+          logoSpacerHeight: logoSpacerHeight,
+          catalog: catalog,
+          context: context,
+        ),
+      ),
     );
   }
 }

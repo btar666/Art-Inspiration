@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../cart/presentation/cart_actions.dart';
 import '../../../home/data/home_mock_data.dart';
 import '../../../home/data/models/catalog_snapshot.dart';
@@ -42,8 +43,20 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
 
   void _onScroll() {
     final offset = _scrollController.offset;
-    if ((offset - _scrollOffset).abs() < 0.5) return;
+    if ((offset - _scrollOffset).abs() < 0.5) {
+      _maybeLoadMore();
+      return;
+    }
     setState(() => _scrollOffset = offset);
+    _maybeLoadMore();
+  }
+
+  void _maybeLoadMore() {
+    if (_selectedTab != ExploreTab.general) return;
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.pixels < position.maxScrollExtent - 320) return;
+    ref.read(catalogProvider.notifier).loadMore();
   }
 
   void _onTabSelected(ExploreTab tab) {
@@ -54,12 +67,17 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
     }
   }
 
+  Future<void> _onRefresh() async {
+    await ref.read(catalogProvider.notifier).refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final headerSpacer = ExploreScrollMetrics.pinnedHeaderHeight(topInset);
-    final catalog = ref.watch(catalogProvider).value;
+    final catalogAsync = ref.watch(catalogProvider);
+    final catalog = catalogAsync.value;
     final products = ref.watch(productsProvider).value ?? HomeMockData.products;
     final brands = catalog?.brands ?? const [];
     final categories = catalog != null && catalog.source != CatalogDataSource.mock
@@ -70,7 +88,8 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          CustomScrollView(
+          AppRefreshScrollView(
+            onRefresh: _onRefresh,
             controller: _scrollController,
             slivers: [
               SliverToBoxAdapter(child: SizedBox(height: headerSpacer)),
@@ -80,8 +99,10 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
                 products: products,
                 brands: brands,
                 categories: categories,
+                catalog: catalog,
                 onAddToCart: (product) =>
                     addProductToCart(context, ref, product),
+                onLoadMore: () => ref.read(catalogProvider.notifier).loadMore(),
               ),
             ],
           ),

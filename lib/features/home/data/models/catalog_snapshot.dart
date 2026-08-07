@@ -20,6 +20,7 @@ class CatalogSnapshot {
     this.stats = const CatalogStats(),
     this.storeSettings = const StoreSettings(),
     this.warningMessage,
+    this.activeCategory = 'الكل',
     this.currentPage = 1,
     this.lastPage = 1,
     this.isLoadingMore = false,
@@ -32,6 +33,7 @@ class CatalogSnapshot {
   final StoreSettings storeSettings;
   final CatalogDataSource source;
   final String? warningMessage;
+  final String activeCategory;
   final int currentPage;
   final int lastPage;
   final bool isLoadingMore;
@@ -52,6 +54,7 @@ class CatalogSnapshot {
     CatalogDataSource? source,
     String? warningMessage,
     bool clearWarning = false,
+    String? activeCategory,
     int? currentPage,
     int? lastPage,
     bool? isLoadingMore,
@@ -64,6 +67,7 @@ class CatalogSnapshot {
       storeSettings: storeSettings ?? this.storeSettings,
       source: source ?? this.source,
       warningMessage: clearWarning ? null : (warningMessage ?? this.warningMessage),
+      activeCategory: activeCategory ?? this.activeCategory,
       currentPage: currentPage ?? this.currentPage,
       lastPage: lastPage ?? this.lastPage,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,

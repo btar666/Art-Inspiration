@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/page_back_header.dart';
 import '../../data/models/notification_model.dart';
 import '../providers/notifications_provider.dart';
@@ -55,20 +56,33 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                 ),
                 data: (notifications) {
                   if (notifications.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'لا توجد إشعارات',
-                        style: AppTextStyles.notificationGroupTitle(),
+                    return AppRefreshIndicator(
+                      onRefresh: () =>
+                          ref.read(notificationsProvider.notifier).refresh(),
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        children: [
+                          SizedBox(height: 160.h),
+                          Center(
+                            child: Text(
+                              'لا توجد إشعارات',
+                              style: AppTextStyles.notificationGroupTitle(),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   }
 
-                  return RefreshIndicator(
-                    color: AppColors.primary,
+                  return AppRefreshIndicator(
                     onRefresh: () =>
                         ref.read(notificationsProvider.notifier).refresh(),
                     child: ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
                       padding: EdgeInsets.fromLTRB(
                         20.w,
                         0,

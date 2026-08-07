@@ -12,6 +12,7 @@ import 'home_mock_data.dart';
 import 'models/catalog_snapshot.dart';
 import 'models/catalog_stats.dart';
 import 'models/product_model.dart';
+import 'models/product_page_result.dart';
 import 'models/store_settings.dart';
 
 final productsRepositoryProvider = Provider<ProductsRepository>((ref) {
@@ -129,6 +130,7 @@ class ProductsRepository {
         source: CatalogDataSource.api,
         currentPage: pageResult.currentPage,
         lastPage: pageResult.lastPage,
+        activeCategory: 'الكل',
         warning: pageResult.products.isEmpty
             ? 'لا توجد منتجات — عرض بيانات تجريبية'
             : null,
@@ -151,7 +153,11 @@ class ProductsRepository {
       _lookups = lookups;
 
       final nextPage = current.currentPage + 1;
-      final pageResult = await _fetchProductsPage(nextPage, lookups);
+      final pageResult = await _fetchProductsPage(
+        nextPage,
+        lookups,
+        category: current.activeCategory,
+      );
       final merged = _mergeProducts(current.products, pageResult.products);
 
       final snapshot = current.copyWith(
@@ -160,6 +166,70 @@ class ProductsRepository {
         lastPage: pageResult.lastPage,
         isLoadingMore: false,
         source: CatalogDataSource.api,
+        clearWarning: true,
+      );
+
+      await _persistSnapshot(snapshot);
+      return snapshot;
+    } on ApiException catch (error) {
+      return current.copyWith(
+        isLoadingMore: false,
+        warningMessage: error.message,
+      );
+    }
+  }
+
+  /// جلب الصفحة الأولى لفئة محددة (تصفح من الخادم)
+  Future<CatalogSnapshot> fetchProductsForCategory(
+    String category,
+    CatalogSnapshot current,
+  ) async {
+    if (category == current.activeCategory && current.products.isNotEmpty) {
+      return current;
+    }
+
+    if (!_hasToken) {
+      final products = category == 'الكل'
+          ? HomeMockData.products
+          : HomeMockData.products
+              .where((p) => p.matchesCategoryOrBrand(category))
+              .toList();
+      return current.copyWith(
+        products: products,
+        activeCategory: category,
+        currentPage: 1,
+        lastPage: 1,
+        stats: CatalogStats(totalProducts: products.length),
+      );
+    }
+
+    try {
+      final lookups = _lookups ?? await _fetchLookups();
+      _lookups = lookups;
+
+      final pageResult = await _fetchProductsPage(
+        1,
+        lookups,
+        category: category,
+      );
+
+      final snapshot = current.copyWith(
+        products: pageResult.products,
+        activeCategory: category,
+        currentPage: pageResult.currentPage,
+        lastPage: pageResult.lastPage,
+        isLoadingMore: false,
+        source: CatalogDataSource.api,
+        stats: CatalogStats(
+          totalProducts: pageResult.totalProducts,
+          brandCount: current.stats.brandCount,
+          categoryCount: current.stats.categoryCount,
+          productsWithImages: pageResult.products
+              .where((p) => p.imageUrl != null)
+              .length,
+          productsWithoutBrand:
+              pageResult.products.where((p) => p.brandName.isEmpty).length,
+        ),
         clearWarning: true,
       );
 
@@ -182,6 +252,7 @@ class ProductsRepository {
     required CatalogDataSource source,
     required int currentPage,
     required int lastPage,
+    String activeCategory = 'الكل',
     String? warning,
   }) {
     final useMockProducts = products.isEmpty;
@@ -197,6 +268,7 @@ class ProductsRepository {
       storeSettings: storeSettings,
       source: source,
       warningMessage: warning,
+      activeCategory: activeCategory,
       currentPage: currentPage,
       lastPage: lastPage,
     );
@@ -282,13 +354,27 @@ class ProductsRepository {
 
   Future<_ProductsPageResult> _fetchProductsPage(
     int page,
-    _LookupMaps lookups,
-  ) async {
+    _LookupMaps lookups, {
+    String category = 'الكل',
+    String brand = 'الكل',
+  }) async {
+    final query = <String, dynamic>{'is_active': true};
+
+    if (category != 'الكل') {
+      final categoryId = lookups.categoryIdByName[category];
+      if (categoryId != null) query['category_id'] = categoryId;
+    }
+
+    if (brand != 'الكل') {
+      final brandId = lookups.brandIdByName[brand];
+      if (brandId != null) query['brand_id'] = brandId;
+    }
+
     final result = await _api.list(
       path: ApiEndpoints.products,
       page: page,
       perPage: ApiConfig.productsPerPage,
-      query: const {'is_active': true},
+      query: query,
     );
 
     return _ProductsPageResult(
@@ -303,8 +389,53 @@ class ProductsRepository {
     );
   }
 
-  /// بحث عبر أمان ERP — يدعم `q` + تصنيف/ماركة
-  Future<List<ProductModel>> searchProducts({
+  ProductPageResult _toPageResult(_ProductsPageResult result) => ProductPageResult(
+        products: result.products,
+        currentPage: result.currentPage,
+        lastPage: result.lastPage,
+        total: result.totalProducts,
+      );
+
+  /// منتجات قسم أو براند — يحدد تلقائياً category_id أو brand_id
+  Future<ProductPageResult> fetchSectionProductsPage(
+    int page,
+    String sectionName,
+  ) async {
+    if (!_hasToken) {
+      final products = HomeMockData.products
+          .where((p) => p.matchesCategoryOrBrand(sectionName))
+          .toList();
+      return ProductPageResult(
+        products: products,
+        currentPage: 1,
+        lastPage: 1,
+        total: products.length,
+      );
+    }
+
+    final lookups = _lookups ?? await _fetchLookups();
+    _lookups = lookups;
+
+    if (lookups.categoryIdByName.containsKey(sectionName)) {
+      return _toPageResult(
+        await _fetchProductsPage(page, lookups, category: sectionName),
+      );
+    }
+
+    if (lookups.brandIdByName.containsKey(sectionName)) {
+      return _toPageResult(
+        await _fetchProductsPage(page, lookups, brand: sectionName),
+      );
+    }
+
+    return _toPageResult(
+      await _fetchProductsPage(page, lookups),
+    );
+  }
+
+  /// بحث مقسّم عبر أمان ERP
+  Future<ProductPageResult> searchProductsPage({
+    required int page,
     required String query,
     String category = 'الكل',
     String brand = 'الكل',
@@ -313,19 +444,26 @@ class ProductsRepository {
   }) async {
     if (!_hasToken) {
       final q = query.trim().toLowerCase();
-      return HomeMockData.products.where((p) {
-        return p.name.toLowerCase().contains(q) ||
+      final products = HomeMockData.products.where((p) {
+        final matchesQuery = p.name.toLowerCase().contains(q) ||
             p.categoryName.toLowerCase().contains(q) ||
             p.brandName.toLowerCase().contains(q);
+        final matchesPrice =
+            p.price >= minPrice.round() && p.price <= maxPrice.round();
+        return matchesQuery && matchesPrice;
       }).toList();
+      return ProductPageResult(
+        products: products,
+        currentPage: 1,
+        lastPage: 1,
+        total: products.length,
+      );
     }
 
     final lookups = _lookups ?? await _fetchLookups();
     _lookups = lookups;
 
-    final params = <String, dynamic>{
-      'is_active': true,
-    };
+    final params = <String, dynamic>{'is_active': true};
 
     final trimmed = query.trim();
     if (trimmed.isNotEmpty) {
@@ -344,8 +482,8 @@ class ProductsRepository {
 
     final result = await _api.list(
       path: ApiEndpoints.products,
-      page: 1,
-      perPage: 100,
+      page: page,
+      perPage: ApiConfig.productsPerPage,
       query: params,
     );
 
@@ -353,12 +491,36 @@ class ProductsRepository {
       result.items,
       categoryNames: lookups.categoryNames,
       brandNames: lookups.brandNames,
-    );
-
-    return products.where((product) {
+    ).where((product) {
       return product.price >= minPrice.round() &&
           product.price <= maxPrice.round();
     }).toList();
+
+    return ProductPageResult(
+      products: products,
+      currentPage: result.currentPage,
+      lastPage: result.lastPage,
+      total: result.total,
+    );
+  }
+
+  /// بحث عبر أمان ERP — يدعم `q` + تصنيف/ماركة (الصفحة الأولى فقط)
+  Future<List<ProductModel>> searchProducts({
+    required String query,
+    String category = 'الكل',
+    String brand = 'الكل',
+    double minPrice = 0,
+    double maxPrice = 500000,
+  }) async {
+    final result = await searchProductsPage(
+      page: 1,
+      query: query,
+      category: category,
+      brand: brand,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+    );
+    return result.products;
   }
 
   int? _asInt(dynamic value) {

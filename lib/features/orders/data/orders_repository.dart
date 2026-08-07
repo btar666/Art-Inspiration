@@ -10,6 +10,7 @@ import 'create_invoice_api.dart';
 import 'erp_invoice_request_builder.dart';
 import 'erp_order_mapper.dart';
 import 'models/order_model.dart';
+import 'models/orders_list_state.dart';
 import 'models/order_status.dart';
 
 final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
@@ -24,10 +25,16 @@ class OrdersFetchResult {
   const OrdersFetchResult({
     required this.orders,
     required this.total,
+    this.currentPage = 1,
+    this.lastPage = 1,
   });
 
   final List<OrderModel> orders;
   final int total;
+  final int currentPage;
+  final int lastPage;
+
+  bool get hasMore => currentPage < lastPage;
 }
 
 /// مستودع فواتير أمان ERP — sales_invoices
@@ -49,7 +56,7 @@ class OrdersRepository {
     return (token != null && token.isNotEmpty) || ApiConfig.apiToken.isNotEmpty;
   }
 
-  Future<OrdersFetchResult> fetchOrders() async {
+  Future<OrdersFetchResult> fetchOrders({int page = 1}) async {
     if (!_hasToken) {
       throw const ApiException(
         message: 'مفتاح API غير متوفر — راجع إعدادات أمان ERP',
@@ -60,13 +67,49 @@ class OrdersRepository {
 
     final result = await _api.list(
       path: ApiEndpoints.salesInvoices,
-      page: 1,
+      page: page,
       perPage: 50,
     );
 
     return OrdersFetchResult(
       orders: ErpOrderMapper.fromRecords(result.items),
       total: result.total,
+      currentPage: result.currentPage,
+      lastPage: result.lastPage,
+    );
+  }
+
+  Future<OrdersListState> fetchOrdersPage(int page) async {
+    final result = await fetchOrders(page: page);
+    return OrdersListState(
+      orders: result.orders,
+      currentPage: result.currentPage,
+      lastPage: result.lastPage,
+      total: result.total,
+    );
+  }
+
+  Future<OrdersListState> loadMoreOrders(OrdersListState current) async {
+    if (!current.hasMore || current.isLoadingMore) return current;
+
+    final nextPage = current.currentPage + 1;
+    final result = await fetchOrders(page: nextPage);
+
+    final ids = current.orders.map((o) => o.id).toSet();
+    final merged = [...current.orders];
+    for (final order in result.orders) {
+      if (!ids.contains(order.id)) {
+        merged.add(order);
+        ids.add(order.id);
+      }
+    }
+
+    return current.copyWith(
+      orders: merged,
+      currentPage: result.currentPage,
+      lastPage: result.lastPage,
+      total: result.total,
+      isLoadingMore: false,
     );
   }
 

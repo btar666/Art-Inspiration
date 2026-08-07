@@ -29,10 +29,25 @@ class CatalogNotifier extends AsyncNotifier<CatalogSnapshot> {
   }
 
   Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => ref.read(productsRepositoryProvider).fetchCatalog(forceRefresh: true),
-    );
+    final category = state.value?.activeCategory ?? 'الكل';
+    final previous = state.value;
+
+    final result = await AsyncValue.guard(() async {
+      final base = await ref
+          .read(productsRepositoryProvider)
+          .fetchCatalog(forceRefresh: true);
+      if (category == 'الكل') return base;
+      return ref
+          .read(productsRepositoryProvider)
+          .fetchProductsForCategory(category, base);
+    });
+
+    if (result.hasError && previous != null) {
+      state = AsyncData(previous);
+      return;
+    }
+
+    state = result;
   }
 
   Future<void> loadMore() async {
@@ -45,6 +60,25 @@ class CatalogNotifier extends AsyncNotifier<CatalogSnapshot> {
     try {
       final updated =
           await ref.read(productsRepositoryProvider).loadMoreProducts(current);
+      state = AsyncData(updated);
+    } finally {
+      _isLoadingMore = false;
+    }
+  }
+
+  Future<void> selectCategory(String category) async {
+    final current = state.value;
+    if (current == null || current.activeCategory == category) return;
+
+    _isLoadingMore = true;
+    state = AsyncData(
+      current.copyWith(isLoadingMore: true, products: const []),
+    );
+
+    try {
+      final updated = await ref
+          .read(productsRepositoryProvider)
+          .fetchProductsForCategory(category, current);
       state = AsyncData(updated);
     } finally {
       _isLoadingMore = false;
