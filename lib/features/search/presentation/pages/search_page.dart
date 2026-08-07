@@ -10,17 +10,19 @@ import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../cart/presentation/cart_actions.dart';
 import '../../../home/data/models/product_model.dart';
+import '../../../home/data/models/product_page_result.dart';
 import '../../../home/data/products_repository.dart';
 import '../../../home/presentation/widgets/home_product_card.dart';
 import '../../../home/presentation/widgets/home_product_card_metrics.dart';
 import '../../data/models/search_filter_state.dart';
-import '../../data/search_mock_data.dart';
+import '../../data/search_history_storage.dart';
+import '../providers/search_filter_provider.dart';
 import '../widgets/search_active_filters_row.dart';
 import '../widgets/search_history_section.dart';
 import '../widgets/search_input_bar.dart';
 import '../widgets/search_page_header.dart';
 
-/// صفحة البحث — مربوطة بـ أمان ERP (`q` + فلاتر) مع تصفح
+/// صفحة البحث — أمان ERP: `q` + `category_id` + `brand_id` + `is_active`
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
 
@@ -33,7 +35,19 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   final _focusNode = FocusNode();
   final _scrollController = ScrollController();
 
-  List<String> _history = List.of(SearchMockData.defaultHistory);
+  List<String> _history = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _history = ref.read(searchHistoryStorageProvider).load();
+    _scrollController.addListener(_onScroll);
+  }
+
+  Future<void> _persistHistory() {
+    return ref.read(searchHistoryStorageProvider).save(_history);
+  }
+
   SearchFilterState _filter = const SearchFilterState();
   String _query = '';
   bool _showResults = false;
@@ -43,12 +57,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   int _currentPage = 1;
   int _lastPage = 1;
   int _total = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
 
   @override
   void dispose() {
@@ -69,6 +77,27 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   bool get _hasMore => _currentPage < _lastPage;
 
+  bool _canSearchWith(SearchFilterState filter) =>
+      _query.trim().isNotEmpty || filter.hasActiveFilters;
+
+  bool get _canSearch => _canSearchWith(_filter);
+
+  bool get _isShowingResults => _showResults && _canSearch;
+
+  Future<ProductPageResult> _fetchPage(
+    int page, {
+    SearchFilterState? filter,
+  }) {
+    final active = filter ?? _filter;
+    return ref.read(productsRepositoryProvider).searchProductsPage(
+          page: page,
+          query: _query,
+          category: active.selectedCategory,
+          brand: active.selectedBrand,
+          onlyActive: active.onlyActive,
+        );
+  }
+
   void _onCancel() {
     _queryController.clear();
     setState(() {
@@ -80,16 +109,30 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       _currentPage = 1;
       _lastPage = 1;
       _total = 0;
+      _filter = const SearchFilterState();
     });
     _focusNode.unfocus();
   }
 
-  Future<void> _onSearch(String value) async {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) return;
+  Future<void> _runSearch({
+    bool updateHistory = false,
+    SearchFilterState? filter,
+  }) async {
+    final activeFilter = filter ?? _filter;
+    if (!_canSearchWith(activeFilter)) return;
+
+    final trimmed = _query.trim();
+    if (updateHistory && trimmed.isNotEmpty) {
+      _history.remove(trimmed);
+      _history.insert(0, trimmed);
+      if (_history.length > 8) {
+        _history = _history.take(8).toList();
+      }
+      await _persistHistory();
+    }
 
     setState(() {
-      _query = trimmed;
+      _filter = activeFilter;
       _showResults = true;
       _loading = true;
       _isLoadingMore = false;
@@ -97,23 +140,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       _currentPage = 1;
       _lastPage = 1;
       _total = 0;
-      _history.remove(trimmed);
-      _history.insert(0, trimmed);
-      if (_history.length > 8) {
-        _history = _history.take(8).toList();
-      }
     });
 
     try {
-      final result =
-          await ref.read(productsRepositoryProvider).searchProductsPage(
-                page: 1,
-                query: trimmed,
-                category: _filter.selectedCategory,
-                brand: _filter.selectedBrand,
-                minPrice: _filter.minPrice,
-                maxPrice: _filter.maxPrice,
-              );
+      final result = await _fetchPage(1, filter: activeFilter);
 
       if (!mounted) return;
       setState(() {
@@ -132,6 +162,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     }
   }
 
+  Future<void> _onSearch(String value) async {
+    setState(() => _query = value.trim());
+    await _runSearch(updateHistory: true);
+  }
+
   Future<void> _loadMore() async {
     if (!_hasMore || _isLoadingMore || _loading) return;
 
@@ -139,15 +174,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
     try {
       final nextPage = _currentPage + 1;
-      final result =
-          await ref.read(productsRepositoryProvider).searchProductsPage(
-                page: nextPage,
-                query: _query,
-                category: _filter.selectedCategory,
-                brand: _filter.selectedBrand,
-                minPrice: _filter.minPrice,
-                maxPrice: _filter.maxPrice,
-              );
+      final result = await _fetchPage(nextPage);
 
       if (!mounted) return;
 
@@ -174,19 +201,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   Future<void> _refreshResults() async {
-    final trimmed = _query.trim();
-    if (trimmed.isEmpty) return;
+    if (!_canSearch) return;
 
     try {
-      final result =
-          await ref.read(productsRepositoryProvider).searchProductsPage(
-                page: 1,
-                query: trimmed,
-                category: _filter.selectedCategory,
-                brand: _filter.selectedBrand,
-                minPrice: _filter.minPrice,
-                maxPrice: _filter.maxPrice,
-              );
+      final result = await _fetchPage(1);
 
       if (!mounted) return;
       setState(() {
@@ -205,7 +223,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   void _onQueryChanged(String value) {
     setState(() {
       _query = value;
-      if (value.trim().isEmpty) {
+      if (value.trim().isEmpty && !_filter.hasActiveFilters) {
         _showResults = false;
         _results = const [];
         _currentPage = 1;
@@ -216,21 +234,67 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   Future<void> _openFilter() async {
-    final result = await context.push<SearchFilterState>(
+    ref.read(appliedSearchFilterProvider.notifier).state = null;
+
+    final popResult = await context.push<SearchFilterState>(
       AppRoutes.searchFilter,
       extra: _filter,
     );
-    if (result == null || !mounted) return;
-    setState(() => _filter = result);
-    if (_query.trim().isNotEmpty) {
-      await _onSearch(_query);
-    }
+
+    if (!mounted) return;
+
+    final applied =
+        ref.read(appliedSearchFilterProvider) ?? popResult;
+    ref.read(appliedSearchFilterProvider.notifier).state = null;
+
+    if (applied == null) return;
+
+    await _runSearch(filter: applied);
+  }
+
+  Future<void> _onScannerTap() async {
+    final barcode = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          title: const Text('بحث بالباركود'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            textDirection: TextDirection.ltr,
+            decoration: const InputDecoration(
+              hintText: 'أدخل أو امسح الباركود',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, controller.text.trim()),
+              child: const Text('بحث'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || barcode == null || barcode.isEmpty) return;
+
+    _queryController.text = barcode;
+    setState(() => _query = barcode);
+    await _runSearch(updateHistory: true);
   }
 
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final isSearching = _showResults && _query.trim().isNotEmpty;
+    final showCancel = _isShowingResults ||
+        _query.trim().isNotEmpty ||
+        _filter.hasActiveFilters;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -239,18 +303,22 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SearchPageHeader(onCancel: _onCancel),
+            SearchPageHeader(
+              showCancel: showCancel,
+              onCancel: _onCancel,
+            ),
             SearchInputBar(
               controller: _queryController,
               focusNode: _focusNode,
               onFilterTap: _openFilter,
+              onScannerTap: _onScannerTap,
               onChanged: _onQueryChanged,
               onSubmitted: _onSearch,
             ),
-            if (isSearching && _filter.hasActiveFilters)
+            if (_isShowingResults && _filter.hasActiveFilters)
               SearchActiveFiltersRow(filter: _filter),
             Expanded(
-              child: isSearching
+              child: _isShowingResults
                   ? _buildResults(bottomInset)
                   : _buildHistory(),
             ),
@@ -263,9 +331,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   Widget _buildHistory() {
     return SearchHistorySection(
       history: _history,
-      onClearAll: () => setState(() => _history = []),
+      onClearAll: () {
+        setState(() => _history = []);
+        _persistHistory();
+      },
       onRemoveItem: (index) {
         setState(() => _history.removeAt(index));
+        _persistHistory();
       },
       onItemTap: (term) {
         _queryController.text = term;
@@ -315,7 +387,12 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 12.h),
+            padding: EdgeInsets.fromLTRB(
+              20.w,
+              _filter.hasActiveFilters ? 4.h : 20.h,
+              20.w,
+              12.h,
+            ),
             child: Align(
               alignment: Alignment.centerRight,
               child: Text(

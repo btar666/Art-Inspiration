@@ -9,8 +9,9 @@ import '../../../../shared/widgets/app_back_button.dart';
 import '../../../home/presentation/providers/products_provider.dart';
 import '../../data/models/search_filter_state.dart';
 import '../../data/search_mock_data.dart';
+import '../providers/search_filter_provider.dart';
 
-/// صفحة فلترة نتائج البحث
+/// صفحة فلترة نتائج البحث — مطابقة لفلاتر `/products` في أمان ERP
 class SearchFilterPage extends ConsumerStatefulWidget {
   const SearchFilterPage({
     super.key,
@@ -24,7 +25,6 @@ class SearchFilterPage extends ConsumerStatefulWidget {
 }
 
 class _SearchFilterPageState extends ConsumerState<SearchFilterPage> {
-  late RangeValues _priceRange;
   late String _selectedBrand;
   late String _selectedCategory;
   bool _brandsExpanded = true;
@@ -33,28 +33,25 @@ class _SearchFilterPageState extends ConsumerState<SearchFilterPage> {
   @override
   void initState() {
     super.initState();
-    _priceRange = RangeValues(
-      widget.initialFilter.minPrice,
-      widget.initialFilter.maxPrice,
-    );
     _selectedBrand = widget.initialFilter.selectedBrand;
     _selectedCategory = widget.initialFilter.selectedCategory;
   }
 
   SearchFilterState get _currentFilter => SearchFilterState(
-        minPrice: _priceRange.start,
-        maxPrice: _priceRange.end,
         selectedBrand: _selectedBrand,
         selectedCategory: _selectedCategory,
       );
 
-  void _apply() => context.pop(_currentFilter);
+  void _apply() {
+    ref.read(appliedSearchFilterProvider.notifier).state = _currentFilter;
+    context.pop(_currentFilter);
+  }
 
-  String _formatPrice(double value) {
-    return value.toInt().toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]},',
-        );
+  void _reset() {
+    setState(() {
+      _selectedBrand = 'الكل';
+      _selectedCategory = 'الكل';
+    });
   }
 
   List<String> _withAll(Iterable<String> values) {
@@ -100,7 +97,15 @@ class _SearchFilterPageState extends ConsumerState<SearchFilterPage> {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  SizedBox(width: AppBackButtonMetrics.width()),
+                  TextButton(
+                    onPressed: _reset,
+                    child: Text(
+                      'مسح',
+                      style: AppTextStyles.settingsMenuItem(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -110,49 +115,8 @@ class _SearchFilterPageState extends ConsumerState<SearchFilterPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const _FilterSectionHeader(
-                      title: 'حسب السعر',
-                      expanded: true,
-                      onToggle: null,
-                    ),
-                    SizedBox(height: 8.h),
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 4.h,
-                        rangeThumbShape: RoundRangeSliderThumbShape(
-                          enabledThumbRadius: 10.r,
-                        ),
-                        overlayShape:
-                            RoundSliderOverlayShape(overlayRadius: 16.r),
-                        activeTrackColor: AppColors.primarySoft,
-                        inactiveTrackColor: const Color(0xFFF0E8DC),
-                        thumbColor: AppColors.primary,
-                      ),
-                      child: RangeSlider(
-                        values: _priceRange,
-                        min: SearchFilterState.priceMin,
-                        max: SearchFilterState.priceMax,
-                        divisions: 26,
-                        onChanged: (values) =>
-                            setState(() => _priceRange = values),
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${_formatPrice(_priceRange.end)} د.ع',
-                          style: AppTextStyles.searchFilterValue(),
-                        ),
-                        Text(
-                          '${_formatPrice(_priceRange.start)} د.ع',
-                          style: AppTextStyles.searchFilterValue(),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 24.h),
                     _FilterSectionHeader(
-                      title: 'حسب البراند',
+                      title: 'حسب البراند (brand_id)',
                       expanded: _brandsExpanded,
                       onToggle: () =>
                           setState(() => _brandsExpanded = !_brandsExpanded),
@@ -168,7 +132,7 @@ class _SearchFilterPageState extends ConsumerState<SearchFilterPage> {
                     ],
                     SizedBox(height: 24.h),
                     _FilterSectionHeader(
-                      title: 'حسب القسم',
+                      title: 'حسب القسم (category_id)',
                       expanded: _categoriesExpanded,
                       onToggle: () => setState(
                         () => _categoriesExpanded = !_categoriesExpanded,

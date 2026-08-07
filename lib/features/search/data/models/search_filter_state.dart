@@ -1,49 +1,43 @@
-/// حالة فلترة نتائج البحث
+/// حالة فلترة نتائج البحث — مطابقة لفلاتر `/products` في أمان ERP
 class SearchFilterState {
   const SearchFilterState({
-    this.minPrice = priceMin,
-    this.maxPrice = priceMax,
     this.selectedBrand = 'الكل',
     this.selectedCategory = 'الكل',
+    this.onlyActive = true,
   });
 
-  final double minPrice;
-  final double maxPrice;
   final String selectedBrand;
   final String selectedCategory;
-
-  static const double priceMin = 0;
-  static const double priceMax = 500000;
+  final bool onlyActive;
 
   bool get hasActiveFilters =>
-      minPrice > priceMin ||
-      maxPrice < priceMax ||
-      selectedBrand != 'الكل' ||
-      selectedCategory != 'الكل';
+      selectedBrand != 'الكل' || selectedCategory != 'الكل';
 
-  String? get priceFilterLabel {
-    if (minPrice <= priceMin && maxPrice >= priceMax) return null;
-    return 'السعر ( ${_formatPrice(minPrice)} - ${_formatPrice(maxPrice)} )';
+  List<String> get activeFilterLabels {
+    final labels = <String>[];
+    if (selectedCategory != 'الكل') {
+      labels.add('قسم: $selectedCategory');
+    }
+    if (selectedBrand != 'الكل') {
+      labels.add('براند: $selectedBrand');
+    }
+    if (!onlyActive) {
+      labels.add('يشمل غير النشط');
+    }
+    return labels;
   }
 
   SearchFilterState copyWith({
-    double? minPrice,
-    double? maxPrice,
     String? selectedBrand,
     String? selectedCategory,
+    bool? onlyActive,
   }) {
     return SearchFilterState(
-      minPrice: minPrice ?? this.minPrice,
-      maxPrice: maxPrice ?? this.maxPrice,
       selectedBrand: selectedBrand ?? this.selectedBrand,
       selectedCategory: selectedCategory ?? this.selectedCategory,
+      onlyActive: onlyActive ?? this.onlyActive,
     );
   }
 
-  static String _formatPrice(double value) {
-    return value.toInt().toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]},',
-        );
-  }
+  static const cleared = SearchFilterState();
 }

@@ -8,9 +8,11 @@ class SearchPageHeader extends StatelessWidget {
   const SearchPageHeader({
     super.key,
     required this.onCancel,
+    this.showCancel = false,
   });
 
   final VoidCallback onCancel;
+  final bool showCancel;
 
   @override
   Widget build(BuildContext context) {
@@ -19,18 +21,21 @@ class SearchPageHeader extends StatelessWidget {
       child: Row(
         textDirection: TextDirection.ltr,
         children: [
-          TextButton(
-            onPressed: onCancel,
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 4.w),
-              minimumSize: Size(48.w, 36.h),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              'الغاء',
-              style: AppTextStyles.searchCancel(),
-            ),
-          ),
+          if (showCancel)
+            TextButton(
+              onPressed: onCancel,
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 4.w),
+                minimumSize: Size(48.w, 36.h),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'الغاء',
+                style: AppTextStyles.searchCancel(),
+              ),
+            )
+          else
+            SizedBox(width: 48.w),
           Expanded(
             child: Text(
               'البحث',

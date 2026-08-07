@@ -46,12 +46,14 @@ class SearchHistorySection extends StatelessWidget {
           ),
           SizedBox(height: 12.h),
           if (history.isEmpty)
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 24.h),
+            Expanded(
               child: Center(
-                child: Text(
-                  'سجل البحث فارغ',
-                  style: AppTextStyles.searchEmptyState(),
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: 100.h),
+                  child: Text(
+                    'سجل البحث فارغ',
+                    style: AppTextStyles.searchEmptyState(),
+                  ),
                 ),
               ),
             )
