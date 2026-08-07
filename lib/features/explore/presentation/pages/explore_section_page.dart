@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
+import '../../../../shared/widgets/product_details_widget.dart';
 import '../../../cart/presentation/cart_actions.dart';
 import '../../../home/presentation/providers/products_provider.dart';
 import '../../../home/presentation/widgets/home_product_card.dart';
@@ -14,7 +15,6 @@ import '../../../home/presentation/widgets/home_product_card_metrics.dart';
 import '../../data/models/explore_models.dart';
 import '../../data/models/section_products_state.dart';
 import '../providers/section_products_provider.dart';
-import '../widgets/section_filter_chips.dart';
 import '../widgets/section_page_header.dart';
 
 /// صفحة منتجات القسم أو البراند — تصفح من الخادم
@@ -29,7 +29,6 @@ class ExploreSectionPage extends ConsumerStatefulWidget {
 
 class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
   final _scrollController = ScrollController();
-  int _selectedFilterIndex = 0;
 
   @override
   void initState() {
@@ -64,7 +63,6 @@ class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
       id: widget.sectionId,
       name: widget.sectionId,
       imageUrl: apiImage,
-      filters: const ['كل المنتجات'],
     );
   }
 
@@ -94,7 +92,7 @@ class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
     return [
       SliverToBoxAdapter(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
+          padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 12.h),
           child: Align(
             alignment: Alignment.centerRight,
             child: Text(
@@ -119,6 +117,7 @@ class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
               return HomeProductCard(
                 key: ValueKey('section_${section.id}_${product.id}_$index'),
                 product: product,
+                onTap: () => ProductDetailsWidget.open(context, product),
                 onAddToCart: () => addProductToCart(context, ref, product),
               );
             },
@@ -158,14 +157,6 @@ class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
               title: section.name,
               onBack: () => context.pop(),
             ),
-            SectionFilterChips(
-              filters: section.filters,
-              selectedIndex: _selectedFilterIndex,
-              onSelected: (index) {
-                setState(() => _selectedFilterIndex = index);
-              },
-            ),
-            SizedBox(height: 16.h),
             Expanded(
               child: productsAsync.when(
                 loading: () => AppRefreshScrollView(

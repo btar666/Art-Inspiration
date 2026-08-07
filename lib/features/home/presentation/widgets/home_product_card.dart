@@ -127,30 +127,11 @@ class _HomeProductImageSection extends StatelessWidget {
       height: HomeProductCardMetrics.imageHeight(),
       child: Stack(
         clipBehavior: Clip.none,
-        fit: StackFit.expand,
         children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: product.imageBgColor,
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              clipBehavior: Clip.none,
-              children: [
-                Positioned(
-                  bottom: -12.h,
-                  child: Container(
-                    width: 80.w,
-                    height: 80.w,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.35),
-                    ),
-                  ),
-                ),
-                _HomeProductImage(product: product),
-              ],
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12.r),
+            child: SizedBox.expand(
+              child: _HomeProductImage(product: product),
             ),
           ),
           Positioned(
@@ -222,30 +203,43 @@ class _HomeProductImage extends StatelessWidget {
         imageUrl: product.imageUrl!,
         width: double.infinity,
         height: double.infinity,
-        fit: BoxFit.contain,
+        fit: BoxFit.cover,
         memCacheWidth: cacheW,
         memCacheHeight: cacheH,
         fadeInDuration: const Duration(milliseconds: 120),
         fadeOutDuration: Duration.zero,
-        placeholder: (_, __) => Center(
-          child: Icon(
-            Icons.image_outlined,
-            size: 40.sp,
-            color: AppColors.primary.withValues(alpha: 0.25),
+        placeholder: (_, __) => ColoredBox(
+          color: product.imageBgColor,
+          child: Center(
+            child: Icon(
+              Icons.image_outlined,
+              size: 40.sp,
+              color: AppColors.primary.withValues(alpha: 0.25),
+            ),
           ),
         ),
-        errorWidget: (_, __, ___) => Icon(
-          Icons.spa_outlined,
-          size: 64.sp,
-          color: AppColors.primary.withValues(alpha: 0.35),
+        errorWidget: (_, __, ___) => ColoredBox(
+          color: product.imageBgColor,
+          child: Center(
+            child: Icon(
+              Icons.spa_outlined,
+              size: 64.sp,
+              color: AppColors.primary.withValues(alpha: 0.35),
+            ),
+          ),
         ),
       );
     }
 
-    return Icon(
-      Icons.spa_outlined,
-      size: 64.sp,
-      color: AppColors.primary.withValues(alpha: 0.35),
+    return ColoredBox(
+      color: product.imageBgColor,
+      child: Center(
+        child: Icon(
+          Icons.spa_outlined,
+          size: 64.sp,
+          color: AppColors.primary.withValues(alpha: 0.35),
+        ),
+      ),
     );
   }
 }
@@ -260,35 +254,12 @@ class _HomeProductInfoSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Text(
-                product.name,
-                style: AppTextStyles.homeProductCardName(),
-                textAlign: TextAlign.right,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            SizedBox(width: 6.w),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  product.rating.toStringAsFixed(1),
-                  style: AppTextStyles.homeProductRating(),
-                ),
-                SizedBox(width: 2.w),
-                Icon(
-                  Icons.star_rounded,
-                  color: AppColors.homeRating,
-                  size: 13.sp,
-                ),
-              ],
-            ),
-          ],
+        Text(
+          product.name,
+          style: AppTextStyles.homeProductCardName(),
+          textAlign: TextAlign.right,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         SizedBox(height: HomeProductCardMetrics.nameToCategoryGap()),
         Text(

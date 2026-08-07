@@ -18,8 +18,19 @@ class ExploreSegmentedTabs extends StatelessWidget {
   final ValueChanged<ExploreTab> onTabSelected;
   final bool glassStyle;
 
+  int get _selectedIndex => ExploreTab.values.indexOf(selectedTab);
+
+  Alignment _pillAlignment(int index) {
+    final count = ExploreTab.values.length;
+    if (count <= 1) return Alignment.center;
+    final step = 2 / (count - 1);
+    return Alignment(1 - step * index, 0);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final tabCount = ExploreTab.values.length;
+
     final bar = Container(
       height: 46.h,
       padding: EdgeInsets.all(4.w),
@@ -30,48 +41,77 @@ class ExploreSegmentedTabs extends StatelessWidget {
               borderRadius: BorderRadius.circular(28.r),
               border: Border.all(color: AppColors.dotGrid, width: 1.2),
             ),
-      child: Row(
-        children: ExploreTab.values.map((tab) {
-          final isSelected = tab == selectedTab;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => onTabSelected(tab),
-              behavior: HitTestBehavior.opaque,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-                alignment: Alignment.center,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          AnimatedAlign(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            alignment: _pillAlignment(_selectedIndex),
+            child: FractionallySizedBox(
+              widthFactor: 1 / tabCount,
+              heightFactor: 1,
+              child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primaryLight : Colors.transparent,
+                  color: AppColors.primaryLight,
                   borderRadius: BorderRadius.circular(24.r),
-                  border: glassStyle && isSelected
+                  border: glassStyle
                       ? Border.all(
                           color: AppColors.primarySoft.withValues(alpha: 0.5),
                         )
                       : null,
-                ),
-                child: Text(
-                  tab.label,
-                  textAlign: TextAlign.center,
-                  style: glassStyle
-                      ? AppTextStyles.exploreTabLabel(
-                          color: isSelected
-                              ? Colors.white
-                              : const Color(0xFF000000),
-                        )
-                      : AppTextStyles.exploreTabLabel(
-                          color: isSelected
-                              ? AppColors.primary
-                              : AppColors.textPrimary.withValues(alpha: 0.72),
-                          weight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                        ),
+                  boxShadow: glassStyle
+                      ? [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.08),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
               ),
             ),
-          );
-        }).toList(),
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: ExploreTab.values.map((tab) {
+              final isSelected = tab == selectedTab;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onTabSelected(tab),
+                  behavior: HitTestBehavior.opaque,
+                  child: Center(
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                      style: (glassStyle
+                              ? AppTextStyles.exploreTabLabel(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : const Color(0xFF000000),
+                                )
+                              : AppTextStyles.exploreTabLabel(
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : AppColors.textPrimary
+                                          .withValues(alpha: 0.72),
+                                  weight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                ))
+                          .copyWith(height: 1),
+                      child: Text(
+                        tab.label,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
 

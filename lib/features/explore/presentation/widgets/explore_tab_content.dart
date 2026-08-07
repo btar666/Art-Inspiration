@@ -9,6 +9,7 @@ import '../../../home/data/models/catalog_snapshot.dart';
 import '../../../home/data/models/product_model.dart';
 import '../../../home/presentation/widgets/home_product_card.dart';
 import '../../../home/presentation/widgets/home_product_card_metrics.dart';
+import '../../../../shared/widgets/product_details_widget.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
 import '../../data/models/explore_models.dart';
 import 'explore_brand_card.dart';
@@ -91,6 +92,7 @@ abstract final class ExploreTabSlivers {
                 return HomeProductCard(
                   key: ValueKey('explore_${product.id}_$index'),
                   product: product,
+                  onTap: () => ProductDetailsWidget.open(context, product),
                   onAddToCart: () => onAddToCart?.call(product),
                 );
               },
