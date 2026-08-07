@@ -1,11 +1,13 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/explore_models.dart';
 import 'explore_section_card_metrics.dart';
 
-/// كارد قسم — كونتينر أبيض + صورة + اسم القسم
+/// كارد قسم — يعرض صورة الـ API فقط
 class ExploreSectionCard extends StatelessWidget {
   const ExploreSectionCard({
     super.key,
@@ -34,11 +36,26 @@ class ExploreSectionCard extends StatelessWidget {
             Expanded(
               child: Padding(
                 padding: ExploreSectionCardMetrics.imagePadding(),
-                child: Image.asset(
-                  section.iconAsset,
-                  width: double.infinity,
-                  fit: BoxFit.contain,
-                ),
+                child: section.hasNetworkImage
+                    ? CachedNetworkImage(
+                        imageUrl: section.imageUrl!,
+                        width: double.infinity,
+                        fit: BoxFit.contain,
+                        fadeInDuration: const Duration(milliseconds: 120),
+                        placeholder: (_, __) => const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        errorWidget: (_, __, ___) => Icon(
+                          Icons.broken_image_outlined,
+                          size: 32.sp,
+                          color: AppColors.primary.withValues(alpha: 0.35),
+                        ),
+                      )
+                    : Icon(
+                        Icons.image_outlined,
+                        size: 32.sp,
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                      ),
               ),
             ),
             Padding(

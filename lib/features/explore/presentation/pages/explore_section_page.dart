@@ -3,15 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../cart/presentation/cart_actions.dart';
+import '../../../home/presentation/providers/products_provider.dart';
 import '../../../home/presentation/widgets/home_product_card.dart';
 import '../../../home/presentation/widgets/home_product_card_metrics.dart';
-import '../../data/explore_mock_data.dart';
 import '../../data/models/explore_models.dart';
 import '../../data/models/section_products_state.dart';
 import '../providers/section_products_provider.dart';
@@ -58,17 +57,13 @@ class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
   }
 
   ExploreSectionModel _resolveSection() {
-    for (final section in ExploreMockData.sections) {
-      if (section.id == widget.sectionId || section.name == widget.sectionId) {
-        return section;
-      }
-    }
+    final catalog = ref.read(catalogProvider).value;
+    final apiImage = catalog?.imageForCategory(widget.sectionId);
 
     return ExploreSectionModel(
       id: widget.sectionId,
       name: widget.sectionId,
-      iconAsset: AppAssets.sectionMakeup,
-      bgColor: AppColors.background,
+      imageUrl: apiImage,
       filters: const ['كل المنتجات'],
     );
   }
