@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
+import '../../../../shared/widgets/product_details_widget.dart';
 import '../../../cart/presentation/cart_actions.dart';
 import '../../../home/data/models/product_model.dart';
 import '../../../home/data/models/product_page_result.dart';
@@ -43,17 +44,19 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     _history = ref.read(searchHistoryStorageProvider).load();
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _consumePendingFilterOpen();
+      _consumePendingAppliedFilter();
     });
   }
 
-  void _consumePendingFilterOpen() {
-    if (!ref.read(openSearchFilterOnLoadProvider)) return;
-    ref.read(openSearchFilterOnLoadProvider.notifier).state = false;
+  void _consumePendingAppliedFilter() {
+    final applied = ref.read(appliedSearchFilterProvider);
+    if (applied == null) return;
+    ref.read(appliedSearchFilterProvider.notifier).state = null;
 
-    _queryController.clear();
     setState(() {
       _query = '';
+      _queryController.clear();
+      _filter = applied;
       _showResults = false;
       _loading = false;
       _isLoadingMore = false;
@@ -61,12 +64,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       _currentPage = 1;
       _lastPage = 1;
       _total = 0;
-      _filter = const SearchFilterState();
     });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _openFilter();
-    });
+    _runSearch(filter: applied);
   }
 
   Future<void> _persistHistory() {
@@ -316,10 +316,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<bool>(openSearchFilterOnLoadProvider, (previous, next) {
-      if (next) _consumePendingFilterOpen();
-    });
-
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final showCancel = _isShowingResults ||
         _query.trim().isNotEmpty ||
@@ -446,6 +442,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 return HomeProductCard(
                   key: ValueKey('search_${product.id}_$index'),
                   product: product,
+                  onTap: () => ProductDetailsWidget.open(context, product),
                   onAddToCart: () => addProductToCart(context, ref, product),
                 );
               },

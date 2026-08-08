@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/storage/onboarding_storage.dart';
 import '../../cart/data/models/cart_item_model.dart';
 import '../../settings/data/models/delivery_address_model.dart';
+import '../../settings/presentation/providers/saved_addresses_provider.dart';
 
 /// مسودة الطلب أثناء عملية الشراء
 class CheckoutDraft {
@@ -57,7 +58,11 @@ class CheckoutNotifier extends Notifier<CheckoutDraft?> {
       state = null;
       return;
     }
-    state = CheckoutDraft(items: List.of(items));
+    final addresses = ref.read(savedAddressesNotifierProvider);
+    state = CheckoutDraft(
+      items: List.of(items),
+      selectedAddress: DeliveryAddressModel.currentFrom(addresses),
+    );
   }
 
   void updateCustomerInfo({

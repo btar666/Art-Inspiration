@@ -36,8 +36,7 @@ class CartPage extends ConsumerWidget {
   ) async {
     final confirmed = await CartConfirmDialog.show(
       context,
-      title: 'حذف المنتج من السلة',
-      confirmLabel: 'حذف المنتج',
+      CartConfirmType.removeItem,
     );
     if (!confirmed || !context.mounted) return;
     ref.read(cartNotifierProvider.notifier).removeAt(index);
@@ -46,8 +45,7 @@ class CartPage extends ConsumerWidget {
   Future<void> _confirmClearAll(BuildContext context, WidgetRef ref) async {
     final confirmed = await CartConfirmDialog.show(
       context,
-      title: 'أفرغ السلة',
-      confirmLabel: 'أفرغ السلة',
+      CartConfirmType.clearCart,
     );
     if (!confirmed || !context.mounted) return;
     ref.read(cartNotifierProvider.notifier).clearAll();

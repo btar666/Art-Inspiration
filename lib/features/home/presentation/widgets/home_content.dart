@@ -11,6 +11,7 @@ import '../../../../shared/widgets/product_details_widget.dart';
 import '../../../app_api/presentation/providers/app_api_providers.dart';
 import '../../data/models/catalog_snapshot.dart';
 import '../../../cart/presentation/cart_actions.dart';
+import '../../../search/data/models/search_filter_state.dart';
 import '../../../search/presentation/providers/search_filter_provider.dart';
 import '../providers/products_provider.dart';
 import 'home_category_chips.dart';
@@ -75,8 +76,21 @@ class _HomeContentState extends ConsumerState<HomeContent> {
 
   void _openSearchPage() => context.go(AppRoutes.search);
 
-  void _openSearchFilterFromHome() {
-    ref.read(openSearchFilterOnLoadProvider.notifier).state = true;
+  Future<void> _openSearchFilterFromHome() async {
+    ref.read(appliedSearchFilterProvider.notifier).state = null;
+
+    final popResult = await context.push<SearchFilterState>(
+      AppRoutes.searchFilter,
+      extra: const SearchFilterState(),
+    );
+
+    if (!mounted) return;
+
+    final applied =
+        ref.read(appliedSearchFilterProvider) ?? popResult;
+    if (applied == null) return;
+
+    ref.read(appliedSearchFilterProvider.notifier).state = applied;
     context.go(AppRoutes.search);
   }
 

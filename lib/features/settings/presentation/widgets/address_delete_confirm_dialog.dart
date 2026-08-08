@@ -5,45 +5,21 @@ import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
-/// نوع حوار تأكيد السلة
-enum CartConfirmType {
-  clearCart,
-  removeItem,
-}
+/// حوار تأكيد حذف عنوان — مطابق للتصميم
+class AddressDeleteConfirmDialog extends StatelessWidget {
+  const AddressDeleteConfirmDialog({super.key});
 
-/// حوار تأكيد أفرغ السلة أو حذف منتج — مطابق للتصميم
-class CartConfirmDialog extends StatelessWidget {
-  const CartConfirmDialog({
-    super.key,
-    required this.type,
-  });
-
-  final CartConfirmType type;
-
-  static Future<bool> show(
-    BuildContext context,
-    CartConfirmType type,
-  ) async {
+  static Future<bool> show(BuildContext context) async {
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
       barrierColor: Colors.black.withValues(alpha: 0.45),
-      builder: (_) => CartConfirmDialog(type: type),
+      builder: (_) => const AddressDeleteConfirmDialog(),
     );
     return result ?? false;
   }
 
   static const _accentColor = AppColors.homeDiscount;
-
-  String get _title => switch (type) {
-        CartConfirmType.clearCart => 'أفرغ السلة',
-        CartConfirmType.removeItem => 'حذف المنتج من السلة',
-      };
-
-  String get _confirmLabel => switch (type) {
-        CartConfirmType.clearCart => 'أفرغ السلة',
-        CartConfirmType.removeItem => 'حذف المنتج',
-      };
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +43,7 @@ class CartConfirmDialog extends StatelessWidget {
               ),
               alignment: Alignment.center,
               child: Image.asset(
-                AppAssets.settingsDeleteAccount,
+                AppAssets.addressDeleteIcon,
                 width: 28.w,
                 height: 28.w,
                 fit: BoxFit.contain,
@@ -75,7 +51,7 @@ class CartConfirmDialog extends StatelessWidget {
             ),
             SizedBox(height: 20.h),
             Text(
-              _title,
+              'حذف العنوان',
               style: AppTextStyles.cartDialogTitle(color: _accentColor).copyWith(
                 fontSize: 20.sp,
                 fontWeight: FontWeight.w800,
@@ -130,7 +106,7 @@ class CartConfirmDialog extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      _confirmLabel,
+                      'حذف العنوان',
                       style: AppTextStyles.cartDialogConfirm(
                         color: AppColors.background,
                       ),

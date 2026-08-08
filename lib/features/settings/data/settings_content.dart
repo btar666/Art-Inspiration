@@ -78,11 +78,6 @@ abstract final class SettingsContent {
           title: 'تواصل معنا',
           iconAsset: AppAssets.settingsContact,
         ),
-        SettingsMenuItem(
-          id: 'help',
-          title: 'المساعدة',
-          iconAsset: AppAssets.settingsHelp,
-        ),
       ],
     ),
   ];

@@ -10,6 +10,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../orders/presentation/widgets/orders_page_header.dart';
 import '../../data/settings_content.dart';
 import '../widgets/edit_profile_bottom_sheet.dart';
+import '../widgets/settings_confirm_dialog.dart';
 import '../widgets/settings_menu_tile.dart';
 import '../widgets/settings_profile_card.dart';
 
@@ -49,6 +50,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
             Expanded(
               child: ListView(
+                physics: const ClampingScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(
                   16.w,
                   8.h,
@@ -114,8 +116,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         context.push(AppRoutes.settingsAbout);
       case 'contact':
         context.push(AppRoutes.settingsContact);
-      case 'help':
-        context.push(AppRoutes.settingsHelp);
       default:
         break;
     }
@@ -125,15 +125,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     switch (id) {
       case 'logout':
         _showConfirmDialog(
-          title: 'تسجيل الخروج',
-          message: 'هل أنت متأكد من تسجيل الخروج؟',
+          type: SettingsConfirmType.logout,
           onConfirm: _logout,
         );
       case 'delete_account':
         _showConfirmDialog(
-          title: 'حذف الحساب',
-          message: 'هل أنت متأكد من حذف حسابك؟ لا يمكن التراجع عن هذا الإجراء.',
-          isDanger: true,
+          type: SettingsConfirmType.deleteAccount,
           onConfirm: _deleteAccount,
         );
       default:
@@ -161,35 +158,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _showConfirmDialog({
-    required String title,
-    required String message,
-    bool isDanger = false,
+    required SettingsConfirmType type,
     Future<void> Function()? onConfirm,
   }) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title, textAlign: TextAlign.right),
-        content: Text(message, textAlign: TextAlign.right),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('إلغاء'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(
-              'تأكيد',
-              style: TextStyle(
-                color: isDanger ? AppColors.settingsDanger : AppColors.primary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    final confirmed = await SettingsConfirmDialog.show(context, type);
 
-    if (confirmed == true && onConfirm != null) {
+    if (confirmed && onConfirm != null) {
       await onConfirm();
     }
   }

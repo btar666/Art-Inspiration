@@ -5,44 +5,58 @@ import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
-/// نوع حوار تأكيد السلة
-enum CartConfirmType {
-  clearCart,
-  removeItem,
+/// نوع حوار تأكيد الإعدادات
+enum SettingsConfirmType {
+  logout,
+  deleteAccount,
 }
 
-/// حوار تأكيد أفرغ السلة أو حذف منتج — مطابق للتصميم
-class CartConfirmDialog extends StatelessWidget {
-  const CartConfirmDialog({
+/// حوار تأكيد تسجيل الخروج أو حذف الحساب — مطابق للتصميم
+class SettingsConfirmDialog extends StatelessWidget {
+  const SettingsConfirmDialog({
     super.key,
     required this.type,
   });
 
-  final CartConfirmType type;
+  final SettingsConfirmType type;
 
   static Future<bool> show(
     BuildContext context,
-    CartConfirmType type,
+    SettingsConfirmType type,
   ) async {
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
       barrierColor: Colors.black.withValues(alpha: 0.45),
-      builder: (_) => CartConfirmDialog(type: type),
+      builder: (_) => SettingsConfirmDialog(type: type),
     );
     return result ?? false;
   }
 
-  static const _accentColor = AppColors.homeDiscount;
+  String get _iconAsset => switch (type) {
+        SettingsConfirmType.logout => AppAssets.settingsLogout,
+        SettingsConfirmType.deleteAccount => AppAssets.settingsDeleteAccount,
+      };
+
+  Color get _accentColor => switch (type) {
+        SettingsConfirmType.logout => AppColors.settingsLogout,
+        SettingsConfirmType.deleteAccount => AppColors.settingsDanger,
+      };
 
   String get _title => switch (type) {
-        CartConfirmType.clearCart => 'أفرغ السلة',
-        CartConfirmType.removeItem => 'حذف المنتج من السلة',
+        SettingsConfirmType.logout => 'تسجيل الخروج',
+        SettingsConfirmType.deleteAccount => 'حذف الحساب',
+      };
+
+  String get _message => switch (type) {
+        SettingsConfirmType.logout => 'لن تفقد بياناتك ، هل أنت متأكد ؟',
+        SettingsConfirmType.deleteAccount =>
+          'ستفقد كافة بياناتك ، هل أنت متأكد ؟',
       };
 
   String get _confirmLabel => switch (type) {
-        CartConfirmType.clearCart => 'أفرغ السلة',
-        CartConfirmType.removeItem => 'حذف المنتج',
+        SettingsConfirmType.logout => 'تسجيل الخروج',
+        SettingsConfirmType.deleteAccount => 'حذف الحساب',
       };
 
   @override
@@ -67,7 +81,7 @@ class CartConfirmDialog extends StatelessWidget {
               ),
               alignment: Alignment.center,
               child: Image.asset(
-                AppAssets.settingsDeleteAccount,
+                _iconAsset,
                 width: 28.w,
                 height: 28.w,
                 fit: BoxFit.contain,
@@ -84,7 +98,7 @@ class CartConfirmDialog extends StatelessWidget {
             ),
             SizedBox(height: 10.h),
             Text(
-              'هل أنت متأكد ؟',
+              _message,
               style: AppTextStyles.cartDialogBody(
                 color: AppColors.textSecondary,
               ).copyWith(
@@ -102,7 +116,7 @@ class CartConfirmDialog extends StatelessWidget {
                     onPressed: () => Navigator.of(context).pop(false),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: _accentColor,
-                      side: const BorderSide(color: _accentColor, width: 1.2),
+                      side: BorderSide(color: _accentColor, width: 1.2),
                       padding: EdgeInsets.symmetric(vertical: 14.h),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14.r),

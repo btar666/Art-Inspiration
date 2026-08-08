@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +14,7 @@ import '../../../../shared/widgets/page_back_header.dart';
 import '../../../cart/data/models/cart_item_model.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../orders/data/orders_repository.dart';
+import '../../../orders/presentation/providers/orders_provider.dart';
 import '../../../orders/presentation/pages/order_details_page.dart';
 import '../../../orders/presentation/widgets/order_details_action_bar.dart';
 import '../../data/checkout_provider.dart';
@@ -39,6 +42,8 @@ class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
     try {
       final order =
           await ref.read(ordersRepositoryProvider).createInvoice(draft);
+
+      unawaited(ref.read(ordersListProvider.notifier).refreshInBackground());
 
       await ref.read(localOrdersNotifierProvider.notifier).addOrder(order);
       ref.read(cartNotifierProvider.notifier).clearAll();

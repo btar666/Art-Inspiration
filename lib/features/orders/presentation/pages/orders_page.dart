@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -22,24 +24,55 @@ class OrdersPage extends ConsumerStatefulWidget {
   ConsumerState<OrdersPage> createState() => _OrdersPageState();
 }
 
-class _OrdersPageState extends ConsumerState<OrdersPage> {
+class _OrdersPageState extends ConsumerState<OrdersPage>
+    with WidgetsBindingObserver {
+  static const _backgroundRefreshInterval = Duration(seconds: 45);
+
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
   String _query = '';
+  Timer? _backgroundRefreshTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshInBackground();
+      _startBackgroundRefreshTimer();
+    });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _backgroundRefreshTimer?.cancel();
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshInBackground();
+    }
+  }
+
+  void _startBackgroundRefreshTimer() {
+    _backgroundRefreshTimer?.cancel();
+    _backgroundRefreshTimer = Timer.periodic(
+      _backgroundRefreshInterval,
+      (_) => _refreshInBackground(),
+    );
+  }
+
+  void _refreshInBackground() {
+    if (!mounted) return;
+    ref.read(ordersListProvider.notifier).refreshInBackground();
   }
 
   void _onScroll() {

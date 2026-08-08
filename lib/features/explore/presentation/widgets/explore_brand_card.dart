@@ -64,13 +64,10 @@ class _BrandLogoContainer extends StatelessWidget {
               brand.logoAsset!,
               fit: BoxFit.contain,
             )
-          : Text(
-              brand.name,
-              style: AppTextStyles.exploreBrandLogo().copyWith(
-                fontSize: 28.sp,
-                height: 1.1,
-              ),
-              textAlign: TextAlign.center,
+          : Icon(
+              Icons.image_outlined,
+              size: 32.sp,
+              color: AppColors.primary.withValues(alpha: 0.3),
             ),
     );
   }

@@ -48,7 +48,20 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
       _secondPhoneController.text = draft?.secondPhone.isNotEmpty == true
           ? draft!.secondPhone
           : saved.secondPhone;
+      _applyDefaultAddress();
     });
+  }
+
+  void _applyDefaultAddress() {
+    final draft = ref.read(checkoutDraftProvider);
+    if (draft?.selectedAddress != null) return;
+
+    final current =
+        DeliveryAddressModel.currentFrom(ref.read(savedAddressesNotifierProvider));
+    if (current == null) return;
+
+    ref.read(checkoutDraftProvider.notifier).selectAddress(current);
+    if (mounted) setState(() {});
   }
 
   @override

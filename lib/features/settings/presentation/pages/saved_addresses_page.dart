@@ -7,6 +7,7 @@ import '../../../../shared/widgets/page_back_header.dart';
 import '../../../cart/presentation/widgets/cart_checkout_footer.dart';
 import '../../data/models/delivery_address_model.dart';
 import '../providers/saved_addresses_provider.dart';
+import '../widgets/address_delete_confirm_dialog.dart';
 import '../widgets/address_form_bottom_sheet.dart';
 import '../widgets/saved_address_card_widget.dart';
 import '../widgets/saved_addresses_page_metrics.dart';
@@ -90,6 +91,21 @@ class _SavedAddressesPageState extends ConsumerState<SavedAddressesPage> {
     );
     if (result == null) return;
     notifier.updateAddress(address.id, result);
+  }
+
+  Future<void> _confirmDeleteAddress(String id) async {
+    final confirmed = await AddressDeleteConfirmDialog.show(context);
+    if (!confirmed || !mounted) return;
+
+    final notifier = ref.read(savedAddressesNotifierProvider.notifier);
+    notifier.removeAddress(id);
+
+    if (_selectedId != id) return;
+
+    final remaining = ref.read(savedAddressesNotifierProvider);
+    setState(() {
+      _selectedId = remaining.isEmpty ? null : remaining.first.id;
+    });
   }
 
   Widget _buildFooter({
@@ -203,26 +219,18 @@ class _SavedAddressesPageState extends ConsumerState<SavedAddressesPage> {
                                         () => _selectedId = address.id,
                                       ),
                                       onEdit: () => _onEditAddress(address),
-                                      onDelete: () {
-                                        notifier.removeAddress(address.id);
-                                        if (_selectedId == address.id) {
-                                          final remaining =
-                                              ref.read(savedAddressesNotifierProvider);
-                                          setState(() {
-                                            _selectedId = remaining.isEmpty
-                                                ? null
-                                                : remaining.first.id;
-                                          });
-                                        }
-                                      },
+                                      onDelete: () =>
+                                          _confirmDeleteAddress(address.id),
                                     );
                                   }
 
                                   return SavedAddressCardWidget(
                                     address: address,
+                                    onSelect: () =>
+                                        notifier.setCurrentAddress(address.id),
                                     onEdit: () => _onEditAddress(address),
                                     onDelete: () =>
-                                        notifier.removeAddress(address.id),
+                                        _confirmDeleteAddress(address.id),
                                   );
                                 },
                               ),
