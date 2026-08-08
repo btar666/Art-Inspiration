@@ -1,0 +1,29 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "art-inspiration-6d593",
+          "appId": "1:220100841143:android:e69261665086a2f7a10732",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "art-inspiration-6d593",
+          "appId": "1:220100841143:ios:8837717c4e04765aa10732",
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "art-inspiration-6d593",
+          "configurations": {
+            "android": "1:220100841143:android:e69261665086a2f7a10732",
+            "ios": "1:220100841143:ios:8837717c4e04765aa10732"
+          }
+        }
+      }
+    }
+  }
+}
