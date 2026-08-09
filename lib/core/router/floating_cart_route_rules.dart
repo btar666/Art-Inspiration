@@ -4,10 +4,26 @@ import 'app_router.dart';
 
 /// قواعد إظهار زر السلة العائم حسب المسار الحالي
 abstract final class FloatingCartRouteRules {
+  static const _hiddenPrefixes = [
+    AppRoutes.splash,
+    AppRoutes.onboarding,
+    AppRoutes.login,
+    AppRoutes.register,
+    AppRoutes.requestSuccess,
+  ];
+
   static bool shouldShow(String location) {
+    if (_isHiddenRoute(location)) return false;
     if (location == AppRoutes.cart) return false;
     if (location.startsWith('/checkout')) return false;
     return true;
+  }
+
+  static bool _isHiddenRoute(String location) {
+    for (final route in _hiddenPrefixes) {
+      if (location == route) return true;
+    }
+    return false;
   }
 
   static double bottomReservedHeight(String location) {

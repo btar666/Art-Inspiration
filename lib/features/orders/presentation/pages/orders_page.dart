@@ -137,7 +137,6 @@ class _OrdersPageState extends ConsumerState<OrdersPage>
     final isLoadingMore = listState?.isLoadingMore ?? false;
     final currentPage = listState?.currentPage ?? 1;
     final lastPage = listState?.lastPage ?? 1;
-    final total = listState?.total ?? orders.length;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -153,17 +152,6 @@ class _OrdersPageState extends ConsumerState<OrdersPage>
               controller: _searchController,
               onChanged: (value) => setState(() => _query = value),
             ),
-            if (total > 0 && !isLoading && errorMessage == null)
-              Padding(
-                padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 8.h),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    '${orders.length} من $total',
-                    style: TextStyle(fontSize: 13.sp, color: Colors.grey.shade700),
-                  ),
-                ),
-              ),
             SizedBox(height: 8.h),
             Expanded(
               child: AppRefreshIndicator(

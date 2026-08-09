@@ -45,7 +45,28 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _consumePendingAppliedFilter();
+      _consumePendingSearchQuery();
     });
+  }
+
+  void _consumePendingSearchQuery() {
+    final pending = ref.read(pendingSearchQueryProvider);
+    if (pending == null || pending.isEmpty) return;
+    ref.read(pendingSearchQueryProvider.notifier).state = null;
+
+    setState(() {
+      _query = pending;
+      _queryController.text = pending;
+      _filter = const SearchFilterState();
+      _showResults = true;
+      _loading = false;
+      _isLoadingMore = false;
+      _results = const [];
+      _currentPage = 1;
+      _lastPage = 1;
+    });
+
+    _runSearch(updateHistory: true);
   }
 
   void _consumePendingAppliedFilter() {
@@ -63,7 +84,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       _results = const [];
       _currentPage = 1;
       _lastPage = 1;
-      _total = 0;
     });
 
     _runSearch(filter: applied);
@@ -81,7 +101,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   List<ProductModel> _results = const [];
   int _currentPage = 1;
   int _lastPage = 1;
-  int _total = 0;
 
   @override
   void dispose() {
@@ -133,7 +152,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       _results = const [];
       _currentPage = 1;
       _lastPage = 1;
-      _total = 0;
       _filter = const SearchFilterState();
     });
     _focusNode.unfocus();
@@ -164,7 +182,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       _results = const [];
       _currentPage = 1;
       _lastPage = 1;
-      _total = 0;
     });
 
     try {
@@ -175,7 +192,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         _results = result.products;
         _currentPage = result.currentPage;
         _lastPage = result.lastPage;
-        _total = result.total;
         _loading = false;
       });
     } catch (_) {
@@ -216,7 +232,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         _results = merged;
         _currentPage = result.currentPage;
         _lastPage = result.lastPage;
-        _total = result.total;
         _isLoadingMore = false;
       });
     } catch (_) {
@@ -236,7 +251,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         _results = result.products;
         _currentPage = result.currentPage;
         _lastPage = result.lastPage;
-        _total = result.total;
         _loading = false;
         _isLoadingMore = false;
       });
@@ -253,7 +267,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         _results = const [];
         _currentPage = 1;
         _lastPage = 1;
-        _total = 0;
       }
     });
   }
@@ -277,42 +290,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     await _runSearch(filter: applied);
   }
 
-  Future<void> _onScannerTap() async {
-    final barcode = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        final controller = TextEditingController();
-        return AlertDialog(
-          title: const Text('بحث بالباركود'),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            keyboardType: TextInputType.number,
-            textDirection: TextDirection.ltr,
-            decoration: const InputDecoration(
-              hintText: 'أدخل أو امسح الباركود',
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('إلغاء'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, controller.text.trim()),
-              child: const Text('بحث'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (!mounted || barcode == null || barcode.isEmpty) return;
-
-    _queryController.text = barcode;
-    setState(() => _query = barcode);
-    await _runSearch(updateHistory: true);
-  }
+  void _onScannerTap() => context.push(AppRoutes.barcodeScanner);
 
   @override
   Widget build(BuildContext context) {
@@ -402,10 +380,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       );
     }
 
-    final countLabel = _total > 0
-        ? '${_results.length} من $_total'
-        : '${_results.length}';
-
     return AppRefreshScrollView(
       onRefresh: _refreshResults,
       controller: _scrollController,
@@ -421,7 +395,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             child: Align(
               alignment: Alignment.centerRight,
               child: Text(
-                'نتائج البحث ($countLabel)',
+                'نتائج البحث',
                 style: AppTextStyles.searchSectionTitle(),
               ),
             ),

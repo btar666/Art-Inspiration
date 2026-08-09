@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/page_back_header.dart';
 import '../../../cart/presentation/widgets/cart_checkout_footer.dart';
@@ -112,10 +113,6 @@ class _SavedAddressesPageState extends ConsumerState<SavedAddressesPage> {
     required bool isEmpty,
     required bool selectForOrder,
   }) {
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final footerHeight =
-        screenHeight * SavedAddressesPageMetrics.footerHeightFraction;
-
     String label;
     VoidCallback onTap;
 
@@ -132,21 +129,16 @@ class _SavedAddressesPageState extends ConsumerState<SavedAddressesPage> {
       onTap = _onAddAddress;
     }
 
-    return SizedBox(
-      height: footerHeight,
-      child: ColoredBox(
-        color: SavedAddressesPageMetrics.pageBackground,
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: SavedAddressesPageMetrics.footerPadding(),
-            child: Transform.translate(
-              offset: SavedAddressesPageMetrics.footerButtonOffset(),
-              child: CartCheckoutFooter(
-                label: label,
-                onTap: onTap,
-              ),
-            ),
+    return ColoredBox(
+      color: SavedAddressesPageMetrics.pageBackground,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: SavedAddressesPageMetrics.footerPadding(),
+          child: CartCheckoutFooter(
+            label: label,
+            onTap: onTap,
+            height: SavedAddressesPageMetrics.footerHeight(),
           ),
         ),
       ),
@@ -192,7 +184,7 @@ class _SavedAddressesPageState extends ConsumerState<SavedAddressesPage> {
                         child: isEmpty
                             ? const SettingsEmptyState(
                                 title: 'لا توجد عناوين محفوظة',
-                                icon: Icons.location_on_outlined,
+                                imageAsset: AppAssets.noAddressesIllustration,
                               )
                             : ListView.separated(
                                 padding:

@@ -75,10 +75,10 @@ class _DraggableFloatingCartButtonState
     final itemCount = ref.watch(cartItemCountProvider);
     final animationTick = ref.watch(cartAnimationTickProvider);
 
-    return RepaintBoundary(
-      child: Positioned(
-        left: position.dx,
-        top: position.dy,
+    return Positioned(
+      left: position.dx,
+      top: position.dy,
+      child: RepaintBoundary(
         child: GestureDetector(
           onPanUpdate: (d) => _onPanUpdate(d, screenSize, padding),
           child: CartCircleIconButton(
@@ -87,9 +87,9 @@ class _DraggableFloatingCartButtonState
             onTap: widget.onTap,
             size: 50.w,
             iconSize: 40.w,
-            blurred: true,
             showBadge: false,
             showDot: true,
+            blurred: true,
           ),
         ),
       ),

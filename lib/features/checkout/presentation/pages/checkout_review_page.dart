@@ -35,7 +35,7 @@ class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
     if (_submitting) return;
 
     final draft = ref.read(checkoutDraftProvider);
-    if (draft == null || draft.selectedAddress == null) return;
+    if (draft == null || !draft.hasAddress) return;
 
     setState(() => _submitting = true);
 
@@ -81,7 +81,7 @@ class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
       );
     }
 
-    final address = draft.selectedAddress;
+    final addressLabel = draft.deliveryAddressLabel;
     final orderDate = DateTime.now();
     final formattedDate =
         '${orderDate.year} - ${orderDate.month} - ${orderDate.day}';
@@ -136,10 +136,16 @@ class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
                                 : draft.secondPhone,
                           ),
                           _InlineInfoRow(
-                            label: 'عنوان التوصيل :',
-                            value: address?.fullAddress ?? '',
-                            isLast: true,
+                            label: 'طريقة الاستلام :',
+                            value: draft.deliveryMethod.label,
+                            isLast: !draft.requiresAddress,
                           ),
+                          if (draft.requiresAddress)
+                            _InlineInfoRow(
+                              label: 'عنوان التوصيل :',
+                              value: addressLabel,
+                              isLast: true,
+                            ),
                         ],
                       ),
                       SizedBox(height: 12.h),
@@ -183,18 +189,6 @@ class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
                       SizedBox(height: 12.h),
                       _InfoCard(
                         children: [
-                          _InfoRow(
-                            label: 'سعر الطلب :',
-                            value: formatIraqiPrice(draft.subtotal),
-                            valueColor: AppColors.primary,
-                          ),
-                          SizedBox(height: 10.h),
-                          _InfoRow(
-                            label: 'سعر التوصيل :',
-                            value: 'مجاني',
-                            valueColor: AppColors.orderFreeDelivery,
-                          ),
-                          SizedBox(height: 10.h),
                           _InfoRow(
                             label: 'السعر الكلي :',
                             value: formatIraqiPrice(draft.subtotal),

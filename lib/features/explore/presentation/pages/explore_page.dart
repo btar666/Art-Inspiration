@@ -6,8 +6,8 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../cart/presentation/cart_actions.dart';
+import '../../../home/data/erp_catalog_metadata.dart';
 import '../../../home/data/home_mock_data.dart';
-import '../../../home/data/models/catalog_snapshot.dart';
 import '../../../home/presentation/providers/products_provider.dart';
 import '../../data/models/explore_models.dart';
 import '../widgets/explore_header_overlay.dart';
@@ -78,11 +78,11 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
     final headerSpacer = ExploreScrollMetrics.pinnedHeaderHeight(topInset);
     final catalogAsync = ref.watch(catalogProvider);
     final catalog = catalogAsync.value;
+    final mockTaxonomy =
+        ErpCatalogMetadata.fromProducts(HomeMockData.products);
     final products = ref.watch(productsProvider).value ?? HomeMockData.products;
-    final brands = catalog?.brands ?? const [];
-    final categories = catalog != null && catalog.source != CatalogDataSource.mock
-        ? catalog.categories
-        : HomeMockData.categories;
+    final brands = catalog?.brands ?? mockTaxonomy.brands;
+    final categories = catalog?.categories ?? mockTaxonomy.categories;
 
     return Scaffold(
       backgroundColor: AppColors.background,

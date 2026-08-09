@@ -18,6 +18,7 @@ import 'app_back_button.dart';
 import 'product_details_bottom_bar_metrics.dart';
 import 'product_details_gallery_metrics.dart';
 import 'product_image_fullscreen_viewer.dart';
+import 'product_out_of_stock_badge.dart';
 
 /// صفحة تفاصيل المنتج — ويدجت قابل لإعادة الاستخدام من أي مكان
 class ProductDetailsWidget extends ConsumerStatefulWidget {
@@ -343,6 +344,12 @@ class _ProductDetailsMainImage extends StatelessWidget {
             ),
           ),
         ),
+        if (!product.isInStock)
+          Positioned(
+            top: 10.h,
+            left: 10.w,
+            child: const ProductOutOfStockBadge(),
+          ),
         Positioned(
           right: 10.w,
           bottom: 10.h,

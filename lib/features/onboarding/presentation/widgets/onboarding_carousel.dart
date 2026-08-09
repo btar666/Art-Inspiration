@@ -17,6 +17,9 @@ class OnboardingCarousel extends StatelessWidget {
   final CarouselSliderController carouselController;
   final ValueChanged<int> onPageChanged;
 
+  static double get _cardWidth => 240.w;
+  static double get _cardHeight => _cardWidth * (4 / 3);
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -25,7 +28,7 @@ class OnboardingCarousel extends StatelessWidget {
         carouselController: carouselController,
         itemCount: OnboardingContent.items.length,
         options: CarouselOptions(
-          height: 340.h,
+          height: _cardHeight + 24.h,
           viewportFraction: 0.62,
           enlargeCenterPage: true,
           enlargeFactor: 0.22,
@@ -35,7 +38,13 @@ class OnboardingCarousel extends StatelessWidget {
           onPageChanged: (index, _) => onPageChanged(index),
         ),
         itemBuilder: (context, index, _) {
-          return _CarouselCard(item: OnboardingContent.items[index]);
+          return Center(
+            child: _CarouselCard(
+              item: OnboardingContent.items[index],
+              width: _cardWidth,
+              height: _cardHeight,
+            ),
+          );
         },
       ),
     );
@@ -43,53 +52,62 @@ class OnboardingCarousel extends StatelessWidget {
 }
 
 class _CarouselCard extends StatelessWidget {
-  const _CarouselCard({required this.item});
+  const _CarouselCard({
+    required this.item,
+    required this.width,
+    required this.height,
+  });
 
   final OnboardingItem item;
+  final double width;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 300.h,
-      margin: EdgeInsets.symmetric(horizontal: 6.w),
-      decoration: BoxDecoration(
-        color: item.accentColor,
-        borderRadius: BorderRadius.circular(24.r),
-        boxShadow: [
-          BoxShadow(
-            color: item.accentColor.withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: item.imageAsset != null
-          ? Image.asset(
-              item.imageAsset!,
-              width: double.infinity,
-              height: 300.h,
-              fit: BoxFit.cover,
-            )
-          : Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: 120.w,
-                  height: 120.w,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.3),
-                  ),
-                ),
-                Icon(
-                  item.icon,
-                  size: 64.sp,
-                  color: AppColors.primary.withValues(alpha: 0.6),
-                ),
-              ],
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 6.w),
+        decoration: BoxDecoration(
+          color: item.accentColor,
+          borderRadius: BorderRadius.circular(24.r),
+          boxShadow: [
+            BoxShadow(
+              color: item.accentColor.withValues(alpha: 0.4),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: item.imageAsset != null
+            ? Image.asset(
+                item.imageAsset!,
+                width: width,
+                height: height,
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+              )
+            : Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 120.w,
+                    height: 120.w,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  Icon(
+                    item.icon,
+                    size: 64.sp,
+                    color: AppColors.primary.withValues(alpha: 0.6),
+                  ),
+                ],
+              ),
+      ),
     )
         .animate(key: ValueKey(item.title))
         .fadeIn(duration: 500.ms)

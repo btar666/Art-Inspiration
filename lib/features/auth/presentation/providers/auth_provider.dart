@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../data/auth_api_service.dart';
 import '../../data/auth_storage.dart';
+import '../../../notifications/data/notifications_storage.dart';
 import '../../../home/data/products_repository.dart';
 import '../../data/models/auth_models.dart';
 
@@ -105,9 +106,20 @@ class AuthNotifier extends Notifier<AuthState> {
   @override
   AuthState build() {
     final storage = ref.read(authStorageProvider);
+    final user = storage.user;
+    if (storage.isLoggedIn && user != null) {
+      final userKey = user.notificationUserKey;
+      if (userKey.isNotEmpty) {
+        Future.microtask(
+          () => ref
+              .read(notificationsStorageProvider)
+              .onUserSessionStarted(userKey),
+        );
+      }
+    }
     return AuthState(
       isLoggedIn: storage.isLoggedIn,
-      user: storage.user,
+      user: user,
     );
   }
 
@@ -123,9 +135,18 @@ class AuthNotifier extends Notifier<AuthState> {
         identifier: identifier,
         password: password,
       );
+      final user = session.user ?? _repo.currentUser;
+      if (user != null) {
+        final userKey = user.notificationUserKey;
+        if (userKey.isNotEmpty) {
+          await ref
+              .read(notificationsStorageProvider)
+              .onUserSessionStarted(userKey);
+        }
+      }
       state = AuthState(
         isLoggedIn: true,
-        user: session.user ?? _repo.currentUser,
+        user: user,
       );
       return true;
     } on ApiException catch (e) {

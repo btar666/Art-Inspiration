@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -5,7 +6,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../checkout/data/local_orders_storage.dart';
+import '../../../cart/presentation/cart_actions.dart';
 import '../../data/models/order_model.dart';
 import '../providers/orders_provider.dart';
 import '../widgets/order_details_action_bar.dart';
@@ -37,18 +40,6 @@ class OrderDetailsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    OrderDetailModel? localOrder;
-    for (final item in ref.watch(localOrdersNotifierProvider)) {
-      if (item.id == orderId) {
-        localOrder = item;
-        break;
-      }
-    }
-
-    if (localOrder != null) {
-      return _OrderDetailsView(order: localOrder);
-    }
-
     final erpAsync = ref.watch(erpOrderDetailProvider(orderId));
 
     return erpAsync.when(
@@ -56,11 +47,23 @@ class OrderDetailsPage extends ConsumerWidget {
         backgroundColor: OrderDetailsPageMetrics.pageBackground,
         body: Center(child: CircularProgressIndicator()),
       ),
-      error: (_, __) => const _OrderDetailsMissing(
-        message: 'تعذر جلب تفاصيل الطلب',
-      ),
+      error: (_, __) {
+        final localOrder =
+            ref.read(localOrdersNotifierProvider.notifier).orderById(orderId);
+        if (localOrder != null) {
+          return _OrderDetailsView(order: localOrder);
+        }
+        return const _OrderDetailsMissing(
+          message: 'تعذر جلب تفاصيل الطلب',
+        );
+      },
       data: (OrderDetailModel? order) {
         if (order == null) {
+          final localOrder =
+              ref.read(localOrdersNotifierProvider.notifier).orderById(orderId);
+          if (localOrder != null) {
+            return _OrderDetailsView(order: localOrder);
+          }
           return const _OrderDetailsMissing(
             message: 'الطلب غير موجود',
           );
@@ -106,13 +109,20 @@ class _OrderDetailsMissing extends StatelessWidget {
   }
 }
 
-class _OrderDetailsView extends StatelessWidget {
+class _OrderDetailsView extends ConsumerWidget {
   const _OrderDetailsView({required this.order});
 
   final OrderDetailModel order;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authNotifierProvider).user;
+    final customerName = _displayField(order.customerName, user?.name);
+    final phone = _displayField(order.phone, user?.phone);
+    final altPhone = order.altPhone?.trim().isNotEmpty == true
+        ? order.altPhone!.trim()
+        : 'لا يوجد';
+
     final screenHeight = MediaQuery.sizeOf(context).height;
     final footerHeight =
         screenHeight * OrderDetailsPageMetrics.footerHeightFraction;
@@ -151,21 +161,27 @@ class _OrderDetailsView extends StatelessWidget {
                         children: [
                           _InlineInfoRow(
                             label: 'اسم الزبون :',
-                            value: order.customerName,
+                            value: customerName,
                           ),
                           _InlineInfoRow(
                             label: 'رقم الهاتف :',
-                            value: order.phone,
+                            value: phone,
                           ),
                           _InlineInfoRow(
                             label: 'رقم هاتف آخر :',
-                            value: order.altPhone ?? 'لا يوجد',
+                            value: altPhone,
                           ),
                           _InlineInfoRow(
-                            label: 'عنوان التوصيل :',
-                            value: order.deliveryAddress,
-                            isLast: true,
+                            label: 'طريقة الاستلام :',
+                            value: order.displayDeliveryMethodLabel,
+                            isLast: order.isPickupAtCompany,
                           ),
+                          if (!order.isPickupAtCompany)
+                            _InlineInfoRow(
+                              label: 'عنوان التوصيل :',
+                              value: order.deliveryAddress,
+                              isLast: true,
+                            ),
                         ],
                       ),
                       SizedBox(height: 12.h),
@@ -177,7 +193,7 @@ class _OrderDetailsView extends StatelessWidget {
                       ),
                       SizedBox(height: 20.h),
                       Text(
-                        'المنتجات المطلوبة ( ${order.items.length} )',
+                        'المنتجات المطلوبة',
                         style: AppTextStyles.ordersSectionTitle(),
                       ),
                       SizedBox(height: 12.h),
@@ -209,22 +225,8 @@ class _OrderDetailsView extends StatelessWidget {
                       _InfoCard(
                         children: [
                           _InfoRow(
-                            label: 'سعر الطلب :',
-                            value: order.formattedPrice,
-                            valueColor: AppColors.primary,
-                          ),
-                          SizedBox(height: 10.h),
-                          _InfoRow(
-                            label: 'سعر التوصيل :',
-                            value: order.formattedDeliveryPrice,
-                            valueColor: order.deliveryPrice == 0
-                                ? AppColors.orderFreeDelivery
-                                : AppColors.textPrimary,
-                          ),
-                          SizedBox(height: 10.h),
-                          _InfoRow(
                             label: 'السعر الكلي :',
-                            value: order.formattedTotalPrice,
+                            value: order.formattedPrice,
                             valueColor: AppColors.orderTotalPrice,
                           ),
                         ],
@@ -248,7 +250,7 @@ class _OrderDetailsView extends StatelessWidget {
                     child: Transform.translate(
                       offset: Offset(0, 5.h),
                       child: OrderDetailsActionBar(
-                        onPrimary: () {},
+                        onPrimary: () => reorderToCart(context, ref, order),
                         onSecondary: () => context.pop(),
                       ),
                     ),
@@ -260,6 +262,13 @@ class _OrderDetailsView extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _displayField(String value, String? fallback) {
+    final trimmed = value.trim();
+    if (trimmed.isNotEmpty && trimmed != '—') return trimmed;
+    final fb = fallback?.trim() ?? '';
+    return fb.isEmpty ? '—' : fb;
   }
 }
 
@@ -297,23 +306,9 @@ class _OrderDateRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      textDirection: TextDirection.ltr,
-      children: [
-        Padding(
-          padding: EdgeInsets.only(left: 10.w),
-          child: Text(
-            date,
-            style: AppTextStyles.ordersDetailValue(),
-          ),
-        ),
-        const Spacer(),
-        Text(
-          'تاريخ الطلب :',
-          style: AppTextStyles.ordersDetailLabel(),
-          textDirection: TextDirection.rtl,
-        ),
-      ],
+    return _OrderDetailTextRow(
+      label: 'تاريخ الطلب :',
+      value: date,
     );
   }
 }
@@ -333,22 +328,7 @@ class _InlineInfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(bottom: isLast ? 0 : 12.h),
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: Wrap(
-          spacing: 6.w,
-          runSpacing: 4.h,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          alignment: WrapAlignment.end,
-          children: [
-            Text(label, style: AppTextStyles.ordersDetailLabel()),
-            Text(
-              value,
-              style: AppTextStyles.ordersDetailValue(),
-            ),
-          ],
-        ),
-      ),
+      child: _OrderDetailTextRow(label: label, value: value),
     );
   }
 }
@@ -366,17 +346,38 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Wrap(
-        spacing: 6.w,
-        runSpacing: 4.h,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        alignment: WrapAlignment.end,
+    return _OrderDetailTextRow(
+      label: label,
+      value: value,
+      valueColor: valueColor,
+    );
+  }
+}
+
+class _OrderDetailTextRow extends StatelessWidget {
+  const _OrderDetailTextRow({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text.rich(
+      textDirection: TextDirection.rtl,
+      textAlign: TextAlign.right,
+      TextSpan(
         children: [
-          Text(label, style: AppTextStyles.ordersDetailLabel()),
-          Text(
-            value,
+          TextSpan(
+            text: label,
+            style: AppTextStyles.ordersDetailLabel(),
+          ),
+          TextSpan(
+            text: ' $value',
             style: AppTextStyles.ordersDetailValue(color: valueColor),
           ),
         ],
@@ -402,11 +403,31 @@ class _OrderLineItemRow extends StatelessWidget {
             color: item.imageBgColor,
             borderRadius: BorderRadius.circular(14.r),
           ),
-          child: Icon(
-            Icons.spa_outlined,
-            size: 32.sp,
-            color: AppColors.primary.withValues(alpha: 0.35),
-          ),
+          clipBehavior: Clip.antiAlias,
+          child: item.imageUrl != null
+              ? CachedNetworkImage(
+                  imageUrl: item.imageUrl!,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) => Center(
+                    child: Icon(
+                      Icons.spa_outlined,
+                      size: 32.sp,
+                      color: AppColors.primary.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  errorWidget: (_, __, ___) => Center(
+                    child: Icon(
+                      Icons.spa_outlined,
+                      size: 32.sp,
+                      color: AppColors.primary.withValues(alpha: 0.35),
+                    ),
+                  ),
+                )
+              : Icon(
+                  Icons.spa_outlined,
+                  size: 32.sp,
+                  color: AppColors.primary.withValues(alpha: 0.35),
+                ),
         ),
         SizedBox(width: 12.w),
         Expanded(

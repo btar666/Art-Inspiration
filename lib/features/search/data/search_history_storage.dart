@@ -5,9 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/storage/onboarding_storage.dart';
-import 'search_mock_data.dart';
 
-/// تخزين سجل البحث محلياً
+/// تخزين سجل البحث محلياً على الجهاز
 class SearchHistoryStorage {
   SearchHistoryStorage(this._prefs);
 
@@ -15,9 +14,7 @@ class SearchHistoryStorage {
 
   List<String> load() {
     final raw = _prefs.getString(AppConstants.searchHistoryKey);
-    if (raw == null) {
-      return List.of(SearchMockData.defaultHistory);
-    }
+    if (raw == null || raw.isEmpty) return [];
 
     try {
       final decoded = jsonDecode(raw) as List<dynamic>;

@@ -14,7 +14,6 @@ import '../../../../shared/widgets/decorative_background.dart';
 import '../../../../shared/widgets/form_error_animator.dart';
 import '../../data/iraqi_governorates.dart';
 import '../providers/auth_provider.dart';
-import '../widgets/auth_message_dialog.dart';
 
 /// صفحة طلب الانضمام / إنشاء حساب
 class RegisterPage extends ConsumerStatefulWidget {
@@ -37,6 +36,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   int _shopShakeTick = 0;
   int _passwordShakeTick = 0;
   int _logoShakeTick = 0;
+  String? _nameError;
+  String? _phoneError;
+  String? _shopError;
+  String? _passwordError;
 
   @override
   void dispose() {
@@ -49,7 +52,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   bool _isNameInvalid() => _nameController.text.trim().isEmpty;
 
-  bool _isPhoneInvalid() => _phoneController.text.trim().length < 10;
+  String _normalizedPhone() =>
+      _phoneController.text.replaceAll(RegExp(r'\D'), '');
+
+  bool _isPhoneInvalid() {
+    final phone = _normalizedPhone();
+    return !RegExp(r'^07\d{9}$').hasMatch(phone);
+  }
+
+  String _phoneValidationMessage() =>
+      'رقم الهاتف يجب أن يكون 11 رقم ويبدأ ب 07';
 
   bool _isGovernorateInvalid() => _selectedGovernorate == null;
 
@@ -57,9 +69,24 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   bool _isPasswordInvalid() => _passwordController.text.length < 5;
 
+  void _clearErrors() {
+    _nameError = null;
+    _phoneError = null;
+    _shopError = null;
+    _passwordError = null;
+  }
+
+  void _applyRegisterApiError(String error) {
+    setState(() {
+      _clearErrors();
+      _phoneError = error;
+      _phoneShakeTick++;
+      _logoShakeTick++;
+    });
+  }
+
   Future<void> _onSubmit() async {
     FocusManager.instance.primaryFocus?.unfocus();
-    _formKey.currentState!.validate();
 
     final nameInvalid = _isNameInvalid();
     final phoneInvalid = _isPhoneInvalid();
@@ -73,28 +100,38 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         shopInvalid ||
         passwordInvalid) {
       setState(() {
-        if (nameInvalid) _nameShakeTick++;
-        if (phoneInvalid) _phoneShakeTick++;
-        if (governorateInvalid) _governorateShakeTick++;
-        if (shopInvalid) _shopShakeTick++;
-        if (passwordInvalid) _passwordShakeTick++;
+        _clearErrors();
+        if (nameInvalid) {
+          _nameError = 'يرجى إدخال اسمك الكامل';
+          _nameShakeTick++;
+        }
+        if (phoneInvalid) {
+          _phoneError = _phoneValidationMessage();
+          _phoneShakeTick++;
+        }
+        if (shopInvalid) {
+          _shopError = 'يرجى إدخال اسم المتجر';
+          _shopShakeTick++;
+        }
+        if (passwordInvalid) {
+          _passwordError = 'كلمة المرور يجب أن تكون 5 أحرف على الأقل';
+          _passwordShakeTick++;
+        }
+        if (governorateInvalid) {
+          _governorateShakeTick++;
+        }
         _logoShakeTick++;
       });
 
-      final issues = <String>[
-        if (nameInvalid) 'يرجى إدخال اسمك الكامل',
-        if (phoneInvalid) 'يرجى إدخال رقم هاتف صحيح (10 أرقام على الأقل)',
-        if (governorateInvalid) 'يرجى اختيار محافظتك',
-        if (shopInvalid) 'يرجى إدخال اسم المتجر',
-        if (passwordInvalid) 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
-      ];
-      await AuthMessageDialog.showValidation(context, issues: issues);
+      _formKey.currentState?.validate();
       return;
     }
 
+    setState(_clearErrors);
+
     final success = await ref.read(authNotifierProvider.notifier).register(
           fullName: _nameController.text.trim(),
-          phone: _phoneController.text.trim(),
+          phone: _normalizedPhone(),
           password: _passwordController.text,
           shopName: _shopController.text.trim(),
           governorate: _selectedGovernorate!,
@@ -110,16 +147,21 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
     final error = ref.read(authNotifierProvider).errorMessage;
     if (error != null) {
-      await AuthMessageDialog.showError(
-        context,
-        title: 'تعذر إرسال الطلب',
-        message: error,
-      );
+      _applyRegisterApiError(error);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(authNotifierProvider, (previous, next) {
+      if (previous?.isLoading == true &&
+          !next.isLoading &&
+          next.errorMessage != null &&
+          !next.isLoggedIn) {
+        _applyRegisterApiError(next.errorMessage!);
+      }
+    });
+
     final isLoading = ref.watch(authNotifierProvider).isLoading;
 
     return Scaffold(
@@ -145,8 +187,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         hint: 'أسمك',
                         controller: _nameController,
                         icon: Icons.person_outline,
-                        validator: (v) =>
-                            _isNameInvalid() ? 'أدخل اسمك' : null,
+                        errorText: _nameError,
+                        onChanged: (_) {
+                          if (_nameError != null) {
+                            setState(() => _nameError = null);
+                          }
+                        },
                       )
                           .animate()
                           .fadeIn(duration: 350.ms, delay: 80.ms)
@@ -160,8 +206,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         controller: _phoneController,
                         icon: Icons.phone_android_outlined,
                         keyboardType: TextInputType.phone,
-                        validator: (v) =>
-                            _isPhoneInvalid() ? 'أدخل رقم هاتف صحيح' : null,
+                        errorText: _phoneError,
+                        onChanged: (_) {
+                          if (_phoneError != null) {
+                            setState(() => _phoneError = null);
+                          }
+                        },
                       )
                           .animate()
                           .fadeIn(duration: 350.ms, delay: 140.ms)
@@ -175,10 +225,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         icon: Icons.map_outlined,
                         value: _selectedGovernorate,
                         items: IraqiGovernorates.all,
-                        onChanged: (v) =>
-                            setState(() => _selectedGovernorate = v),
+                        onChanged: (v) {
+                          setState(() {
+                            _selectedGovernorate = v;
+                            _formKey.currentState?.validate();
+                          });
+                        },
                         validator: (v) =>
-                            _isGovernorateInvalid() ? 'اختر محافظتك' : null,
+                            _isGovernorateInvalid() ? 'يرجى اختيار محافظتك' : null,
                       )
                           .animate()
                           .fadeIn(duration: 350.ms, delay: 200.ms)
@@ -191,8 +245,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         hint: 'اسم الكوزمتك',
                         controller: _shopController,
                         icon: Icons.storefront_outlined,
-                        validator: (v) =>
-                            _isShopInvalid() ? 'أدخل اسم المتجر' : null,
+                        errorText: _shopError,
+                        onChanged: (_) {
+                          if (_shopError != null) {
+                            setState(() => _shopError = null);
+                          }
+                        },
                       )
                           .animate()
                           .fadeIn(duration: 350.ms, delay: 260.ms)
@@ -206,8 +264,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         controller: _passwordController,
                         icon: Icons.lock_outline,
                         obscureText: true,
-                        validator: (v) =>
-                            _isPasswordInvalid() ? 'أدخل كلمة مرور (6 أحرف)' : null,
+                        errorText: _passwordError,
+                        onChanged: (_) {
+                          if (_passwordError != null) {
+                            setState(() => _passwordError = null);
+                          }
+                        },
                       )
                           .animate()
                           .fadeIn(duration: 350.ms, delay: 320.ms)

@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
-
 /// مجموعة الإشعارات حسب التاريخ
 enum NotificationGroup {
   today('اليوم'),
-  yesterday('أمس');
+  yesterday('أمس'),
+  older('سابق');
 
   const NotificationGroup(this.label);
 
@@ -18,7 +17,6 @@ class AppNotificationModel {
     required this.title,
     required this.description,
     required this.timeLabel,
-    required this.icon,
     this.isRead = true,
   });
 
@@ -27,7 +25,6 @@ class AppNotificationModel {
   final String title;
   final String description;
   final String timeLabel;
-  final IconData icon;
   final bool isRead;
 
   bool get isHighlighted => !isRead;
@@ -41,7 +38,6 @@ class AppNotificationModel {
       title: title,
       description: description,
       timeLabel: timeLabel,
-      icon: icon,
       isRead: isRead ?? this.isRead,
     );
   }

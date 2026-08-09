@@ -1,4 +1,5 @@
 import 'models/catalog_stats.dart';
+import 'models/product_model.dart';
 
 /// بناء بيانات الكتالوج من قوائم أمان ERP
 abstract final class ErpCatalogMetadata {
@@ -30,6 +31,36 @@ abstract final class ErpCatalogMetadata {
         productsWithImages: productsWithImages,
         productsWithoutBrand: productsWithoutBrand,
       ),
+    );
+  }
+
+  /// أقسام وبراندات من قائمة المنتجات
+  static CatalogMetadata fromProducts(
+    List<ProductModel> products, {
+    int? totalProducts,
+  }) {
+    final categoryNames = <String>{};
+    final brandNames = <String>{};
+    var productsWithImages = 0;
+    var productsWithoutBrand = 0;
+
+    for (final product in products) {
+      if (product.categoryName.isNotEmpty) {
+        categoryNames.add(product.categoryName);
+      }
+      if (product.brandName.isNotEmpty) {
+        brandNames.add(product.brandName);
+      }
+      if (product.imageUrl != null) productsWithImages++;
+      if (product.brandName.isEmpty) productsWithoutBrand++;
+    }
+
+    return fromLookups(
+      categoryNames: categoryNames.toList(),
+      brandNames: brandNames.toList(),
+      totalProducts: totalProducts ?? products.length,
+      productsWithImages: productsWithImages,
+      productsWithoutBrand: productsWithoutBrand,
     );
   }
 }

@@ -18,8 +18,6 @@ class CheckoutSuccessPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final footerHeight = screenHeight * CartPageMetrics.footerHeightFraction;
     final bottomRadius = CartPageMetrics.whiteContainerBottomRadius();
 
     return Scaffold(
@@ -76,21 +74,16 @@ class CheckoutSuccessPage extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(
-            height: footerHeight,
-            child: ColoredBox(
-              color: CartPageMetrics.pageBackground,
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: CartPageMetrics.footerPadding(),
-                  child: Transform.translate(
-                    offset: CartPageMetrics.footerButtonOffset(),
-                    child: CartCheckoutFooter(
-                      label: 'العودة للطلبات',
-                      onTap: () => context.go(AppRoutes.orders),
-                    ),
-                  ),
+          ColoredBox(
+            color: CartPageMetrics.pageBackground,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: CartPageMetrics.footerPadding(),
+                child: CartCheckoutFooter(
+                  label: 'العودة للطلبات',
+                  onTap: () => context.go(AppRoutes.orders),
+                  height: CartPageMetrics.footerHeight(),
                 ),
               ),
             ),

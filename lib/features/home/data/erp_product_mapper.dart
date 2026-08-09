@@ -57,6 +57,10 @@ abstract final class ErpProductMapper {
     final sku = record['sku']?.toString().trim();
     final barcode = record['barcode']?.toString().trim();
     final isActive = record['is_active'] != false;
+    final trackStock = record['track_stock'] != false;
+    final stockQuantity = _parseQuantity(
+      record['quantity'] ?? record['stock_quantity'] ?? record['stock'],
+    );
 
     final matchKeys = <String>{
       categoryName,
@@ -79,7 +83,20 @@ abstract final class ErpProductMapper {
       sku: sku != null && sku.isNotEmpty ? sku : null,
       barcode: barcode != null && barcode.isNotEmpty ? barcode : null,
       isActive: isActive,
+      stockQuantity: stockQuantity,
+      trackStock: trackStock,
     );
+  }
+
+  static int? _parseQuantity(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.floor();
+    if (value is String) {
+      final parsed = double.tryParse(value.trim());
+      return parsed?.floor();
+    }
+    return null;
   }
 
   static int? _asInt(dynamic value) {

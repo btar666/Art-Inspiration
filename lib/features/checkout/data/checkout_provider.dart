@@ -2,9 +2,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/storage/onboarding_storage.dart';
+import '../../auth/presentation/providers/auth_provider.dart';
 import '../../cart/data/models/cart_item_model.dart';
 import '../../settings/data/models/delivery_address_model.dart';
 import '../../settings/presentation/providers/saved_addresses_provider.dart';
+
+/// طريقة استلام الطلب
+enum CheckoutDeliveryMethod {
+  pickupAtCompany,
+  delivery,
+}
+
+extension CheckoutDeliveryMethodX on CheckoutDeliveryMethod {
+  String get label {
+    switch (this) {
+      case CheckoutDeliveryMethod.pickupAtCompany:
+        return 'استلام في الشركة';
+      case CheckoutDeliveryMethod.delivery:
+        return 'توصيل';
+    }
+  }
+}
 
 /// مسودة الطلب أثناء عملية الشراء
 class CheckoutDraft {
@@ -13,6 +31,7 @@ class CheckoutDraft {
     this.customerName = '',
     this.phone = '',
     this.secondPhone = '',
+    this.deliveryMethod = CheckoutDeliveryMethod.delivery,
     this.selectedAddress,
   });
 
@@ -20,6 +39,7 @@ class CheckoutDraft {
   final String customerName;
   final String phone;
   final String secondPhone;
+  final CheckoutDeliveryMethod deliveryMethod;
   final DeliveryAddressModel? selectedAddress;
 
   int get subtotal => items.fold(0, (sum, item) => sum + item.lineTotal);
@@ -28,13 +48,24 @@ class CheckoutDraft {
 
   bool get hasItems => items.isNotEmpty;
 
-  bool get hasAddress => selectedAddress != null;
+  bool get requiresAddress =>
+      deliveryMethod == CheckoutDeliveryMethod.delivery;
+
+  bool get hasAddress => !requiresAddress || selectedAddress != null;
+
+  String get deliveryAddressLabel {
+    if (deliveryMethod == CheckoutDeliveryMethod.pickupAtCompany) {
+      return CheckoutDeliveryMethod.pickupAtCompany.label;
+    }
+    return selectedAddress?.fullAddress ?? '';
+  }
 
   CheckoutDraft copyWith({
     List<CartItemModel>? items,
     String? customerName,
     String? phone,
     String? secondPhone,
+    CheckoutDeliveryMethod? deliveryMethod,
     DeliveryAddressModel? selectedAddress,
     bool clearAddress = false,
   }) {
@@ -43,6 +74,7 @@ class CheckoutDraft {
       customerName: customerName ?? this.customerName,
       phone: phone ?? this.phone,
       secondPhone: secondPhone ?? this.secondPhone,
+      deliveryMethod: deliveryMethod ?? this.deliveryMethod,
       selectedAddress:
           clearAddress ? null : (selectedAddress ?? this.selectedAddress),
     );
@@ -61,7 +93,49 @@ class CheckoutNotifier extends Notifier<CheckoutDraft?> {
     final addresses = ref.read(savedAddressesNotifierProvider);
     state = CheckoutDraft(
       items: List.of(items),
+      deliveryMethod: CheckoutDeliveryMethod.delivery,
       selectedAddress: DeliveryAddressModel.currentFrom(addresses),
+    );
+    syncFromProfileAndAddress();
+  }
+
+  /// يحدّث الاسم والهاتف من البروفايل والعنوان من «العنوان الحالي» المحفوظ
+  void syncFromProfileAndAddress() {
+    if (state == null) return;
+
+    final user = ref.read(authNotifierProvider).user;
+    final addresses = ref.read(savedAddressesNotifierProvider);
+    final currentAddress = DeliveryAddressModel.currentFrom(addresses);
+    final saved = ref.read(checkoutCustomerStorageProvider).load();
+    final isDelivery =
+        state!.deliveryMethod == CheckoutDeliveryMethod.delivery;
+
+    state = state!.copyWith(
+      customerName: user?.name.trim() ?? '',
+      phone: (user?.phone ?? '').trim(),
+      secondPhone: saved.secondPhone,
+      selectedAddress: isDelivery ? currentAddress : null,
+      clearAddress: isDelivery && currentAddress == null,
+    );
+  }
+
+  void setDeliveryMethod(CheckoutDeliveryMethod method) {
+    if (state == null) return;
+
+    if (method == CheckoutDeliveryMethod.pickupAtCompany) {
+      state = state!.copyWith(
+        deliveryMethod: method,
+        clearAddress: true,
+      );
+      return;
+    }
+
+    final current =
+        DeliveryAddressModel.currentFrom(ref.read(savedAddressesNotifierProvider));
+    state = state!.copyWith(
+      deliveryMethod: method,
+      selectedAddress: current,
+      clearAddress: current == null,
     );
   }
 

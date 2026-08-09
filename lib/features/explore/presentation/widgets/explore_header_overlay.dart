@@ -48,7 +48,15 @@ class ExploreHeaderOverlay extends StatelessWidget {
                 children: [
                   const Positioned.fill(
                     child: PinnedBlurGradientBackground(
-                      fadeStops: PinnedBlurHeaderStyle.homeFadeStops,
+                      fadeStops: PinnedBlurHeaderStyle.exploreFadeStops,
+                      strongBlurSigma:
+                          PinnedBlurHeaderStyle.exploreStrongBlurSigma,
+                      mediumBlurSigma:
+                          PinnedBlurHeaderStyle.exploreMediumBlurSigma,
+                      lightBlurSigma:
+                          PinnedBlurHeaderStyle.exploreLightBlurSigma,
+                      strongBlurMaskEnd:
+                          PinnedBlurHeaderStyle.exploreStrongBlurMaskEnd,
                     ),
                   ),
                   Padding(

@@ -66,8 +66,6 @@ class CartPage extends ConsumerWidget {
         items.fold(0, (sum, item) => sum + item.quantity);
     final subtotal = ref.watch(cartSubtotalProvider);
     final cart = ref.read(cartNotifierProvider.notifier);
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final footerHeight = screenHeight * CartPageMetrics.footerHeightFraction;
     final bottomRadius = CartPageMetrics.whiteContainerBottomRadius();
 
     Future<void> onRefresh() => cart.reload();
@@ -93,19 +91,33 @@ class CartPage extends ConsumerWidget {
                 child: SafeArea(
                   bottom: false,
                   child: isEmpty
-                      ? AppRefreshIndicator(
-                          onRefresh: onRefresh,
-                          child: ListView(
-                            physics: const AlwaysScrollableScrollPhysics(
-                              parent: BouncingScrollPhysics(),
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            CartPageHeader(
+                              onBack: () => context.pop(),
                             ),
-                            children: [
-                              CartPageHeader(
-                                onBack: () => context.pop(),
+                            Expanded(
+                              child: AppRefreshIndicator(
+                                onRefresh: onRefresh,
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return SingleChildScrollView(
+                                      physics: const AlwaysScrollableScrollPhysics(
+                                        parent: BouncingScrollPhysics(),
+                                      ),
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          minHeight: constraints.maxHeight,
+                                        ),
+                                        child: const CartEmptyState(),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
-                              const CartEmptyState(),
-                            ],
-                          ),
+                            ),
+                          ],
                         )
                       : Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -160,9 +172,6 @@ class CartPage extends ConsumerWidget {
                                   SizedBox(height: 8.h),
                                   CartPriceSummary(
                                     subtotal: _formatPrice(subtotal),
-                                    deliveryLabel: 'مجاني',
-                                    total: _formatPrice(subtotal),
-                                    isFreeDelivery: true,
                                   ),
                                 ],
                               ),
@@ -175,20 +184,15 @@ class CartPage extends ConsumerWidget {
             ),
           ),
           if (!isEmpty)
-            SizedBox(
-              height: footerHeight,
-              child: ColoredBox(
-                color: CartPageMetrics.pageBackground,
-                child: SafeArea(
-                  top: false,
-                  child: Padding(
-                    padding: CartPageMetrics.footerPadding(),
-                    child: Transform.translate(
-                      offset: CartPageMetrics.footerButtonOffset(),
-                      child: CartCheckoutFooter(
-                        onTap: () => _startCheckout(context, ref),
-                      ),
-                    ),
+            ColoredBox(
+              color: CartPageMetrics.pageBackground,
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: CartPageMetrics.footerPadding(),
+                  child: CartCheckoutFooter(
+                    onTap: () => _startCheckout(context, ref),
+                    height: CartPageMetrics.footerHeight(),
                   ),
                 ),
               ),

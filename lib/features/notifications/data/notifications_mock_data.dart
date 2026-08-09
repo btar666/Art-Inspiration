@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 import 'models/notification_model.dart';
 
 /// بيانات تجريبية للإشعارات
@@ -11,7 +9,6 @@ abstract final class NotificationsMockData {
       title: 'تمت مراجعة طلبك',
       description: 'تمت مراجعة طلبك بنجاح وسيتم التواصل معك قريباً',
       timeLabel: 'الآن',
-      icon: Icons.schedule_rounded,
       isRead: false,
     ),
     AppNotificationModel(
@@ -20,7 +17,6 @@ abstract final class NotificationsMockData {
       title: 'وصل التحديث الجديد!',
       description: 'تحقق من أحدث المنتجات والعروض المتوفرة الآن',
       timeLabel: 'منذ 10 دقائق',
-      icon: Icons.spa_outlined,
       isRead: false,
     ),
     AppNotificationModel(
@@ -29,7 +25,6 @@ abstract final class NotificationsMockData {
       title: 'تم شحن طلبك',
       description: 'طلبك في الطريق إليك وسيصل خلال يومين',
       timeLabel: 'أمس',
-      icon: Icons.schedule_rounded,
     ),
     AppNotificationModel(
       id: '4',
@@ -37,7 +32,6 @@ abstract final class NotificationsMockData {
       title: 'تحديث في حالة الطلب',
       description: 'تم تحديث حالة طلبك إلى قيد التجهيز',
       timeLabel: 'أمس',
-      icon: Icons.schedule_rounded,
     ),
     AppNotificationModel(
       id: '5',
@@ -45,7 +39,6 @@ abstract final class NotificationsMockData {
       title: 'تم إلغاء الطلب',
       description: 'تم إلغاء طلبك بناءً على طلبك',
       timeLabel: 'أمس',
-      icon: Icons.schedule_rounded,
     ),
     AppNotificationModel(
       id: '6',
@@ -53,7 +46,6 @@ abstract final class NotificationsMockData {
       title: 'عرض خاص لك',
       description: 'خصم 20% على منتجات العناية بالبشرة',
       timeLabel: 'أمس',
-      icon: Icons.schedule_rounded,
     ),
     AppNotificationModel(
       id: '7',
@@ -61,7 +53,6 @@ abstract final class NotificationsMockData {
       title: 'لم تتم معالجة طلبك بعد',
       description: 'طلبك قيد المراجعة وسنخبرك عند اكتمال المعالجة',
       timeLabel: 'أمس',
-      icon: Icons.schedule_rounded,
     ),
   ];
 

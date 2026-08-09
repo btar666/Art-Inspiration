@@ -1,12 +1,5 @@
-/// بيانات تجريبية لصفحة البحث
+/// بيانات تجريبية لصفحة البحث (فلاتر فقط)
 abstract final class SearchMockData {
-  static const defaultHistory = [
-    'مكياج',
-    'عطور Dior',
-    'كريم مرطب',
-    'شامبو الشعر',
-  ];
-
   static const brands = [
     'الكل',
     'Huda Beauty',

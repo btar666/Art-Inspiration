@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/router/floating_cart_route_rules.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/cart/presentation/providers/cart_provider.dart';
 import '../../features/home/presentation/widgets/floating_cart_button.dart';
 
@@ -11,33 +12,28 @@ import '../../features/home/presentation/widgets/floating_cart_button.dart';
 class GlobalFloatingCartOverlay extends ConsumerWidget {
   const GlobalFloatingCartOverlay({
     super.key,
+    required this.router,
     required this.location,
   });
 
+  final GoRouter router;
   final String location;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isLoggedIn = ref.watch(authNotifierProvider).isLoggedIn;
     final itemCount = ref.watch(cartItemCountProvider);
-    final visible =
-        itemCount > 0 && FloatingCartRouteRules.shouldShow(location);
+    final visible = isLoggedIn &&
+        itemCount > 0 &&
+        FloatingCartRouteRules.shouldShow(location);
 
-    return Positioned.fill(
-      child: IgnorePointer(
-        ignoring: !visible,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            if (visible)
-              DraggableFloatingCartButton(
-                key: const ValueKey('global-floating-cart'),
-                onTap: () => context.push(AppRoutes.cart),
-                bottomReservedHeight:
-                    FloatingCartRouteRules.bottomReservedHeight(location),
-              ),
-          ],
-        ),
-      ),
+    if (!visible) return const SizedBox.shrink();
+
+    return DraggableFloatingCartButton(
+      key: const ValueKey('global-floating-cart'),
+      onTap: () => router.push(AppRoutes.cart),
+      bottomReservedHeight:
+          FloatingCartRouteRules.bottomReservedHeight(location),
     );
   }
 }

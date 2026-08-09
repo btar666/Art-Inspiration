@@ -6,3 +6,8 @@ import '../../data/models/search_filter_state.dart';
 final appliedSearchFilterProvider = StateProvider<SearchFilterState?>(
   (ref) => null,
 );
+
+/// نص بحث معلّق من الرئيسية (مثل الباركود) — يُستهلك عند فتح صفحة البحث
+final pendingSearchQueryProvider = StateProvider<String?>(
+  (ref) => null,
+);

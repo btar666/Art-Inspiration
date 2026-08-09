@@ -248,7 +248,32 @@ class AppNotificationItem {
       title: (json['title'] ?? json['name'] ?? 'إشعار').toString(),
       body: (json['body'] ?? json['message'] ?? json['description'] ?? '')
           .toString(),
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? ''),
+      createdAt: _parseCreatedAt(
+        json['created_at'] ?? json['createdAt'] ?? json['date'],
+      ),
     );
+  }
+
+  /// يحوّل وقت السيرفر (غالباً UTC بدون Z) إلى التوقيت المحلي
+  static DateTime? _parseCreatedAt(dynamic value) {
+    if (value == null) return null;
+    final raw = value.toString().trim();
+    if (raw.isEmpty) return null;
+
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return null;
+
+    if (parsed.isUtc) return parsed.toLocal();
+
+    return DateTime.utc(
+      parsed.year,
+      parsed.month,
+      parsed.day,
+      parsed.hour,
+      parsed.minute,
+      parsed.second,
+      parsed.millisecond,
+      parsed.microsecond,
+    ).toLocal();
   }
 }

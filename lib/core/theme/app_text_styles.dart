@@ -168,6 +168,14 @@ abstract final class AppTextStyles {
         color: color ?? AppColors.textOnPrimary,
       );
 
+  static TextStyle homeProductCardOutOfStock({Color? color, double? fontSize}) =>
+      _base.copyWith(
+        fontSize: fontSize ?? 11.94.sp,
+        fontWeight: FontWeight.w700,
+        height: 1.5,
+        color: color ?? AppColors.orderFreeDelivery,
+      );
+
   static TextStyle homeProductCardPrice({Color? color}) => _base.copyWith(
         fontSize: 14.sp,
         fontWeight: FontWeight.w700,
@@ -346,29 +354,36 @@ abstract final class AppTextStyles {
       );
 
   // ── Notifications ─────────────────────────────────────────
-  static TextStyle notificationGroupTitle({Color? color}) => _base.copyWith(
-        fontSize: 16.sp,
-        fontWeight: FontWeight.w800,
-        color: color ?? AppColors.homeSectionTitle,
+  static TextStyle notificationGroupTitle({Color? color}) => GoogleFonts.almarai(
+        fontSize: 15.96.sp,
+        fontWeight: FontWeight.w700,
+        height: 1.5,
+        letterSpacing: 0,
+        color: color ?? const Color(0xFF022B2F).withValues(alpha: 0.6),
       );
 
   static TextStyle notificationTitle({Color? color}) => _base.copyWith(
-        fontSize: 14.sp,
+        fontSize: 13.96.sp,
         fontWeight: FontWeight.w700,
-        color: color ?? AppColors.textPrimary,
+        height: 1.5,
+        letterSpacing: 0,
+        color: color ?? const Color(0xFF040814),
       );
 
   static TextStyle notificationBody({Color? color}) => _base.copyWith(
-        fontSize: 12.sp,
-        fontWeight: FontWeight.w400,
+        fontSize: 11.97.sp,
+        fontWeight: FontWeight.w700,
         height: 1.5,
-        color: color ?? AppColors.textSecondary,
+        letterSpacing: 0,
+        color: color ?? const Color(0xFF040814),
       );
 
-  static TextStyle notificationTime({Color? color}) => _base.copyWith(
-        fontSize: 11.sp,
-        fontWeight: FontWeight.w500,
-        color: color ?? AppColors.textSecondary,
+  static TextStyle notificationTime({Color? color}) => GoogleFonts.almarai(
+        fontSize: 11.97.sp,
+        fontWeight: FontWeight.w700,
+        height: 1.5,
+        letterSpacing: 0,
+        color: color ?? const Color(0xFF040814),
       );
 
   // ── Search ──────────────────────────────────────────────

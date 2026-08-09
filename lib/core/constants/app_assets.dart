@@ -19,17 +19,22 @@ abstract final class AppAssets {
 
   static const String frameIllustration = 'assets/images/Frame.png';
   static const String splashReference = 'assets/images/splash_reference.png';
-  static const String onboarding1 = 'assets/images/onboarding1.png';
-  static const String onboarding2 = 'assets/images/onboarding2.png';
-  static const String onboarding3 = 'assets/images/onboarding3.png';
+  static const String onboarding1 =
+      'assets/images/false-eyelashes-concept-different-makeup-accessories.jpg';
+  static const String onboarding2 =
+      'assets/images/false-eyelashes-concept-different-makeup-accessories (1).jpg';
+  static const String onboarding3 =
+      'assets/images/ChatGPT Image Aug 9, 2026, 09_17_17 PM.png';
   static const String notificationRed = 'assets/images/notred.png';
   static const String notificationClean = 'assets/images/notclean.png';
   static const String basketLogo = 'assets/images/basket_logo.png';
+  static const String artNoti = 'assets/images/artnoti.png';
   static const String cartClearAll = 'assets/images/delt.png';
   static const String addressDeleteIcon = 'assets/images/delt.png';
   static const String addressEditIcon = 'assets/images/deltloc.png';
   static const String confirmOrderIllustration = 'assets/images/conform_order.png';
   static const String orderTrackingIllustration = 'assets/images/order_check.png';
+  static const String noAddressesIllustration = 'assets/images/dxfzxz.png';
 
   // ── Bottom nav ────────────────────────────────────────────
   static const String navExploreIn = 'assets/images/exploer_in.png';

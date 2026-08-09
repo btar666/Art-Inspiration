@@ -1,8 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/settings_content.dart';
@@ -26,7 +26,7 @@ class SettingsProfileCard extends ConsumerWidget {
       borderRadius: BorderRadius.circular(SettingsMetrics.profileCardRadius()),
       child: Row(
         children: [
-          _ProfileAvatar(imageUrl: SettingsContent.profileImageUrl),
+          const _ProfileAvatar(),
           SizedBox(width: 12.w),
           Expanded(
             child: Column(
@@ -55,32 +55,24 @@ class SettingsProfileCard extends ConsumerWidget {
 }
 
 class _ProfileAvatar extends StatelessWidget {
-  const _ProfileAvatar({required this.imageUrl});
-
-  final String imageUrl;
+  const _ProfileAvatar();
 
   @override
   Widget build(BuildContext context) {
     final size = SettingsMetrics.profileAvatarSize();
 
-    return ClipOval(
-      child: CachedNetworkImage(
-        imageUrl: imageUrl,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        placeholder: (_, __) => Container(
-          width: size,
-          height: size,
-          color: const Color(0xFFE9E4F5),
-          child: Icon(Icons.person_rounded, size: 28.sp),
-        ),
-        errorWidget: (_, __, ___) => Container(
-          width: size,
-          height: size,
-          color: const Color(0xFFE9E4F5),
-          child: Icon(Icons.person_rounded, size: 28.sp),
-        ),
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        color: Color(0xFFE9E4F5),
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.person_rounded,
+        size: 28.sp,
+        color: AppColors.primary.withValues(alpha: 0.55),
       ),
     );
   }

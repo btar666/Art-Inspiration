@@ -5,6 +5,7 @@ import 'order_status.dart';
 /// عنصر منتج داخل الطلب
 class OrderLineItem {
   const OrderLineItem({
+    this.productId,
     required this.productName,
     required this.quantity,
     required this.price,
@@ -12,6 +13,7 @@ class OrderLineItem {
     this.imageBgColor = const Color(0xFFE9E4F5),
   });
 
+  final String? productId;
   final String productName;
   final int quantity;
   final int price;
@@ -61,6 +63,22 @@ class OrderModel {
     final year = date.year.toString();
     return '$day/$month/$year';
   }
+
+  OrderModel copyWith({
+    String? imageUrl,
+    Color? imageBgColor,
+  }) {
+    return OrderModel(
+      id: id,
+      orderName: orderName,
+      address: address,
+      price: price,
+      status: status,
+      orderDate: orderDate,
+      imageUrl: imageUrl ?? this.imageUrl,
+      imageBgColor: imageBgColor ?? this.imageBgColor,
+    );
+  }
 }
 
 /// تفاصيل الطلب الكاملة
@@ -80,7 +98,11 @@ class OrderDetailModel extends OrderModel {
     required this.items,
     this.altPhone,
     this.deliveryPrice = 0,
+    this.deliveryMethodLabel = '',
   }) : super(orderDate: orderDate);
+
+  static const pickupAtCompanyLabel = 'استلام في الشركة';
+  static const deliveryLabel = 'توصيل';
 
   final String customerName;
   final String phone;
@@ -88,19 +110,39 @@ class OrderDetailModel extends OrderModel {
   final String deliveryAddress;
   final List<OrderLineItem> items;
   final int deliveryPrice;
+  final String deliveryMethodLabel;
+
+  String get displayDeliveryMethodLabel {
+    final trimmed = deliveryMethodLabel.trim();
+    if (trimmed.isNotEmpty) return trimmed;
+
+    final address = deliveryAddress.trim();
+    if (address == pickupAtCompanyLabel) return pickupAtCompanyLabel;
+    return deliveryLabel;
+  }
+
+  bool get isPickupAtCompany =>
+      displayDeliveryMethodLabel == pickupAtCompanyLabel;
 
   DateTime get detailOrderDate => orderDate ?? DateTime.now();
 
-  int get totalPrice => price + deliveryPrice;
+  int get totalPrice => price;
 
-  String get formattedTotalPrice => OrderLineItem._formatPrice(totalPrice);
-
-  String get formattedDeliveryPrice =>
-      deliveryPrice == 0 ? 'مجاني' : OrderLineItem._formatPrice(deliveryPrice);
+  String get formattedTotalPrice => formattedPrice;
 
   @override
   String get formattedOrderDate {
     final date = detailOrderDate;
     return '${date.year} - ${date.month} - ${date.day}';
+  }
+
+  /// أول صورة متوفرة — للمعاينة في قائمة الفواتير
+  String? get previewImageUrl {
+    if (imageUrl != null && imageUrl!.isNotEmpty) return imageUrl;
+    for (final item in items) {
+      final url = item.imageUrl;
+      if (url != null && url.isNotEmpty) return url;
+    }
+    return null;
   }
 }

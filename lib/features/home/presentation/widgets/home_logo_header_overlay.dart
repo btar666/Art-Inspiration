@@ -6,7 +6,7 @@ import '../../../../shared/widgets/pinned_blur_gradient_background.dart';
 import 'home_scroll_metrics.dart';
 import 'home_top_section.dart';
 
-/// شريط الشعار الثابت بتغويش متدرج — يختفي عند الوصول لقسم المنتجات
+/// شريط الشعار + خلفية blur للهيدر — يختفي عند الوصول لقسم المنتجات
 class HomeLogoHeaderOverlay extends StatelessWidget {
   const HomeLogoHeaderOverlay({
     super.key,
@@ -17,11 +17,17 @@ class HomeLogoHeaderOverlay extends StatelessWidget {
   final ValueListenable<double> scrollOffsetListenable;
   final VoidCallback? onNotificationTap;
 
+  double _headerBlurHeight(double topInset) =>
+      topInset +
+      HomeScrollMetrics.logoBarHeight() +
+      HomeScrollMetrics.searchBlockHeight();
+
   @override
   Widget build(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;
     final hideStart = HomeScrollMetrics.logoHideStartOffset();
     final hideRange = HomeScrollMetrics.logoHideAnimationRange();
+    final headerBlurHeight = _headerBlurHeight(topInset);
 
     return ValueListenableBuilder<double>(
       valueListenable: scrollOffsetListenable,
@@ -36,31 +42,49 @@ class HomeLogoHeaderOverlay extends StatelessWidget {
           top: 0,
           left: 0,
           right: 0,
-          child: IgnorePointer(
-            ignoring: opacity < 0.1,
-            child: Opacity(
-              opacity: opacity,
-              child: Transform.translate(
-                offset: Offset(0, -12.h * hideProgress),
-                child: ClipRect(
-                  child: Stack(
-                    children: [
-                      const Positioned.fill(
+          height: headerBlurHeight,
+          child: Opacity(
+            opacity: opacity,
+            child: Transform.translate(
+              offset: Offset(0, -12.h * hideProgress),
+              child: ClipRect(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const Positioned.fill(
+                      child: IgnorePointer(
                         child: PinnedBlurGradientBackground(
-                          fadeStops: PinnedBlurHeaderStyle.homeFadeStops,
+                          fadeStops: PinnedBlurHeaderStyle.exploreFadeStops,
+                          strongBlurSigma:
+                              PinnedBlurHeaderStyle.exploreStrongBlurSigma,
+                          mediumBlurSigma:
+                              PinnedBlurHeaderStyle.exploreMediumBlurSigma,
+                          lightBlurSigma:
+                              PinnedBlurHeaderStyle.exploreLightBlurSigma,
+                          strongBlurMaskEnd:
+                              PinnedBlurHeaderStyle.exploreStrongBlurMaskEnd,
                         ),
                       ),
-                      Padding(
-                        padding: EdgeInsets.only(top: topInset),
+                    ),
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: topInset + HomeScrollMetrics.logoBarHeight(),
+                      child: IgnorePointer(
+                        ignoring: opacity < 0.1,
                         child: Padding(
-                          padding: EdgeInsets.fromLTRB(0, 8.h, 0, 8.h),
-                          child: HomeLogoHeader(
-                            onNotificationTap: onNotificationTap,
+                          padding: EdgeInsets.only(top: topInset),
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(0, 8.h, 0, 8.h),
+                            child: HomeLogoHeader(
+                              onNotificationTap: onNotificationTap,
+                            ),
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),

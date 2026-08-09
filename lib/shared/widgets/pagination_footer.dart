@@ -31,9 +31,7 @@ class PaginationFooter extends StatelessWidget {
           else if (hasMore)
             OutlinedButton(
               onPressed: onLoadMore,
-              child: Text(
-                'تحميل المزيد (صفحة ${currentPage + 1} من $lastPage)',
-              ),
+              child: const Text('تحميل المزيد'),
             ),
         ],
       ),

@@ -77,6 +77,23 @@ class AuthUser {
         'uuid': uuid,
       };
 
+  /// مفتاح ثابت لتخزين إشعارات المستخدم بين الجلسات
+  String get notificationUserKey {
+    final trimmedId = id.trim();
+    if (trimmedId.isNotEmpty) return trimmedId;
+
+    final trimmedUuid = uuid?.trim();
+    if (trimmedUuid != null && trimmedUuid.isNotEmpty) return trimmedUuid;
+
+    final trimmedErp = erpId?.trim();
+    if (trimmedErp != null && trimmedErp.isNotEmpty) return trimmedErp;
+
+    final trimmedPhone = phone?.trim();
+    if (trimmedPhone != null && trimmedPhone.isNotEmpty) return trimmedPhone;
+
+    return email?.trim() ?? name.trim();
+  }
+
   AuthUser copyWith({
     String? id,
     String? name,

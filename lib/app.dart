@@ -47,11 +47,11 @@ class ArtInspirationApp extends ConsumerWidget {
                 children: [
                   if (child != null) child,
                   ListenableBuilder(
-                    listenable: router.routeInformationProvider,
+                    listenable: router.routerDelegate,
                     builder: (context, _) {
                       return GlobalFloatingCartOverlay(
-                        location:
-                            router.routeInformationProvider.value.uri.path,
+                        router: router,
+                        location: router.state.uri.path,
                       );
                     },
                   ),

@@ -12,8 +12,12 @@ abstract final class AppConstants {
   static const String authRefreshTokenKey = 'auth_refresh_token';
   static const String authUserKey = 'auth_user';
   static const String catalogOfflineCacheKey = 'catalog_offline_cache';
+  static const String taxonomyCacheKey = 'catalog_taxonomy_cache';
+  static const String orderImageCacheKey = 'order_preview_image_cache';
   static const String searchHistoryKey = 'search_history';
-  static const int catalogOfflineCacheVersion = 7;
+  static const int catalogOfflineCacheVersion = 9;
+  static const int taxonomyCacheVersion = 2;
+  static const int orderImageCacheVersion = 1;
 
   /// للتجربة فقط: إجبار ظهور الـ Onboarding في كل تشغيل
   static const bool alwaysShowOnboarding = false;

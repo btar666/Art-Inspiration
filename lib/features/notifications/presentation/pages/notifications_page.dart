@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/page_back_header.dart';
@@ -20,12 +19,9 @@ class NotificationsPage extends ConsumerStatefulWidget {
 }
 
 class _NotificationsPageState extends ConsumerState<NotificationsPage> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(notificationsProvider.notifier).markAllAsRead();
-    });
+  void _markReadAndLeave() {
+    ref.read(notificationsProvider.notifier).markAllAsRead();
+    if (context.mounted) context.pop();
   }
 
   @override
@@ -33,15 +29,20 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final async = ref.watch(notificationsProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _markReadAndLeave();
+      },
+      child: Scaffold(
+      backgroundColor: NotificationCardMetrics.pageBackground,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             PageBackHeader(
               title: 'الأشعارات',
-              onBack: () => context.pop(),
+              onBack: _markReadAndLeave,
             ),
             Expanded(
               child: async.when(
@@ -97,7 +98,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                             for (final notification in notifications
                                 .where((item) => item.group == group)) ...[
                               NotificationCard(notification: notification),
-                              SizedBox(height: 10.h),
+                              SizedBox(height: 12.h),
                             ],
                             SizedBox(height: 8.h),
                           ],
@@ -111,6 +112,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
           ],
         ),
       ),
+      ),
     );
   }
 }
@@ -122,11 +124,16 @@ class _GroupHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Text(
-        label,
-        style: AppTextStyles.notificationGroupTitle(),
+    return Padding(
+      padding: EdgeInsets.only(bottom: 4.h),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: Text(
+          label,
+          style: AppTextStyles.notificationGroupTitle(),
+          textAlign: TextAlign.right,
+          textDirection: TextDirection.rtl,
+        ),
       ),
     );
   }

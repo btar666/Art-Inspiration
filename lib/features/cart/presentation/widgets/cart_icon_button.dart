@@ -5,7 +5,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/shake_animation.dart';
 import '../../../home/presentation/widgets/home_product_card_metrics.dart';
 
@@ -61,27 +60,10 @@ class CartItemCountBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (count <= 0) return const SizedBox.shrink();
-
-    final label = count > 99 ? '99+' : '$count';
-
-    return Positioned(
-      top: top ?? 6.h,
-      right: right ?? 6.w,
-      child: Container(
-        constraints: BoxConstraints(minWidth: 18.w, minHeight: 18.w),
-        padding: EdgeInsets.symmetric(horizontal: 4.w),
-        decoration: BoxDecoration(
-          color: AppColors.notificationDot,
-          borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: AppColors.background, width: 1.5),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: AppTextStyles.cartBadgeCount(),
-        ),
-      ),
+    return CartItemDot(
+      visible: count > 0,
+      top: top,
+      right: right,
     );
   }
 }

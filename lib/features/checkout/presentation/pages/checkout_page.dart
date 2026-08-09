@@ -12,6 +12,7 @@ import '../../../../shared/widgets/page_back_header.dart';
 import '../../../settings/data/models/delivery_address_model.dart';
 import '../../../cart/presentation/widgets/cart_checkout_footer.dart';
 import '../../../cart/presentation/widgets/cart_page_metrics.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../settings/presentation/providers/saved_addresses_provider.dart';
 import '../../../settings/presentation/widgets/address_form_bottom_sheet.dart';
 import '../../data/checkout_provider.dart';
@@ -37,30 +38,20 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final saved = ref.read(checkoutCustomerStorageProvider).load();
-      final draft = ref.read(checkoutDraftProvider);
-      _nameController.text = draft?.customerName.isNotEmpty == true
-          ? draft!.customerName
-          : saved.name;
-      _phoneController.text =
-          draft?.phone.isNotEmpty == true ? draft!.phone : saved.phone;
-      _secondPhoneController.text = draft?.secondPhone.isNotEmpty == true
-          ? draft!.secondPhone
-          : saved.secondPhone;
-      _applyDefaultAddress();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshCheckoutSession());
   }
 
-  void _applyDefaultAddress() {
+  Future<void> _refreshCheckoutSession() async {
+    await ref.read(authNotifierProvider.notifier).refreshProfile();
+    ref.read(checkoutDraftProvider.notifier).syncFromProfileAndAddress();
+
     final draft = ref.read(checkoutDraftProvider);
-    if (draft?.selectedAddress != null) return;
+    if (draft == null) return;
 
-    final current =
-        DeliveryAddressModel.currentFrom(ref.read(savedAddressesNotifierProvider));
-    if (current == null) return;
+    _nameController.text = draft.customerName;
+    _phoneController.text = draft.phone;
+    _secondPhoneController.text = draft.secondPhone;
 
-    ref.read(checkoutDraftProvider.notifier).selectAddress(current);
     if (mounted) setState(() {});
   }
 
@@ -101,7 +92,8 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
     final nameInvalid = _nameController.text.trim().isEmpty;
     final phoneInvalid = _phoneController.text.trim().length < 10;
     final draft = ref.read(checkoutDraftProvider);
-    final addressInvalid = draft?.selectedAddress == null;
+    final addressInvalid =
+        draft != null && draft.requiresAddress && draft.selectedAddress == null;
 
     if (nameInvalid || phoneInvalid || addressInvalid) {
       setState(() {
@@ -151,8 +143,8 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
 
     final address = draft.selectedAddress;
     final addressLabel = address?.fullAddress ?? 'أختر العنوان';
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final footerHeight = screenHeight * CartPageMetrics.footerHeightFraction;
+    final isDelivery =
+        draft.deliveryMethod == CheckoutDeliveryMethod.delivery;
     final bottomRadius = CartPageMetrics.whiteContainerBottomRadius();
 
     return Scaffold(
@@ -239,90 +231,127 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: Text(
-                          'العنوان',
+                          'طريقة الاستلام',
                           style: AppTextStyles.checkoutSectionTitle(),
                         ),
                       ),
                       SizedBox(height: 14.h),
-                      FormErrorAnimator(
-                        tick: _addressShakeTick,
-                        child: GestureDetector(
-                          onTap: _pickAddress,
-                          child: SizedBox(
-                            height: CheckoutFieldMetrics.fieldHeight(),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(horizontal: 20.w),
-                              decoration: BoxDecoration(
-                                color: AppColors.background,
-                                borderRadius: BorderRadius.circular(
-                                  CheckoutFieldMetrics.borderRadius(),
-                                ),
-                                border: Border.all(
-                                  color: address == null
-                                      ? AppColors.dotGrid
-                                      : AppColors.primary,
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                Icon(
-                                  Icons.keyboard_arrow_down_rounded,
-                                  color: AppColors.textSecondary,
-                                  size: 26.sp,
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    addressLabel,
-                                    style: AppTextStyles.authField(
-                                      color: address == null
-                                          ? AppColors.textSecondary
-                                          : AppColors.textPrimary,
-                                    ),
-                                    textAlign: TextAlign.right,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                      _CheckoutRadioOption(
+                        label: CheckoutDeliveryMethod.pickupAtCompany.label,
+                        selected: draft.deliveryMethod ==
+                            CheckoutDeliveryMethod.pickupAtCompany,
+                        onTap: () {
+                          ref
+                              .read(checkoutDraftProvider.notifier)
+                              .setDeliveryMethod(
+                                CheckoutDeliveryMethod.pickupAtCompany,
+                              );
+                        },
+                      ),
+                      SizedBox(height: 12.h),
+                      _CheckoutRadioOption(
+                        label: CheckoutDeliveryMethod.delivery.label,
+                        selected: draft.deliveryMethod ==
+                            CheckoutDeliveryMethod.delivery,
+                        onTap: () {
+                          ref
+                              .read(checkoutDraftProvider.notifier)
+                              .setDeliveryMethod(
+                                CheckoutDeliveryMethod.delivery,
+                              );
+                        },
+                      ),
+                      if (isDelivery) ...[
+                        SizedBox(height: 24.h),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            'العنوان',
+                            style: AppTextStyles.checkoutSectionTitle(),
+                          ),
+                        ),
+                        SizedBox(height: 14.h),
+                        FormErrorAnimator(
+                          tick: _addressShakeTick,
+                          child: GestureDetector(
+                            onTap: _pickAddress,
+                            child: SizedBox(
+                              height: CheckoutFieldMetrics.fieldHeight(),
+                              child: Container(
+                                padding:
+                                    EdgeInsets.symmetric(horizontal: 20.w),
+                                decoration: BoxDecoration(
+                                  color: AppColors.background,
+                                  borderRadius: BorderRadius.circular(
+                                    CheckoutFieldMetrics.borderRadius(),
+                                  ),
+                                  border: Border.all(
+                                    color: address == null
+                                        ? AppColors.dotGrid
+                                        : AppColors.primary,
+                                    width: 1.2,
                                   ),
                                 ),
-                                Icon(
-                                  Icons.location_on_outlined,
-                                  color: AppColors.textSecondary,
-                                  size: 22.sp,
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.keyboard_arrow_down_rounded,
+                                      color: AppColors.textSecondary,
+                                      size: 26.sp,
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        addressLabel,
+                                        style: AppTextStyles.authField(
+                                          color: address == null
+                                              ? AppColors.textSecondary
+                                              : AppColors.textPrimary,
+                                        ),
+                                        textAlign: TextAlign.right,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.location_on_outlined,
+                                      color: AppColors.textSecondary,
+                                      size: 22.sp,
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      ),
-                      SizedBox(height: 8.h),
-                      Center(
-                        child: GestureDetector(
-                          onTap: _onAddNewAddress,
-                          behavior: HitTestBehavior.opaque,
-                          child: IntrinsicWidth(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'أضافة عنوان جديد',
-                                  style: AppTextStyles.checkoutLink(
+                        SizedBox(height: 8.h),
+                        Center(
+                          child: GestureDetector(
+                            onTap: _onAddNewAddress,
+                            behavior: HitTestBehavior.opaque,
+                            child: IntrinsicWidth(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'أضافة عنوان جديد',
+                                    style: AppTextStyles.checkoutLink(
+                                      color:
+                                          CheckoutFieldMetrics.addAddressLinkColor(),
+                                    ),
+                                  ),
+                                  SizedBox(height: 4.h),
+                                  Container(
+                                    height: 1.h,
                                     color:
                                         CheckoutFieldMetrics.addAddressLinkColor(),
                                   ),
-                                ),
-                                SizedBox(height: 4.h),
-                                Container(
-                                  height: 1.h,
-                                  color:
-                                      CheckoutFieldMetrics.addAddressLinkColor(),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                       SizedBox(height: 24.h),
                       Align(
                         alignment: Alignment.centerRight,
@@ -332,7 +361,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                         ),
                       ),
                       SizedBox(height: 14.h),
-                      _PaymentOption(
+                      _CheckoutRadioOption(
                         label: 'عند الأستلام',
                         selected: true,
                         onTap: () {},
@@ -348,21 +377,16 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
               ),
             ),
           ),
-          SizedBox(
-            height: footerHeight,
-            child: ColoredBox(
-              color: CartPageMetrics.pageBackground,
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: CartPageMetrics.footerPadding(),
-                  child: Transform.translate(
-                    offset: CartPageMetrics.footerButtonOffset(),
-                    child: CartCheckoutFooter(
-                      label: 'التالي',
-                      onTap: _onNext,
-                    ),
-                  ),
+          ColoredBox(
+            color: CartPageMetrics.pageBackground,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: CartPageMetrics.footerPadding(),
+                child: CartCheckoutFooter(
+                  label: 'التالي',
+                  onTap: _onNext,
+                  height: CartPageMetrics.footerHeight(),
                 ),
               ),
             ),
@@ -373,8 +397,8 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
   }
 }
 
-class _PaymentOption extends StatelessWidget {
-  const _PaymentOption({
+class _CheckoutRadioOption extends StatelessWidget {
+  const _CheckoutRadioOption({
     required this.label,
     required this.selected,
     required this.onTap,

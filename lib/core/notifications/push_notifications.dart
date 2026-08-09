@@ -19,6 +19,9 @@ abstract final class PushNotifications {
   static final FlutterLocalNotificationsPlugin _local =
       FlutterLocalNotificationsPlugin();
 
+  /// يُستدعى عند وصول إشعار في المقدمة — لتحديث قائمة الإشعارات
+  static void Function()? onForegroundMessage;
+
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'art_inspiration_default',
     'إشعارات إلهام الفن',
@@ -86,5 +89,7 @@ abstract final class PushNotifications {
         iOS: const DarwinNotificationDetails(),
       ),
     );
+
+    onForegroundMessage?.call();
   }
 }

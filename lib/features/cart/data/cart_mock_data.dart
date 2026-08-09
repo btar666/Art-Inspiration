@@ -8,6 +8,4 @@ abstract final class CartMockData {
         CartItemModel(product: HomeMockData.products[1], quantity: 2),
         CartItemModel(product: HomeMockData.products[2], quantity: 2),
       ];
-
-  static const deliveryPrice = 0;
 }

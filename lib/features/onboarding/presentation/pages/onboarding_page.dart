@@ -71,42 +71,47 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               child: Column(
                 children: [
                   SizedBox(height: 80.h),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32.w),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                item.title,
-                                style: AppTextStyles.onboardingTitle(),
-                                textAlign: TextAlign.center,
+                  SizedBox(
+                    height: 196.h,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 32.w),
+                      child: Column(
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.title,
+                                  style: AppTextStyles.onboardingTitle(),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                ),
                               ),
-                            ),
-                            SparkleIcon(size: 16.w, delay: 100.ms),
-                          ],
-                        ),
-                        SizedBox(height: 12.h),
-                        Text(
-                          item.description,
-                          style: AppTextStyles.onboardingBody(),
-                          textAlign: TextAlign.center,
-                          maxLines: 4,
-                        ),
-                      ],
-                    )
-                        .animate(key: ValueKey('text_$currentIndex'))
-                        .fadeIn(duration: 400.ms)
-                        .slideY(
-                          begin: 0.15,
-                          end: 0,
-                          duration: 400.ms,
-                          curve: Curves.easeOutCubic,
-                        ),
+                              SparkleIcon(size: 16.w, delay: 100.ms),
+                            ],
+                          ),
+                          SizedBox(height: 12.h),
+                          Text(
+                            item.description,
+                            style: AppTextStyles.onboardingBody(),
+                            textAlign: TextAlign.center,
+                            maxLines: 4,
+                          ),
+                        ],
+                      )
+                          .animate(key: ValueKey('text_$currentIndex'))
+                          .fadeIn(duration: 400.ms)
+                          .slideY(
+                            begin: 0.15,
+                            end: 0,
+                            duration: 400.ms,
+                            curve: Curves.easeOutCubic,
+                          ),
+                    ),
                   ),
-                  SizedBox(height: 56.h),
+                  SizedBox(height: 12.h),
                   OnboardingCarousel(
                     carouselController: _carouselController,
                     onPageChanged: (index) {

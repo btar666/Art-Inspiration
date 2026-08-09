@@ -53,29 +53,15 @@ abstract final class ExploreTabSlivers {
         ? [...HomeMockData.products, ...HomeMockData.products]
         : products;
 
-    final total = catalog?.stats.totalProducts ?? items.length;
     final hasMore = catalog?.hasMore ?? false;
     final isLoadingMore = catalog?.isLoadingMore ?? false;
 
     return SliverMainAxisGroup(
       slivers: [
-        if (total > 0)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 8.h),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '${items.length} من $total',
-                  style: AppTextStyles.settingsMenuItem(),
-                ),
-              ),
-            ),
-          ),
         SliverPadding(
           padding: EdgeInsets.fromLTRB(
             20.w,
-            0,
+            16.h,
             20.w,
             0,
           ),

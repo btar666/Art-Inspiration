@@ -35,9 +35,6 @@ class SettingsSection {
 abstract final class SettingsContent {
   static const userName = 'نونة الحنونة';
 
-  static const profileImageUrl =
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop';
-
   static const settingsSections = [
     SettingsSection(
       title: 'الأعدادات',

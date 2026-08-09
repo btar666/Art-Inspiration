@@ -9,15 +9,9 @@ class CartPriceSummary extends StatelessWidget {
   const CartPriceSummary({
     super.key,
     required this.subtotal,
-    required this.deliveryLabel,
-    required this.total,
-    this.isFreeDelivery = false,
   });
 
   final String subtotal;
-  final String deliveryLabel;
-  final String total;
-  final bool isFreeDelivery;
 
   @override
   Widget build(BuildContext context) {
@@ -41,25 +35,9 @@ class CartPriceSummary extends StatelessWidget {
           ),
           child: Column(
             children: [
-              _PriceRow(label: 'سعر الطلب :', value: subtotal),
-              SizedBox(height: 10.h),
-              _PriceRow(
-                label: 'سعر التوصيل :',
-                value: deliveryLabel,
-                valueColor: isFreeDelivery
-                    ? AppColors.orderFreeDelivery
-                    : AppColors.textPrimary,
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 12.h),
-                child: Divider(
-                  height: 1,
-                  color: AppColors.dotGrid,
-                ),
-              ),
               _PriceRow(
                 label: 'السعر الكلي :',
-                value: total,
+                value: subtotal,
                 valueColor: AppColors.orderTotalPrice,
                 labelWeight: FontWeight.w800,
                 valueWeight: FontWeight.w800,

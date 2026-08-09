@@ -46,11 +46,13 @@ class SettingsEmptyState extends StatelessWidget {
   const SettingsEmptyState({
     super.key,
     required this.title,
-    required this.icon,
+    this.icon,
+    this.imageAsset,
   });
 
   final String title;
-  final IconData icon;
+  final IconData? icon;
+  final String? imageAsset;
 
   @override
   Widget build(BuildContext context) {
@@ -60,19 +62,26 @@ class SettingsEmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 80.w,
-              height: 80.w,
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                shape: BoxShape.circle,
+            if (imageAsset != null)
+              Image.asset(
+                imageAsset!,
+                width: 280.w,
+                fit: BoxFit.contain,
+              )
+            else
+              Container(
+                width: 80.w,
+                height: 80.w,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon ?? Icons.info_outline_rounded,
+                  color: AppColors.productStore,
+                  size: 36.sp,
+                ),
               ),
-              child: Icon(
-                icon,
-                color: AppColors.productStore,
-                size: 36.sp,
-              ),
-            ),
             SizedBox(height: 16.h),
             Text(
               title,

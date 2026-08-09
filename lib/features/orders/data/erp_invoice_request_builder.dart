@@ -11,11 +11,16 @@ abstract final class ErpInvoiceRequestBuilder {
         '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
     final address = draft.selectedAddress?.fullAddress ?? '';
+    final deliveryNote = draft.deliveryMethod == CheckoutDeliveryMethod.pickupAtCompany
+        ? CheckoutDeliveryMethod.pickupAtCompany.label
+        : null;
+
     final notes = [
       if (draft.customerName.trim().isNotEmpty) 'الزبون: ${draft.customerName}',
       if (draft.phone.trim().isNotEmpty) 'هاتف: ${draft.phone}',
       if (draft.secondPhone.trim().isNotEmpty)
         'هاتف بديل: ${draft.secondPhone}',
+      if (deliveryNote != null) 'طريقة الاستلام: $deliveryNote',
       if (address.isNotEmpty) 'عنوان: $address',
     ].join(' | ');
 

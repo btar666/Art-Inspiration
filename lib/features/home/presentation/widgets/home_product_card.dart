@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/product_out_of_stock_badge.dart';
 import '../../../cart/presentation/widgets/cart_icon_button.dart';
 import '../../../favorites/presentation/favorites_actions.dart';
 import '../../../favorites/presentation/providers/favorites_provider.dart';
@@ -95,6 +96,7 @@ class _HomeProductCardState extends ConsumerState<HomeProductCard> {
                     padding: HomeProductCardMetrics.priceBarMargin(),
                     child: _HomeProductPriceBar(
                       price: product.formattedPrice,
+                      isOutOfStock: !product.isInStock,
                       onAddToCart: widget.onAddToCart,
                     ),
                   ),
@@ -178,6 +180,12 @@ class _HomeProductImageSection extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
               ),
+            ),
+          if (!product.isInStock)
+            Positioned(
+              bottom: 6.w,
+              right: 6.w,
+              child: const ProductOutOfStockBadge(compact: true),
             ),
         ],
       ),
@@ -290,10 +298,12 @@ class _HomeProductInfoSection extends StatelessWidget {
 class _HomeProductPriceBar extends StatelessWidget {
   const _HomeProductPriceBar({
     required this.price,
+    required this.isOutOfStock,
     this.onAddToCart,
   });
 
   final String price;
+  final bool isOutOfStock;
   final VoidCallback? onAddToCart;
 
   @override
@@ -328,7 +338,10 @@ class _HomeProductPriceBar extends StatelessWidget {
             top: 0,
             bottom: 0,
             child: Center(
-              child: ProductCardCartButton(onAddToCart: onAddToCart),
+              child: Opacity(
+                opacity: isOutOfStock ? 0.45 : 1,
+                child: ProductCardCartButton(onAddToCart: onAddToCart),
+              ),
             ),
           ),
         ],

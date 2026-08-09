@@ -76,6 +76,8 @@ class _HomeContentState extends ConsumerState<HomeContent> {
 
   void _openSearchPage() => context.go(AppRoutes.search);
 
+  void _openScannerFromHome() => context.push(AppRoutes.barcodeScanner);
+
   Future<void> _openSearchFilterFromHome() async {
     ref.read(appliedSearchFilterProvider.notifier).state = null;
 
@@ -99,6 +101,7 @@ class _HomeContentState extends ConsumerState<HomeContent> {
     required CatalogSnapshot catalog,
     required BuildContext context,
   }) {
+    final products = catalog.products;
     return [
             SliverToBoxAdapter(
               child: SizedBox(height: logoSpacerHeight),
@@ -107,6 +110,7 @@ class _HomeContentState extends ConsumerState<HomeContent> {
               child: HomeSearchBar(
                 onSearchTap: _openSearchPage,
                 onFilterTap: _openSearchFilterFromHome,
+                onScannerTap: _openScannerFromHome,
               ),
             ),
             SliverToBoxAdapter(
@@ -136,22 +140,17 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                             style: AppTextStyles.homeSectionTitle(),
                           ),
                         ),
-                        if (catalog.stats.totalProducts > 0)
-                          Text(
-                            '${catalog.products.length} من ${catalog.stats.totalProducts}',
-                            style: AppTextStyles.settingsMenuItem(),
-                          ),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
-            if (catalog.isLoadingMore && catalog.products.isEmpty)
+            if (catalog.isLoadingMore && products.isEmpty)
               const SliverFillRemaining(
                 child: Center(child: CircularProgressIndicator()),
               )
-            else if (catalog.products.isEmpty)
+            else if (products.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: Center(
@@ -178,7 +177,7 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      final product = catalog.products[index];
+                      final product = products[index];
                       return HomeProductCard(
                         key: ValueKey(product.id),
                         product: product,
@@ -187,11 +186,11 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                             addProductToCart(context, ref, product),
                       );
                     },
-                    childCount: catalog.products.length,
+                    childCount: products.length,
                   ),
                 ),
               ),
-            if (catalog.products.isNotEmpty &&
+            if ((products.isNotEmpty || catalog.hasMore) &&
                 (catalog.hasMore || catalog.isLoadingMore))
               SliverToBoxAdapter(
                 child: PaginationFooter(

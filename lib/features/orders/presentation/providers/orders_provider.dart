@@ -16,7 +16,48 @@ class OrdersListNotifier extends AsyncNotifier<OrdersListState> {
   @override
   Future<OrdersListState> build() async {
     ref.watch(authNotifierProvider);
-    return ref.read(ordersRepositoryProvider).fetchOrdersPage(1);
+    final page = await ref.read(ordersRepositoryProvider).fetchOrdersPage(1);
+    _scheduleImageEnrichment(page.orders);
+    return page;
+  }
+
+  void _scheduleImageEnrichment(List<OrderModel> orders) {
+    ref.read(ordersRepositoryProvider).enrichMissingOrderImages(orders).then(
+      (enriched) {
+        final current = state.value;
+        if (current == null) return;
+        final merged = _mergeOrderImages(current.orders, enriched);
+        if (_ordersEqual(current.orders, merged)) return;
+        state = AsyncData(current.copyWith(orders: merged));
+      },
+    );
+  }
+
+  List<OrderModel> _mergeOrderImages(
+    List<OrderModel> existing,
+    List<OrderModel> enriched,
+  ) {
+    final byId = {for (final order in enriched) order.id: order};
+    return existing
+        .map((order) {
+          final updated = byId[order.id];
+          if (updated == null) return order;
+          if (updated.imageUrl == null || updated.imageUrl == order.imageUrl) {
+            return order;
+          }
+          return order.copyWith(imageUrl: updated.imageUrl);
+        })
+        .toList();
+  }
+
+  bool _ordersEqual(List<OrderModel> a, List<OrderModel> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id || a[i].imageUrl != b[i].imageUrl) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<void> refresh() async {
@@ -33,6 +74,10 @@ class OrdersListNotifier extends AsyncNotifier<OrdersListState> {
     }
 
     state = result;
+    final orders = result.value?.orders;
+    if (orders != null) {
+      _scheduleImageEnrichment(orders);
+    }
   }
 
   /// تحديث صامت في الخلفية — بدون مؤشر تحميل كامل
@@ -43,7 +88,9 @@ class OrdersListNotifier extends AsyncNotifier<OrdersListState> {
     try {
       final fresh =
           await ref.read(ordersRepositoryProvider).fetchOrdersPage(1);
-      state = AsyncData(_mergeBackgroundRefresh(previous, fresh));
+      final mergedState = _mergeBackgroundRefresh(previous, fresh);
+      state = AsyncData(mergedState);
+      _scheduleImageEnrichment(mergedState.orders);
     } catch (_) {
       // الإبقاء على البيانات الحالية عند فشل التحديث الصامت
     }
@@ -83,6 +130,7 @@ class OrdersListNotifier extends AsyncNotifier<OrdersListState> {
       final updated =
           await ref.read(ordersRepositoryProvider).loadMoreOrders(current);
       state = AsyncData(updated);
+      _scheduleImageEnrichment(updated.orders);
     } finally {
       _isLoadingMore = false;
     }
@@ -107,4 +155,11 @@ final erpOrderDetailProvider =
     FutureProvider.family<OrderDetailModel?, String>((ref, orderId) async {
   ref.watch(authNotifierProvider);
   return ref.read(ordersRepositoryProvider).fetchOrderDetail(orderId);
+});
+
+/// صورة معاينة الفاتورة — يجلب مباشرة من API الفاتورة
+final orderPreviewImageProvider =
+    FutureProvider.family<String?, String>((ref, orderId) async {
+  ref.watch(authNotifierProvider);
+  return ref.read(ordersRepositoryProvider).resolveInvoicePreviewImage(orderId);
 });

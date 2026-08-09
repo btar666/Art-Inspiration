@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/page_back_header.dart';
 import '../providers/saved_addresses_provider.dart';
@@ -84,7 +85,7 @@ class _SelectAddressForOrderPageState
               child: isEmpty
                   ? const SettingsEmptyState(
                       title: 'لا توجد عناوين محفوظة',
-                      icon: Icons.location_on_outlined,
+                      imageAsset: AppAssets.noAddressesIllustration,
                     )
                   : ListView.separated(
                       padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),

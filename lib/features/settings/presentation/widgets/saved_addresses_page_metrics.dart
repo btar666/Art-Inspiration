@@ -5,14 +5,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 abstract final class SavedAddressesPageMetrics {
   static const Color pageBackground = Color(0xFFEAECFC);
 
-  static const double footerHeightFraction = 0.10;
+  static double footerHeight() => 50.h;
 
   static double whiteContainerBottomRadius() => 44.r;
 
-  static Offset footerButtonOffset() => Offset(0, 6.h);
-
   static EdgeInsets footerPadding() =>
-      EdgeInsets.fromLTRB(24.w, 0, 24.w, 10.h);
+      EdgeInsets.fromLTRB(24.w, 8.h, 24.w, 8.h);
 
   static EdgeInsets listPadding() =>
       EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 16.h);

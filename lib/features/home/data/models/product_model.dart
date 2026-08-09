@@ -18,6 +18,7 @@ class ProductModel {
     this.galleryImageUrls = const [],
     this.categoryIds = const [],
     this.stockQuantity,
+    this.trackStock = true,
     this.sku,
     this.barcode,
     this.isActive = true,
@@ -39,9 +40,18 @@ class ProductModel {
   final List<String> categoryIds;
   /// الكمية المتوفرة في المخزن — null إذا غير معروفة
   final int? stockQuantity;
+  /// تتبع المخزون — إن false لا يُخفى المنتج حتى لو الكمية 0
+  final bool trackStock;
   final String? sku;
   final String? barcode;
   final bool isActive;
+
+  /// متوفر للبيع — نافذ إذا trackStock وكمية ≤ 0
+  bool get isInStock {
+    if (!trackStock) return true;
+    if (stockQuantity == null) return true;
+    return stockQuantity! > 0;
+  }
 
   bool matchesCategoryOrBrand(String selected) {
     if (selected == 'الكل') return true;
@@ -73,6 +83,7 @@ class ProductModel {
         'galleryImageUrls': galleryImageUrls,
         'categoryIds': categoryIds,
         'stockQuantity': stockQuantity,
+        'trackStock': trackStock,
         'sku': sku,
         'barcode': barcode,
         'isActive': isActive,
@@ -100,6 +111,7 @@ class ProductModel {
                 .toList() ??
             const [],
         stockQuantity: json['stockQuantity'] as int?,
+        trackStock: json['trackStock'] as bool? ?? true,
         sku: json['sku'] as String?,
         barcode: json['barcode'] as String?,
         isActive: json['isActive'] as bool? ?? true,

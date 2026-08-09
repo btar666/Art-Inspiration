@@ -63,12 +63,10 @@ class _ProductImageFullscreenViewer extends StatefulWidget {
 class _ProductImageFullscreenViewerState
     extends State<_ProductImageFullscreenViewer> {
   late final PageController _pageController;
-  late int _currentIndex;
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
   }
 
@@ -88,7 +86,6 @@ class _ProductImageFullscreenViewerState
             PageView.builder(
               controller: _pageController,
               itemCount: widget.imageUrls.length,
-              onPageChanged: (index) => setState(() => _currentIndex = index),
               itemBuilder: (context, index) {
                 return GestureDetector(
                   onTap: () => Navigator.of(context).pop(),
@@ -124,21 +121,6 @@ class _ProductImageFullscreenViewerState
                 onTap: () => Navigator.of(context).pop(),
               ),
             ),
-            if (widget.imageUrls.length > 1)
-              Positioned(
-                bottom: 24.h,
-                left: 0,
-                right: 0,
-                child: Text(
-                  '${_currentIndex + 1} / ${widget.imageUrls.length}',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
           ],
         ),
       ),

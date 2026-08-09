@@ -25,31 +25,84 @@ class CatalogNotifier extends AsyncNotifier<CatalogSnapshot> {
 
     ref.onDispose(link.close);
 
-    return ref.read(productsRepositoryProvider).fetchCatalog();
+    final repo = ref.read(productsRepositoryProvider);
+    final cached = repo.peekDefaultCatalog();
+    if (cached != null) {
+      _scheduleBackgroundCatalogSync(cached);
+      _scheduleTaxonomySync();
+      return cached;
+    }
+
+    final snapshot = await repo.fetchCatalog();
+    _scheduleTaxonomySync();
+    return snapshot;
+  }
+
+  void _scheduleTaxonomySync({bool force = false}) {
+    ref
+        .read(productsRepositoryProvider)
+        .syncTaxonomyIfStale(force: force)
+        .then((updated) {
+      if (updated == null) return;
+      final current = state.value;
+      if (current == null) return;
+      state = AsyncData(
+        current.copyWith(
+          categories: updated.categories,
+          brands: updated.brands,
+          stats: updated.stats,
+          warningMessage: updated.warningMessage,
+          clearWarning: updated.warningMessage == null,
+        ),
+      );
+    });
+  }
+
+  void _scheduleBackgroundCatalogSync(CatalogSnapshot displayed) {
+    ref
+        .read(productsRepositoryProvider)
+        .syncCatalogInBackground(displayed)
+        .then((updated) {
+      if (updated == null) return;
+      final current = state.value;
+      if (current == null || current.activeCategory != updated.activeCategory) {
+        return;
+      }
+      state = AsyncData(updated);
+    });
+  }
+
+  void _scheduleCategoryBackgroundSync(CatalogSnapshot displayed) {
+    ref
+        .read(productsRepositoryProvider)
+        .syncCatalogInBackground(displayed)
+        .then((updated) {
+      if (updated == null) return;
+      final current = state.value;
+      if (current == null || current.activeCategory != updated.activeCategory) {
+        return;
+      }
+      state = AsyncData(updated);
+    });
   }
 
   Future<void> refresh() async {
-    final category = state.value?.activeCategory ?? 'الكل';
-    final previous = state.value;
+    final current = state.value;
+    if (current == null) return;
 
-    ref.read(productsRepositoryProvider).invalidateMemoryCache();
+    final previous = current;
 
     final result = await AsyncValue.guard(() async {
-      final base = await ref
-          .read(productsRepositoryProvider)
-          .fetchCatalog(forceRefresh: true);
-      if (category == 'الكل') return base;
-      return ref
-          .read(productsRepositoryProvider)
-          .fetchProductsForCategory(category, base);
+      return ref.read(productsRepositoryProvider).refreshCatalog(current);
     });
 
-    if (result.hasError && previous != null) {
+    if (result.hasError) {
       state = AsyncData(previous);
       return;
     }
 
     state = result;
+    _scheduleTaxonomySync(force: true);
   }
 
   Future<void> loadMore() async {
@@ -72,24 +125,26 @@ class CatalogNotifier extends AsyncNotifier<CatalogSnapshot> {
     final current = state.value;
     if (current == null || current.activeCategory == category) return;
 
+    final repo = ref.read(productsRepositoryProvider);
+    final cached = repo.peekCategoryCatalog(category, current);
+    if (cached != null) {
+      state = AsyncData(cached);
+      _scheduleCategoryBackgroundSync(cached);
+      return;
+    }
+
     _isLoadingMore = true;
     state = AsyncData(
       current.copyWith(isLoadingMore: true, products: const []),
     );
 
     try {
-      final updated = await ref
-          .read(productsRepositoryProvider)
-          .fetchProductsForCategory(category, current);
+      final updated = await repo.fetchProductsForCategory(category, current);
       state = AsyncData(updated);
     } finally {
       _isLoadingMore = false;
     }
   }
-}
-
-extension CatalogSnapshotX on CatalogSnapshot {
-  List<ProductModel> get visibleProducts => products;
 }
 
 final productsProvider = Provider<AsyncValue<List<ProductModel>>>((ref) {

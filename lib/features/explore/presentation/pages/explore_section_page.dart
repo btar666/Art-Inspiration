@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../../shared/widgets/product_details_widget.dart';
@@ -85,25 +84,9 @@ class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
       ];
     }
 
-    final countLabel = state.total > 0
-        ? '${state.products.length} من ${state.total}'
-        : '${state.products.length}';
-
     return [
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 12.h),
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              countLabel,
-              style: AppTextStyles.settingsMenuItem(),
-            ),
-          ),
-        ),
-      ),
       SliverPadding(
-        padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 0),
+        padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 0),
         sliver: SliverGrid(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,

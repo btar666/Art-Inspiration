@@ -22,28 +22,28 @@ class OnboardingItem {
 abstract final class OnboardingContent {
   static const items = [
     OnboardingItem(
-      title: 'اكتشفي جمالكِ الحقيقي',
+      title: 'شريكك الموثوق في عالم الجمال',
       description:
-          'تصفّحي أحدث منتجات التجميل والعناية بالبشرة المختارة بعناية، '
-          'من المكياج اليومي إلى العناية المتكاملة التي تناسب أسلوبكِ.',
+          'منصة متخصصة توفر لك منتجات التجميل والعناية، وتجمع احتياجاتك '
+          'في مكان واحد بتجربة شراء سهلة ومنظمة.',
       icon: Icons.spa_outlined,
       accentColor: Color(0xFFE8C4B8),
       imageAsset: AppAssets.onboarding1,
     ),
     OnboardingItem(
-      title: 'جودة تثقي بها',
+      title: 'كل منتجاتك بمكان واحد',
       description:
-          'منتجات أصلية من أفضل العلامات العالمية في عالم الكوزمتك، '
-          'بأسعار منافسة وتوصيل سريع وآمن إلى باب منزلكِ.',
+          'يوفر التطبيق مجموعة من منتجات التجميل والعناية من مصادر وعلامات '
+          'مختلفة، لتسهيل البحث عن المنتجات وإضافتها إلى طلبك من مكان واحد.',
       icon: Icons.verified_outlined,
       accentColor: Color(0xFFD4C4E8),
       imageAsset: AppAssets.onboarding2,
     ),
     OnboardingItem(
-      title: 'ابدئي رحلتكِ الآن',
+      title: 'طلباتك بكل سهولة',
       description:
-          'انضمي إلينا واستمتعي بتجربة تسوق سلسة مع عروض حصرية، '
-          'نقاط مكافآت، وتوصيات مخصصة تناسب احتياجاتكِ الجمالية.',
+          'صُمم التطبيق لتسهيل عملية الشراء، من تصفح المنتجات ومعرفة تفاصيلها '
+          'وكمياتها، إلى إنشاء الطلب ومتابعة حالته حتى التجهيز والتوصيل.',
       icon: Icons.card_giftcard_outlined,
       accentColor: Color(0xFFC4D8E8),
       imageAsset: AppAssets.onboarding3,

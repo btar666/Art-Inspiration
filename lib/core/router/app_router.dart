@@ -27,6 +27,7 @@ import '../../features/settings/presentation/pages/help_page.dart';
 import '../../features/settings/presentation/pages/saved_addresses_page.dart';
 import '../../features/settings/presentation/pages/select_address_for_order_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
+import '../../features/search/presentation/pages/barcode_scanner_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/widgets/product_details_widget.dart';
 
@@ -52,6 +53,7 @@ abstract final class AppRoutes {
   static const exploreSection = '/explore/sections/:sectionId';
   static const notifications = '/notifications';
   static const searchFilter = '/search/filter';
+  static const barcodeScanner = '/barcode-scanner';
   static const cart = '/cart';
   static const checkout = '/checkout';
   static const checkoutReview = '/checkout/review';
@@ -187,6 +189,16 @@ GoRouter createAppRouter() {
             transitionsBuilder: _slideTransition,
           );
         },
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.barcodeScanner,
+        name: 'barcode-scanner',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const BarcodeScannerPage(),
+          transitionsBuilder: _slideTransition,
+        ),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,

@@ -68,6 +68,7 @@ final localOrdersNotifierProvider =
 );
 
 Map<String, dynamic> orderLineItemToJson(OrderLineItem item) => {
+      'productId': item.productId,
       'productName': item.productName,
       'quantity': item.quantity,
       'price': item.price,
@@ -89,6 +90,7 @@ Map<String, dynamic> orderDetailToJson(OrderDetailModel order) => {
       'deliveryAddress': order.deliveryAddress,
       'orderDate': order.detailOrderDate.toIso8601String(),
       'deliveryPrice': order.deliveryPrice,
+      'deliveryMethodLabel': order.deliveryMethodLabel,
       'items': order.items.map(orderLineItemToJson).toList(),
     };
 
@@ -109,9 +111,11 @@ OrderDetailModel orderDetailFromJson(Map<String, dynamic> json) {
     orderDate:
         DateTime.tryParse(json['orderDate'] as String? ?? '') ?? DateTime.now(),
     deliveryPrice: json['deliveryPrice'] as int? ?? 0,
+    deliveryMethodLabel: json['deliveryMethodLabel'] as String? ?? '',
     items: itemsJson
         .map(
           (e) => OrderLineItem(
+            productId: e['productId'] as String?,
             productName: e['productName'] as String? ?? '',
             quantity: e['quantity'] as int? ?? 1,
             price: e['price'] as int? ?? 0,

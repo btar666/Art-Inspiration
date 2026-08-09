@@ -26,10 +26,12 @@ class CartCheckoutFooter extends StatelessWidget {
     super.key,
     required this.onTap,
     this.label = 'أكمال الشراء',
+    this.height,
   });
 
   final VoidCallback onTap;
   final String label;
+  final double? height;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +39,7 @@ class CartCheckoutFooter extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      height: CartCheckoutFooterMetrics.buttonHeight(),
+      height: height ?? CartCheckoutFooterMetrics.buttonHeight(),
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(radius),

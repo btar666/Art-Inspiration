@@ -3,7 +3,7 @@ class SearchFilterState {
   const SearchFilterState({
     this.selectedBrand = 'الكل',
     this.selectedCategory = 'الكل',
-    this.onlyActive = true,
+    this.onlyActive = false,
   });
 
   final String selectedBrand;
