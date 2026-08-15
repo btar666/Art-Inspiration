@@ -30,6 +30,7 @@ import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/search/presentation/pages/barcode_scanner_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/widgets/product_details_widget.dart';
+import 'app_swipe_page.dart';
 
 /// مسارات التطبيق
 abstract final class AppRoutes {
@@ -94,28 +95,25 @@ GoRouter createAppRouter() {
       GoRoute(
         path: AppRoutes.onboarding,
         name: 'onboarding',
-        pageBuilder: (context, state) => CustomTransitionPage(
+        pageBuilder: (context, state) => AppSwipePage(
           key: state.pageKey,
           child: const OnboardingPage(),
-          transitionsBuilder: _slideTransition,
         ),
       ),
       GoRoute(
         path: AppRoutes.login,
         name: 'login',
-        pageBuilder: (context, state) => CustomTransitionPage(
+        pageBuilder: (context, state) => AppSwipePage(
           key: state.pageKey,
           child: const LoginPage(),
-          transitionsBuilder: _slideTransition,
         ),
       ),
       GoRoute(
         path: AppRoutes.register,
         name: 'register',
-        pageBuilder: (context, state) => CustomTransitionPage(
+        pageBuilder: (context, state) => AppSwipePage(
           key: state.pageKey,
           child: const RegisterPage(),
-          transitionsBuilder: _slideTransition,
         ),
       ),
       GoRoute(
@@ -133,10 +131,9 @@ GoRouter createAppRouter() {
         name: 'order-details',
         pageBuilder: (context, state) {
           final id = state.pathParameters['id']!;
-          return CustomTransitionPage(
+          return AppSwipePage(
             key: state.pageKey,
             child: OrderDetailsPage(orderId: id),
-            transitionsBuilder: _slideTransition,
           );
         },
       ),
@@ -146,10 +143,9 @@ GoRouter createAppRouter() {
         name: 'explore-section',
         pageBuilder: (context, state) {
           final sectionId = state.pathParameters['sectionId']!;
-          return CustomTransitionPage(
+          return AppSwipePage(
             key: state.pageKey,
             child: ExploreSectionPage(sectionId: sectionId),
-            transitionsBuilder: _slideTransition,
           );
         },
       ),
@@ -157,10 +153,9 @@ GoRouter createAppRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.notifications,
         name: 'notifications',
-        pageBuilder: (context, state) => CustomTransitionPage(
+        pageBuilder: (context, state) => AppSwipePage(
           key: state.pageKey,
           child: const NotificationsPage(),
-          transitionsBuilder: _slideTransition,
         ),
       ),
       GoRoute(
@@ -169,10 +164,9 @@ GoRouter createAppRouter() {
         name: 'product-details',
         pageBuilder: (context, state) {
           final product = state.extra! as ProductModel;
-          return CustomTransitionPage(
+          return AppSwipePage(
             key: state.pageKey,
             child: ProductDetailsWidget(product: product),
-            transitionsBuilder: _slideTransition,
           );
         },
       ),
@@ -183,10 +177,9 @@ GoRouter createAppRouter() {
         pageBuilder: (context, state) {
           final filter = state.extra as SearchFilterState? ??
               const SearchFilterState();
-          return CustomTransitionPage(
+          return AppSwipePage(
             key: state.pageKey,
             child: SearchFilterPage(initialFilter: filter),
-            transitionsBuilder: _slideTransition,
           );
         },
       ),
@@ -194,40 +187,36 @@ GoRouter createAppRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.barcodeScanner,
         name: 'barcode-scanner',
-        pageBuilder: (context, state) => CustomTransitionPage(
+        pageBuilder: (context, state) => AppSwipePage(
           key: state.pageKey,
           child: const BarcodeScannerPage(),
-          transitionsBuilder: _slideTransition,
         ),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.cart,
         name: 'cart',
-        pageBuilder: (context, state) => CustomTransitionPage(
+        pageBuilder: (context, state) => AppSwipePage(
           key: state.pageKey,
           child: const CartPage(),
-          transitionsBuilder: _slideTransition,
         ),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.checkout,
         name: 'checkout',
-        pageBuilder: (context, state) => CustomTransitionPage(
+        pageBuilder: (context, state) => AppSwipePage(
           key: state.pageKey,
           child: const CheckoutPage(),
-          transitionsBuilder: _slideTransition,
         ),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.checkoutReview,
         name: 'checkout-review',
-        pageBuilder: (context, state) => CustomTransitionPage(
+        pageBuilder: (context, state) => AppSwipePage(
           key: state.pageKey,
           child: const CheckoutReviewPage(),
-          transitionsBuilder: _slideTransition,
         ),
       ),
       GoRoute(
@@ -236,10 +225,9 @@ GoRouter createAppRouter() {
         name: 'checkout-success',
         pageBuilder: (context, state) {
           final orderId = state.pathParameters['orderId']!;
-          return CustomTransitionPage(
+          return AppSwipePage(
             key: state.pageKey,
             child: CheckoutSuccessPage(orderId: orderId),
-            transitionsBuilder: _slideTransition,
           );
         },
       ),
@@ -247,10 +235,9 @@ GoRouter createAppRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.checkoutSelectAddress,
         name: 'checkout-select-address',
-        pageBuilder: (context, state) => CustomTransitionPage(
+        pageBuilder: (context, state) => AppSwipePage(
           key: state.pageKey,
           child: const SelectAddressForOrderPage(),
-          transitionsBuilder: _slideTransition,
         ),
       ),
       // تتبع الطلب معلّق مؤقتاً — أي دخول يُحوَّل لصفحة الطلبات
@@ -264,50 +251,45 @@ GoRouter createAppRouter() {
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.favorites,
         name: 'favorites',
-        pageBuilder: (context, state) => CustomTransitionPage(
+        pageBuilder: (context, state) => AppSwipePage(
           key: state.pageKey,
           child: const FavoritesPage(),
-          transitionsBuilder: _slideTransition,
         ),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.settingsAbout,
         name: 'settings-about',
-        pageBuilder: (context, state) => CustomTransitionPage(
+        pageBuilder: (context, state) => AppSwipePage(
           key: state.pageKey,
           child: const AboutUsPage(),
-          transitionsBuilder: _slideTransition,
         ),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.settingsContact,
         name: 'settings-contact',
-        pageBuilder: (context, state) => CustomTransitionPage(
+        pageBuilder: (context, state) => AppSwipePage(
           key: state.pageKey,
           child: const ContactUsPage(),
-          transitionsBuilder: _slideTransition,
         ),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.settingsHelp,
         name: 'settings-help',
-        pageBuilder: (context, state) => CustomTransitionPage(
+        pageBuilder: (context, state) => AppSwipePage(
           key: state.pageKey,
           child: const HelpPage(),
-          transitionsBuilder: _slideTransition,
         ),
       ),
       GoRoute(
         parentNavigatorKey: rootNavigatorKey,
         path: AppRoutes.settingsAddresses,
         name: 'settings-addresses',
-        pageBuilder: (context, state) => CustomTransitionPage(
+        pageBuilder: (context, state) => AppSwipePage(
           key: state.pageKey,
           child: const SavedAddressesPage(),
-          transitionsBuilder: _slideTransition,
         ),
       ),
       ShellRoute(
@@ -374,19 +356,3 @@ Widget _fadeTransition(
   return FadeTransition(opacity: animation, child: child);
 }
 
-Widget _slideTransition(
-  BuildContext context,
-  Animation<double> animation,
-  Animation<double> secondaryAnimation,
-  Widget child,
-) {
-  final offset = Tween<Offset>(
-    begin: const Offset(0, 0.08),
-    end: Offset.zero,
-  ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
-
-  return SlideTransition(
-    position: offset,
-    child: FadeTransition(opacity: animation, child: child),
-  );
-}

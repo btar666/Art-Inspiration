@@ -11,7 +11,6 @@ class SearchInputBar extends StatelessWidget {
     super.key,
     required this.controller,
     required this.focusNode,
-    this.onFilterTap,
     this.onScannerTap,
     this.onSubmitted,
     this.onChanged,
@@ -19,7 +18,6 @@ class SearchInputBar extends StatelessWidget {
 
   final TextEditingController controller;
   final FocusNode focusNode;
-  final VoidCallback? onFilterTap;
   final VoidCallback? onScannerTap;
   final ValueChanged<String>? onSubmitted;
   final ValueChanged<String>? onChanged;
@@ -47,37 +45,58 @@ class SearchInputBar extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: Row(
             children: [
-              SearchFilterButton(onTap: onFilterTap),
-              GestureDetector(
-                onTap: onScannerTap,
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w),
-                  child: Icon(
-                    Icons.qr_code_scanner_rounded,
-                    color: AppColors.primary,
-                    size: 24.sp,
-                  ),
-                ),
-              ),
+              SearchBarcodeButton(onTap: onScannerTap),
               Expanded(
-                child: TextField(
-                  controller: controller,
-                  focusNode: focusNode,
+                child: Directionality(
                   textDirection: TextDirection.rtl,
-                  textAlign: TextAlign.right,
-                  style: AppTextStyles.authField(
-                    color: AppColors.textPrimary,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          textDirection: TextDirection.rtl,
+                          textAlign: TextAlign.right,
+                          style: AppTextStyles.authField(
+                            color: AppColors.textPrimary,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'أبحث عن منتج أو متجر محدد ..',
+                            hintStyle: AppTextStyles.authField(),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding:
+                                EdgeInsets.symmetric(vertical: 14.h),
+                          ),
+                          onChanged: onChanged,
+                          onSubmitted: onSubmitted,
+                        ),
+                      ),
+                      ListenableBuilder(
+                        listenable: controller,
+                        builder: (context, _) {
+                          if (controller.text.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return GestureDetector(
+                            onTap: () {
+                              controller.clear();
+                              onChanged?.call('');
+                            },
+                            behavior: HitTestBehavior.opaque,
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 6.w),
+                              child: Icon(
+                                Icons.close_rounded,
+                                color: AppColors.textSecondary,
+                                size: 20.sp,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                  decoration: InputDecoration(
-                    hintText: 'أبحث عن منتج أو متجر محدد ..',
-                    hintStyle: AppTextStyles.authField(),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(vertical: 14.h),
-                  ),
-                  onChanged: onChanged,
-                  onSubmitted: onSubmitted,
                 ),
               ),
               Padding(

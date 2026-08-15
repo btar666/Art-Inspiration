@@ -30,9 +30,10 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
     final async = ref.watch(notificationsProvider);
 
     return PopScope(
-      canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) _markReadAndLeave();
+        if (didPop) {
+          ref.read(notificationsProvider.notifier).markAllAsRead();
+        }
       },
       child: Scaffold(
       backgroundColor: NotificationCardMetrics.pageBackground,

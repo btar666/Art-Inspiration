@@ -26,7 +26,7 @@ void addProductToCart(
       );
 
   if (!context.mounted) return;
-  showAddToCartSnackBar(context, product.name);
+  showAddToCartSnackBar(context);
 }
 
 /// تحويل عنصر طلب إلى منتج للسلة

@@ -47,13 +47,15 @@ class _LookupMaps {
     required this.categoryIdByName,
     required this.brandIdByName,
     this.categoryImages = const {},
+    this.brandImages = const {},
   });
 
   final Map<int, String> categoryNames;
   final Map<int, String> brandNames;
   final Map<String, int> categoryIdByName;
   final Map<String, int> brandIdByName;
-  final Map<String, String> categoryImages;
+  final Map<String, String>? categoryImages;
+  final Map<String, String>? brandImages;
 }
 
 class _CategoryProductsCache {
@@ -342,7 +344,8 @@ class ProductsRepository {
         currentPage: pageResult.currentPage,
         lastPage: pageResult.lastPage,
         activeCategory: 'الكل',
-        categoryImages: lookups.categoryImages,
+        categoryImages: lookups.categoryImages ?? const {},
+        brandImages: lookups.brandImages ?? const {},
         warning: pageResult.products.isEmpty
             ? 'لا توجد منتجات — عرض بيانات تجريبية'
             : null,
@@ -385,7 +388,8 @@ class ProductsRepository {
         source: CatalogDataSource.api,
         currentPage: pageResult.currentPage,
         lastPage: pageResult.lastPage,
-        categoryImages: lookups.categoryImages,
+        categoryImages: lookups.categoryImages ?? const {},
+        brandImages: lookups.brandImages ?? const {},
         clearWarning: true,
       );
 
@@ -628,6 +632,7 @@ class ProductsRepository {
     required int lastPage,
     String activeCategory = 'الكل',
     Map<String, String> categoryImages = const {},
+    Map<String, String> brandImages = const {},
     String? warning,
   }) {
     final useMockProducts = products.isEmpty;
@@ -647,6 +652,7 @@ class ProductsRepository {
       currentPage: currentPage,
       lastPage: lastPage,
       categoryImages: categoryImages,
+      brandImages: brandImages,
     );
   }
 
@@ -775,12 +781,19 @@ class ProductsRepository {
 
     final brandNames = <int, String>{};
     final brandIdByName = <String, int>{};
+    final brandImages = <String, String>{};
     for (final row in brands.items) {
       final id = _asInt(row['id']);
       final name = row['name']?.toString().trim() ?? '';
       if (id == null || name.isEmpty) continue;
       brandNames[id] = name;
       brandIdByName[name] = id;
+      final image = _normalizeBrandImage(
+        row['image'] ?? row['logo'] ?? row['photo'],
+      );
+      if (image != null) {
+        brandImages[name] = image;
+      }
     }
 
     return _LookupMaps(
@@ -789,6 +802,7 @@ class ProductsRepository {
       categoryIdByName: categoryIdByName,
       brandIdByName: brandIdByName,
       categoryImages: categoryImages,
+      brandImages: brandImages,
     );
   }
 
@@ -803,6 +817,19 @@ class ProductsRepository {
       return 'https://aman-erp.com$text';
     }
     return 'https://aman-erp.com/storage/categories/$text';
+  }
+
+  String? _normalizeBrandImage(dynamic raw) {
+    var text = raw?.toString().trim() ?? '';
+    if (text.isEmpty || text == 'null') return null;
+    if (text.startsWith('http://')) {
+      text = 'https://${text.substring(7)}';
+    }
+    if (text.startsWith('https://')) return text;
+    if (text.startsWith('/')) {
+      return 'https://aman-erp.com$text';
+    }
+    return 'https://aman-erp.com/storage/brands/$text';
   }
 
   Future<_ProductsPageResult> _fetchProductsPage(

@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/glass_favorite_button.dart';
 import '../../../../shared/widgets/product_out_of_stock_badge.dart';
 import '../../../cart/presentation/widgets/cart_icon_button.dart';
 import '../../../favorites/presentation/favorites_actions.dart';
@@ -139,24 +140,14 @@ class _HomeProductImageSection extends StatelessWidget {
           Positioned(
             top: 6.w,
             left: 6.w,
-            child: GestureDetector(
+            child: GlassFavoriteButton(
+              isFavorite: isFavorite,
               onTap: onFavoriteTap,
-              child: Container(
-                width: HomeProductCardMetrics.favoriteWidth(),
-                height: HomeProductCardMetrics.favoriteHeight(),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(
-                    HomeProductCardMetrics.favoriteRadius(),
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  isFavorite ? Icons.favorite : Icons.favorite_border,
-                  size: HomeProductCardMetrics.favoriteIconSize(),
-                  color: HomeProductCardMetrics.favoriteHeartColor(),
-                ),
-              ),
+              width: HomeProductCardMetrics.favoriteWidth(),
+              height: HomeProductCardMetrics.favoriteHeight(),
+              iconSize: HomeProductCardMetrics.favoriteIconSize(),
+              borderRadius: HomeProductCardMetrics.favoriteRadius(),
+              iconColor: HomeProductCardMetrics.favoriteHeartColor(),
             ),
           ),
           if (product.discountPercent != null &&

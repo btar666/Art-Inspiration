@@ -14,7 +14,6 @@ import '../widgets/cart_confirm_dialog.dart';
 import '../widgets/cart_empty_state.dart';
 import '../widgets/cart_item_card.dart';
 import '../widgets/cart_page_header.dart';
-import '../widgets/cart_page_metrics.dart';
 import '../widgets/cart_price_summary.dart';
 
 /// صفحة السلة
@@ -62,142 +61,102 @@ class CartPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final items = ref.watch(cartNotifierProvider);
     final isEmpty = items.isEmpty;
-    final totalQuantity =
-        items.fold(0, (sum, item) => sum + item.quantity);
+    final totalQuantity = items.fold(0, (sum, item) => sum + item.quantity);
     final subtotal = ref.watch(cartSubtotalProvider);
     final cart = ref.read(cartNotifierProvider.notifier);
-    final bottomRadius = CartPageMetrics.whiteContainerBottomRadius();
 
     Future<void> onRefresh() => cart.reload();
 
     return Scaffold(
-      backgroundColor: CartPageMetrics.pageBackground,
-      body: Column(
-        children: [
-          Expanded(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(bottomRadius),
-                  bottomRight: Radius.circular(bottomRadius),
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(bottomRadius),
-                  bottomRight: Radius.circular(bottomRadius),
-                ),
-                child: SafeArea(
-                  bottom: false,
-                  child: isEmpty
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            CartPageHeader(
-                              onBack: () => context.pop(),
-                            ),
-                            Expanded(
-                              child: AppRefreshIndicator(
-                                onRefresh: onRefresh,
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    return SingleChildScrollView(
-                                      physics: const AlwaysScrollableScrollPhysics(
-                                        parent: BouncingScrollPhysics(),
-                                      ),
-                                      child: ConstrainedBox(
-                                        constraints: BoxConstraints(
-                                          minHeight: constraints.maxHeight,
-                                        ),
-                                        child: const CartEmptyState(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            CartPageHeader(
-                              onBack: () => context.pop(),
-                              showClearAll: true,
-                              onClearAll: () =>
-                                  _confirmClearAll(context, ref),
-                            ),
-                            Expanded(
-                              child: AppRefreshIndicator(
-                                onRefresh: onRefresh,
-                                child: ListView(
-                                  physics: const AlwaysScrollableScrollPhysics(
-                                    parent: BouncingScrollPhysics(),
-                                  ),
-                                  padding: EdgeInsets.fromLTRB(
-                                    20.w,
-                                    12.h,
-                                    20.w,
-                                    16.h,
-                                  ),
-                                  children: [
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Text(
-                                      'المنتجات ( $totalQuantity )',
-                                      style:
-                                          AppTextStyles.cartSectionTitle(),
-                                    ),
-                                  ),
-                                  SizedBox(height: 12.h),
-                                  ...List.generate(items.length, (index) {
-                                    final item = items[index];
-                                    return Padding(
-                                      padding: EdgeInsets.only(bottom: 12.h),
-                                      child: CartItemCard(
-                                        item: item,
-                                        onRemove: () => _confirmRemoveItem(
-                                          context,
-                                          ref,
-                                          index,
-                                        ),
-                                        onIncrement: () =>
-                                            cart.incrementQuantity(index),
-                                        onDecrement: () =>
-                                            cart.decrementQuantity(index),
-                                      ),
-                                    );
-                                  }),
-                                  SizedBox(height: 8.h),
-                                  CartPriceSummary(
-                                    subtotal: _formatPrice(subtotal),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            ),
-                          ],
-                        ),
-                ),
-              ),
-            ),
-          ),
-          if (!isEmpty)
-            ColoredBox(
-              color: CartPageMetrics.pageBackground,
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: CartPageMetrics.footerPadding(),
-                  child: CartCheckoutFooter(
-                    onTap: () => _startCheckout(context, ref),
-                    height: CartPageMetrics.footerHeight(),
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: isEmpty
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  CartPageHeader(
+                    onBack: () => context.pop(),
                   ),
-                ),
+                  Expanded(
+                    child: AppRefreshIndicator(
+                      onRefresh: onRefresh,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(
+                              parent: BouncingScrollPhysics(),
+                            ),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: constraints.maxHeight,
+                              ),
+                              child: const CartEmptyState(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  CartPageHeader(
+                    onBack: () => context.pop(),
+                    showClearAll: true,
+                    onClearAll: () => _confirmClearAll(context, ref),
+                  ),
+                  Expanded(
+                    child: AppRefreshIndicator(
+                      onRefresh: onRefresh,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
+                        children: [
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              'المنتجات ( $totalQuantity )',
+                              style: AppTextStyles.cartSectionTitle(),
+                            ),
+                          ),
+                          SizedBox(height: 12.h),
+                          ...List.generate(items.length, (index) {
+                            final item = items[index];
+                            return Padding(
+                              padding: EdgeInsets.only(bottom: 12.h),
+                              child: CartItemCard(
+                                item: item,
+                                onRemove: () => _confirmRemoveItem(
+                                  context,
+                                  ref,
+                                  index,
+                                ),
+                                onIncrement: () =>
+                                    cart.incrementQuantity(index),
+                                onDecrement: () =>
+                                    cart.decrementQuantity(index),
+                              ),
+                            );
+                          }),
+                          SizedBox(height: 8.h),
+                          CartPriceSummary(
+                            subtotal: _formatPrice(subtotal),
+                          ),
+                          SizedBox(height: 20.h),
+                          CartCheckoutFooter(
+                            onTap: () => _startCheckout(context, ref),
+                            glassy: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-        ],
       ),
     );
   }

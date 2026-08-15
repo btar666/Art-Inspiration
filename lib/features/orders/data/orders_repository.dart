@@ -149,34 +149,56 @@ class OrdersRepository {
     );
   }
 
-  /// صورة معاينة من الفاتورة مباشرة — كاش ثم API ثم منتج
+  /// صور معاينة من الفاتورة مباشرة — كاش ثم API ثم منتجات
   Future<String?> resolveInvoicePreviewImage(String orderId) async {
-    if (orderId.isEmpty) return null;
+    final urls = await resolveInvoicePreviewImages(orderId);
+    return urls.isEmpty ? null : urls.first;
+  }
 
-    final cached = _imageCache.load(orderId);
-    if (cached != null && cached.isNotEmpty) return cached;
+  Future<List<String>> resolveInvoicePreviewImages(String orderId) async {
+    if (orderId.isEmpty) return const [];
 
-    if (!_hasToken) return null;
+    final cached = _imageCache.loadAll(orderId);
+    if (cached.length >= OrderModel.maxPreviewImages) return cached;
+
+    if (!_hasToken) return cached;
 
     try {
       final record = await _api.getById(ApiEndpoints.salesInvoice(orderId));
-      var url = ErpOrderMapper.previewImageFromRecord(record);
-
-      if (url == null) {
-        final productId = ErpOrderMapper.firstProductIdFromRecord(record);
-        if (productId != null) {
-          url = await _productImageUrl(productId);
-        }
+      final urls = await _imagesFromInvoiceRecord(record, existing: cached);
+      if (urls.isNotEmpty) {
+        await _imageCache.saveAll(orderId, urls);
       }
-
-      if (url != null && url.isNotEmpty) {
-        await _imageCache.save(orderId, url);
-      }
-
-      return url;
+      return urls;
     } catch (_) {
-      return null;
+      return cached;
     }
+  }
+
+  Future<List<String>> _imagesFromInvoiceRecord(
+    Map<String, dynamic> record, {
+    List<String> existing = const [],
+  }) async {
+    final urls = [...existing];
+    final seen = urls.toSet();
+
+    void add(String? url) {
+      final trimmed = url?.trim() ?? '';
+      if (trimmed.isEmpty || !seen.add(trimmed)) return;
+      if (urls.length >= OrderModel.maxPreviewImages) return;
+      urls.add(trimmed);
+    }
+
+    for (final url in ErpOrderMapper.previewImagesFromRecord(record)) {
+      add(url);
+    }
+
+    for (final productId in ErpOrderMapper.productIdsFromRecord(record)) {
+      if (urls.length >= OrderModel.maxPreviewImages) break;
+      add(await _productImageUrl(productId));
+    }
+
+    return OrderModel.uniqueImageUrls(urls);
   }
 
   Future<String?> _productImageUrl(String productId) async {
@@ -202,22 +224,19 @@ class OrdersRepository {
     if (!_hasToken || orders.isEmpty) return orders;
 
     final withCache = _applyCachedImages(orders);
-    final missingIds = withCache
-        .where((order) => order.imageUrl == null || order.imageUrl!.isEmpty)
-        .map((order) => order.id)
-        .toList();
+    final missing = withCache.where(_needsMorePreviewImages).toList();
 
-    if (missingIds.isEmpty) return withCache;
+    if (missing.isEmpty) return withCache;
 
-    final updates = <String, String>{};
+    final updates = <String, List<String>>{};
 
-    for (var i = 0; i < missingIds.length; i += _imageFetchBatchSize) {
-      final batch = missingIds.skip(i).take(_imageFetchBatchSize);
+    for (var i = 0; i < missing.length; i += _imageFetchBatchSize) {
+      final batch = missing.skip(i).take(_imageFetchBatchSize);
       await Future.wait(
-        batch.map((orderId) async {
-          final url = await resolveInvoicePreviewImage(orderId);
-          if (url != null && url.isNotEmpty) {
-            updates[orderId] = url;
+        batch.map((order) async {
+          final urls = await _resolveOrderPreviewImages(order);
+          if (urls.isNotEmpty) {
+            updates[order.id] = urls;
           }
         }),
       );
@@ -228,15 +247,57 @@ class OrdersRepository {
     return withCache
         .map(
           (order) => updates.containsKey(order.id)
-              ? order.copyWith(imageUrl: updates[order.id])
+              ? order.copyWith(
+                  imageUrls: updates[order.id],
+                  imageUrl: updates[order.id]!.first,
+                )
               : order,
         )
         .toList();
   }
 
+  bool _needsMorePreviewImages(OrderModel order) {
+    final have = order.previewImageUrls.length;
+    if (have >= OrderModel.maxPreviewImages) return false;
+    final want = order.productIds.isEmpty
+        ? (have == 0 ? 1 : have)
+        : order.productIds.length.clamp(1, OrderModel.maxPreviewImages);
+    return have < want;
+  }
+
+  Future<List<String>> _resolveOrderPreviewImages(OrderModel order) async {
+    final urls = [...order.previewImageUrls];
+    final seen = urls.toSet();
+
+    final fetched = await Future.wait(
+      order.productIds
+          .take(OrderModel.maxPreviewImages)
+          .map(_productImageUrl),
+    );
+    for (final url in fetched) {
+      if (urls.length >= OrderModel.maxPreviewImages) break;
+      final trimmed = url?.trim() ?? '';
+      if (trimmed.isEmpty || !seen.add(trimmed)) continue;
+      urls.add(trimmed);
+    }
+
+    if (urls.length >= _wantedPreviewCount(order) ||
+        (urls.isNotEmpty && order.productIds.isNotEmpty)) {
+      await _imageCache.saveAll(order.id, urls);
+      return urls;
+    }
+
+    return resolveInvoicePreviewImages(order.id);
+  }
+
+  int _wantedPreviewCount(OrderModel order) {
+    if (order.productIds.isEmpty) return 1;
+    return order.productIds.length.clamp(1, OrderModel.maxPreviewImages);
+  }
+
   Future<OrderDetailModel?> fetchOrderDetail(String orderId) async {
     final cached = _invoiceRecordCache[orderId];
-    if (cached != null) {
+    if (cached != null && !_needsFullInvoiceRecord(cached)) {
       return _buildDetailFromRecord(orderId, cached);
     }
 
@@ -248,9 +309,26 @@ class OrdersRepository {
       );
     }
 
-    final record = await _api.getById(ApiEndpoints.salesInvoice(orderId));
-    _cacheInvoiceRecord(record);
-    return _buildDetailFromRecord(orderId, record);
+    try {
+      final record = await _api.getById(ApiEndpoints.salesInvoice(orderId));
+      _cacheInvoiceRecord(record);
+      return _buildDetailFromRecord(orderId, record);
+    } catch (_) {
+      if (cached != null) {
+        return _buildDetailFromRecord(orderId, cached);
+      }
+      rethrow;
+    }
+  }
+
+  bool _needsFullInvoiceRecord(Map<String, dynamic> record) {
+    final detail = ErpOrderMapper.detailFromRecord(record);
+    if (detail == null || detail.items.isEmpty) return true;
+    return detail.items.any((item) {
+      final hasImage = item.imageUrl != null && item.imageUrl!.isNotEmpty;
+      final hasProductId = item.productId != null && item.productId!.trim().isNotEmpty;
+      return !hasImage && !hasProductId;
+    });
   }
 
   void _cacheInvoiceRecords(List<Map<String, dynamic>> records) {
@@ -272,7 +350,9 @@ class OrdersRepository {
     final detail = ErpOrderMapper.detailFromRecord(record);
     if (detail == null) return null;
 
-    var preview = detail.previewImageUrl;
+    final items = await _enrichLineItemImages(detail.items);
+
+    var preview = _firstItemImageUrl(items) ?? detail.previewImageUrl;
     if (preview == null) {
       final productId = ErpOrderMapper.firstProductIdFromRecord(record);
       if (productId != null) {
@@ -280,13 +360,16 @@ class OrdersRepository {
       }
     }
 
-    if (preview != null && preview.isNotEmpty) {
-      await _imageCache.save(orderId, preview);
+    final previewUrls = OrderModel.uniqueImageUrls(items.map((e) => e.imageUrl));
+    if (preview == null && previewUrls.isNotEmpty) {
+      preview = previewUrls.first;
     }
 
-    final items = preview != null && preview.isNotEmpty
-        ? _mergeLineItemImages(detail.items, preview)
-        : detail.items;
+    if (previewUrls.isNotEmpty) {
+      await _imageCache.saveAll(orderId, previewUrls);
+    } else if (preview != null && preview.isNotEmpty) {
+      await _imageCache.save(orderId, preview);
+    }
 
     return OrderDetailModel(
       id: detail.id,
@@ -295,6 +378,8 @@ class OrdersRepository {
       price: detail.price,
       status: detail.status,
       imageUrl: preview ?? detail.imageUrl,
+      imageUrls: previewUrls.isNotEmpty ? previewUrls : detail.imageUrls,
+      productIds: OrderModel.uniqueIds(items.map((e) => e.productId)),
       imageBgColor: detail.imageBgColor,
       customerName: detail.customerName,
       phone: detail.phone,
@@ -307,36 +392,65 @@ class OrdersRepository {
     );
   }
 
-  List<OrderLineItem> _mergeLineItemImages(
+  /// يجلب صورة كل بند من /products عند غيابها في الفاتورة
+  Future<List<OrderLineItem>> _enrichLineItemImages(
     List<OrderLineItem> items,
-    String previewUrl,
-  ) {
+  ) async {
     if (items.isEmpty) return items;
-    final first = items.first;
-    if (first.imageUrl != null && first.imageUrl!.isNotEmpty) return items;
+
+    final missingIndexes = <int>[];
+    for (var i = 0; i < items.length; i++) {
+      final item = items[i];
+      final hasImage = item.imageUrl != null && item.imageUrl!.isNotEmpty;
+      final productId = item.productId?.trim() ?? '';
+      if (!hasImage && productId.isNotEmpty) {
+        missingIndexes.add(i);
+      }
+    }
+    if (missingIndexes.isEmpty) return items;
+
+    final urls = List<String?>.filled(items.length, null);
+    for (var i = 0; i < missingIndexes.length; i += _imageFetchBatchSize) {
+      final batch = missingIndexes.skip(i).take(_imageFetchBatchSize);
+      await Future.wait(
+        batch.map((index) async {
+          final productId = items[index].productId?.trim();
+          if (productId == null || productId.isEmpty) return;
+          urls[index] = await _productImageUrl(productId);
+        }),
+      );
+    }
 
     return [
-      OrderLineItem(
-        productId: first.productId,
-        productName: first.productName,
-        quantity: first.quantity,
-        price: first.price,
-        imageUrl: previewUrl,
-        imageBgColor: first.imageBgColor,
-      ),
-      ...items.skip(1),
+      for (var i = 0; i < items.length; i++)
+        (urls[i] != null && urls[i]!.isNotEmpty)
+            ? items[i].copyWith(imageUrl: urls[i])
+            : items[i],
     ];
+  }
+
+  String? _firstItemImageUrl(List<OrderLineItem> items) {
+    for (final item in items) {
+      final url = item.imageUrl;
+      if (url != null && url.isNotEmpty) return url;
+    }
+    return null;
   }
 
   List<OrderModel> _applyCachedImages(List<OrderModel> orders) {
     return orders
         .map((order) {
-          if (order.imageUrl != null && order.imageUrl!.isNotEmpty) {
-            return order;
-          }
-          final cached = _imageCache.load(order.id);
-          if (cached == null) return order;
-          return order.copyWith(imageUrl: cached);
+          final cached = _imageCache.loadAll(order.id);
+          if (cached.isEmpty) return order;
+          final merged = OrderModel.uniqueImageUrls([
+            ...order.previewImageUrls,
+            ...cached,
+          ]);
+          if (merged.length <= order.previewImageUrls.length) return order;
+          return order.copyWith(
+            imageUrls: merged,
+            imageUrl: merged.first,
+          );
         })
         .toList();
   }
@@ -377,13 +491,22 @@ class OrdersRepository {
         ? created.elementNumber
         : 'طلب ${draft.totalQuantity} منتج';
 
+    final itemUrls = OrderModel.uniqueImageUrls(
+      draft.items.map((item) => item.product.imageUrl),
+    );
+    final itemIds = OrderModel.uniqueIds(
+      draft.items.map((item) => item.product.id),
+    );
+
     final order = OrderDetailModel(
       id: created.id,
       orderName: number,
       address: addressLabel,
       price: draft.subtotal,
       status: OrderStatus.reviewing,
-      imageUrl: firstItem.imageUrl,
+      imageUrl: itemUrls.isEmpty ? firstItem.imageUrl : itemUrls.first,
+      imageUrls: itemUrls,
+      productIds: itemIds,
       imageBgColor: firstItem.imageBgColor,
       customerName: draft.customerName,
       phone: draft.phone,
@@ -406,9 +529,8 @@ class OrdersRepository {
           .toList(),
     );
 
-    final preview = order.previewImageUrl;
-    if (preview != null && preview.isNotEmpty) {
-      await _imageCache.save(created.id, preview);
+    if (itemUrls.isNotEmpty) {
+      await _imageCache.saveAll(created.id, itemUrls);
     }
 
     return order;

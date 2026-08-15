@@ -10,6 +10,7 @@ import '../../../home/data/erp_catalog_metadata.dart';
 import '../../../home/data/home_mock_data.dart';
 import '../../../home/presentation/providers/products_provider.dart';
 import '../../data/models/explore_models.dart';
+import '../providers/explore_tab_provider.dart';
 import '../widgets/explore_header_overlay.dart';
 import '../widgets/explore_scroll_metrics.dart';
 import '../widgets/explore_tab_content.dart';
@@ -24,7 +25,6 @@ class ExplorePage extends ConsumerStatefulWidget {
 
 class _ExplorePageState extends ConsumerState<ExplorePage> {
   final _scrollController = ScrollController();
-  ExploreTab _selectedTab = ExploreTab.general;
   double _scrollOffset = 0;
 
   @override
@@ -52,7 +52,7 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
   }
 
   void _maybeLoadMore() {
-    if (_selectedTab != ExploreTab.general) return;
+    if (ref.read(exploreTabProvider) != ExploreTab.general) return;
     if (!_scrollController.hasClients) return;
     final position = _scrollController.position;
     if (position.pixels < position.maxScrollExtent - 320) return;
@@ -60,8 +60,8 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
   }
 
   void _onTabSelected(ExploreTab tab) {
-    if (tab == _selectedTab) return;
-    setState(() => _selectedTab = tab);
+    if (tab == ref.read(exploreTabProvider)) return;
+    ref.read(exploreTabProvider.notifier).state = tab;
     if (_scrollController.hasClients) {
       _scrollController.jumpTo(0);
     }
@@ -76,6 +76,7 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
     final topInset = MediaQuery.paddingOf(context).top;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final headerSpacer = ExploreScrollMetrics.pinnedHeaderHeight(topInset);
+    final selectedTab = ref.watch(exploreTabProvider);
     final catalogAsync = ref.watch(catalogProvider);
     final catalog = catalogAsync.value;
     final mockTaxonomy =
@@ -94,7 +95,7 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
             slivers: [
               SliverToBoxAdapter(child: SizedBox(height: headerSpacer)),
               ExploreTabSlivers.build(
-                tab: _selectedTab,
+                tab: selectedTab,
                 bottomInset: bottomInset,
                 products: products,
                 brands: brands,
@@ -108,7 +109,7 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
           ),
           ExploreHeaderOverlay(
             scrollOffset: _scrollOffset,
-            selectedTab: _selectedTab,
+            selectedTab: selectedTab,
             onTabSelected: _onTabSelected,
             onNotificationTap: () => context.push(AppRoutes.notifications),
           ),

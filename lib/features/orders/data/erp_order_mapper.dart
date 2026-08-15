@@ -20,7 +20,8 @@ abstract final class ErpOrderMapper {
     final price = _parsePrice(record['total'] ?? record['subtotal']);
     final statusRaw = (record['status'] ?? '').toString();
     final address = _deliveryAddress(record);
-    final imageUrl = previewImageFromRecord(record);
+    final imageUrls = previewImagesFromRecord(record);
+    final productIds = productIdsFromRecord(record);
 
     return OrderModel(
       id: id,
@@ -34,7 +35,9 @@ abstract final class ErpOrderMapper {
             record['issued_at'] ??
             record['created_at'],
       ),
-      imageUrl: imageUrl,
+      imageUrl: imageUrls.isEmpty ? null : imageUrls.first,
+      imageUrls: imageUrls,
+      productIds: productIds,
     );
   }
 
@@ -58,6 +61,8 @@ abstract final class ErpOrderMapper {
       _deliveryAddress(record, ''),
     ]);
     final previewImage = base.imageUrl ?? _firstLineItemImageFromItems(items);
+    final itemUrls = OrderModel.uniqueImageUrls(items.map((e) => e.imageUrl));
+    final itemIds = OrderModel.uniqueIds(items.map((e) => e.productId));
 
     return OrderDetailModel(
       id: base.id,
@@ -66,6 +71,8 @@ abstract final class ErpOrderMapper {
       price: base.price,
       status: base.status,
       imageUrl: previewImage,
+      imageUrls: itemUrls.isNotEmpty ? itemUrls : base.imageUrls,
+      productIds: itemIds.isNotEmpty ? itemIds : base.productIds,
       imageBgColor: base.imageBgColor,
       customerName: customerName.isEmpty ? '—' : customerName,
       phone: phone.isEmpty ? '—' : phone,
@@ -84,16 +91,39 @@ abstract final class ErpOrderMapper {
 
   /// أول صورة منتج من سجل الفاتورة — للقائمة والمعاينة
   static String? previewImageFromRecord(Map<String, dynamic> record) {
-    final fromLines = _firstLineItemImageUrl(_invoiceLines(record));
-    if (fromLines != null) return fromLines;
+    final urls = previewImagesFromRecord(record);
+    return urls.isEmpty ? null : urls.first;
+  }
+
+  /// حتى 4 صور من بنود الفاتورة
+  static List<String> previewImagesFromRecord(Map<String, dynamic> record) {
+    final fromLines = _lineItemImageUrls(_invoiceLines(record));
+    if (fromLines.isNotEmpty) return fromLines;
 
     final product = _asMap(record['product'])
         ?? _asMap(record['inventory_product']);
     if (product != null) {
-      return ErpMediaUrl.resolve(record: record, main: product);
+      final url = ErpMediaUrl.resolve(record: record, main: product);
+      if (url != null && url.isNotEmpty) return [url];
     }
 
-    return null;
+    return const [];
+  }
+
+  /// حتى 4 معرّفات منتج من بنود الفاتورة
+  static List<String> productIdsFromRecord(Map<String, dynamic> record) {
+    final raw = _invoiceLines(record);
+    if (raw is! List) return const [];
+
+    final ids = <String>[];
+    for (final item in raw) {
+      if (item is! Map) continue;
+      final id = _productIdFromLine(Map<String, dynamic>.from(item));
+      if (id == null || id.isEmpty || ids.contains(id)) continue;
+      ids.add(id);
+      if (ids.length >= OrderModel.maxPreviewImages) break;
+    }
+    return ids;
   }
 
   /// أول product_id من بنود الفاتورة — للجلب من /products
@@ -103,15 +133,8 @@ abstract final class ErpOrderMapper {
 
     for (final item in raw) {
       if (item is! Map) continue;
-      final map = Map<String, dynamic>.from(item);
-      final direct = (map['product_id'] ?? map['productId'] ?? '')
-          .toString()
-          .trim();
-      if (direct.isNotEmpty) return direct;
-
-      final nested = _asMap(map['product']) ?? _asMap(map['inventory_product']);
-      final nestedId = nested?['id']?.toString().trim() ?? '';
-      if (nestedId.isNotEmpty) return nestedId;
+      final id = _productIdFromLine(Map<String, dynamic>.from(item));
+      if (id != null) return id;
     }
 
     return null;
@@ -140,12 +163,8 @@ abstract final class ErpOrderMapper {
           ]);
           if (name.isEmpty) return null;
 
-          final productIdRaw = (map['product_id'] ?? map['productId'] ?? '')
-              .toString()
-              .trim();
-
           return OrderLineItem(
-            productId: productIdRaw.isEmpty ? null : productIdRaw,
+            productId: _productIdFromLine(map),
             productName: name,
             quantity: _parsePrice(map['quantity']).clamp(1, 999999),
             price: _parsePrice(map['unit_price'] ?? map['total']),
@@ -154,6 +173,19 @@ abstract final class ErpOrderMapper {
         })
         .whereType<OrderLineItem>()
         .toList();
+  }
+
+  static String? _productIdFromLine(Map<String, dynamic> map) {
+    final direct = (map['product_id'] ?? map['productId'] ?? '')
+        .toString()
+        .trim();
+    if (direct.isNotEmpty) return direct;
+
+    final nested = _asMap(map['product']) ??
+        _asMap(map['inventory_product']) ??
+        _asMap(map['inventoryProduct']);
+    final nestedId = nested?['id']?.toString().trim() ?? '';
+    return nestedId.isEmpty ? null : nestedId;
   }
 
   static String? _lineItemImageUrl(Map<String, dynamic> map) {
@@ -166,16 +198,19 @@ abstract final class ErpOrderMapper {
     );
   }
 
-  static String? _firstLineItemImageUrl(dynamic raw) {
-    if (raw is! List) return null;
+  static List<String> _lineItemImageUrls(dynamic raw) {
+    if (raw is! List) return const [];
 
+    final urls = <String>[];
+    final seen = <String>{};
     for (final item in raw) {
       if (item is! Map) continue;
       final url = _lineItemImageUrl(Map<String, dynamic>.from(item));
-      if (url != null) return url;
+      if (url == null || url.isEmpty || !seen.add(url)) continue;
+      urls.add(url);
+      if (urls.length >= OrderModel.maxPreviewImages) break;
     }
-
-    return null;
+    return urls;
   }
 
   static String? _firstLineItemImageFromItems(List<OrderLineItem> items) {

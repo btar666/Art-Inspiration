@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Release secrets (keystore passwords in android/key.properties)
+dart_defines.json
+android/upload-keystore.jks

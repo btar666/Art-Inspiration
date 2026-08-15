@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -13,6 +14,7 @@ import '../../../cart/presentation/cart_actions.dart';
 import '../../../home/data/models/product_model.dart';
 import '../../../home/data/models/product_page_result.dart';
 import '../../../home/data/products_repository.dart';
+import '../../../home/presentation/providers/products_provider.dart';
 import '../../../home/presentation/widgets/home_product_card.dart';
 import '../../../home/presentation/widgets/home_product_card_metrics.dart';
 import '../../data/models/search_filter_state.dart';
@@ -32,11 +34,17 @@ class SearchPage extends ConsumerStatefulWidget {
 }
 
 class _SearchPageState extends ConsumerState<SearchPage> {
+  static const _suggestedCount = 10;
+
   final _queryController = TextEditingController();
   final _focusNode = FocusNode();
   final _scrollController = ScrollController();
 
   List<String> _history = [];
+  List<ProductModel> _suggestedProducts = const [];
+  bool _loadingSuggestions = false;
+  int _searchRequestId = 0;
+  int _suggestRequestId = 0;
 
   @override
   void initState() {
@@ -46,6 +54,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _consumePendingAppliedFilter();
       _consumePendingSearchQuery();
+      _loadSuggestions();
     });
   }
 
@@ -143,6 +152,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   void _onCancel() {
+    _searchRequestId++;
     _queryController.clear();
     setState(() {
       _query = '';
@@ -155,6 +165,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       _filter = const SearchFilterState();
     });
     _focusNode.unfocus();
+    _loadSuggestions();
   }
 
   Future<void> _runSearch({
@@ -168,11 +179,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     if (updateHistory && trimmed.isNotEmpty) {
       _history.remove(trimmed);
       _history.insert(0, trimmed);
-      if (_history.length > 8) {
-        _history = _history.take(8).toList();
+      if (_history.length > AppConstants.maxSearchHistoryItems) {
+        _history = _history.take(AppConstants.maxSearchHistoryItems).toList();
       }
       await _persistHistory();
     }
+
+    final requestId = ++_searchRequestId;
 
     setState(() {
       _filter = activeFilter;
@@ -183,11 +196,12 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       _currentPage = 1;
       _lastPage = 1;
     });
+    _scrollToTop();
 
     try {
       final result = await _fetchPage(1, filter: activeFilter);
 
-      if (!mounted) return;
+      if (!mounted || requestId != _searchRequestId) return;
       setState(() {
         _results = result.products;
         _currentPage = result.currentPage;
@@ -195,7 +209,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         _loading = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || requestId != _searchRequestId) return;
       setState(() {
         _results = const [];
         _loading = false;
@@ -260,37 +274,39 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   void _onQueryChanged(String value) {
+    final trimmed = value.trim();
+
     setState(() {
       _query = value;
-      if (value.trim().isEmpty && !_filter.hasActiveFilters) {
+      if (trimmed.isEmpty && !_filter.hasActiveFilters) {
         _showResults = false;
+        _loading = false;
+        _isLoadingMore = false;
         _results = const [];
         _currentPage = 1;
         _lastPage = 1;
       }
     });
-  }
 
-  Future<void> _openFilter() async {
-    ref.read(appliedSearchFilterProvider.notifier).state = null;
+    if (trimmed.isEmpty) {
+      _searchRequestId++;
+      if (!_filter.hasActiveFilters) {
+        _loadSuggestions();
+      }
+      return;
+    }
 
-    final popResult = await context.push<SearchFilterState>(
-      AppRoutes.searchFilter,
-      extra: _filter,
-    );
-
-    if (!mounted) return;
-
-    final applied =
-        ref.read(appliedSearchFilterProvider) ?? popResult;
-    ref.read(appliedSearchFilterProvider.notifier).state = null;
-
-    if (applied == null) return;
-
-    await _runSearch(filter: applied);
+    _runSearch();
   }
 
   void _onScannerTap() => context.push(AppRoutes.barcodeScanner);
+
+  void _scrollToTop() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      _scrollController.jumpTo(0);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -313,7 +329,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             SearchInputBar(
               controller: _queryController,
               focusNode: _focusNode,
-              onFilterTap: _openFilter,
               onScannerTap: _onScannerTap,
               onChanged: _onQueryChanged,
               onSubmitted: _onSearch,
@@ -323,7 +338,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             Expanded(
               child: _isShowingResults
                   ? _buildResults(bottomInset)
-                  : _buildHistory(),
+                  : _buildIdle(bottomInset),
             ),
           ],
         ),
@@ -331,21 +346,174 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     );
   }
 
-  Widget _buildHistory() {
-    return SearchHistorySection(
-      history: _history,
-      onClearAll: () {
-        setState(() => _history = []);
-        _persistHistory();
+  Future<void> _loadSuggestions() async {
+    if (_isShowingResults) return;
+
+    final requestId = ++_suggestRequestId;
+    setState(() => _loadingSuggestions = _suggestedProducts.isEmpty);
+
+    try {
+      final products = await _fetchSuggestedProducts();
+      if (!mounted || requestId != _suggestRequestId) return;
+      setState(() {
+        _suggestedProducts = products;
+        _loadingSuggestions = false;
+      });
+    } catch (_) {
+      if (!mounted || requestId != _suggestRequestId) return;
+      setState(() => _loadingSuggestions = false);
+    }
+  }
+
+  Future<List<ProductModel>> _fetchSuggestedProducts() async {
+    if (_history.isNotEmpty) {
+      final fromHistory = await _productsForHistory();
+      if (fromHistory.isNotEmpty) return fromHistory;
+    }
+    return _randomProducts();
+  }
+
+  Future<List<ProductModel>> _productsForHistory() async {
+    final repo = ref.read(productsRepositoryProvider);
+    final terms = _history
+        .map((term) => term.trim())
+        .where((term) => term.isNotEmpty)
+        .take(3)
+        .toList();
+    if (terms.isEmpty) return const [];
+
+    final pages = await Future.wait(
+      terms.map(
+        (term) => repo.searchProductsPage(page: 1, query: term),
+      ),
+    );
+
+    final seen = <String>{};
+    final matched = <ProductModel>[];
+    for (final page in pages) {
+      for (final product in page.products) {
+        if (!seen.add(product.id)) continue;
+        matched.add(product);
+        if (matched.length >= _suggestedCount) {
+          return matched;
+        }
+      }
+    }
+    return matched;
+  }
+
+  Future<List<ProductModel>> _randomProducts() async {
+    var pool =
+        ref.read(productsRepositoryProvider).peekDefaultCatalog()?.products;
+    if (pool == null || pool.isEmpty) {
+      try {
+        pool = (await ref.read(catalogProvider.future)).products;
+      } catch (_) {
+        pool = const [];
+      }
+    }
+    if (pool.isEmpty) return const [];
+
+    final source = List<ProductModel>.from(pool);
+    source.shuffle();
+    return source.take(_suggestedCount).toList();
+  }
+
+  Widget _buildIdle(double bottomInset) {
+    return AppRefreshScrollView(
+      onRefresh: () async {
+        await ref.read(catalogProvider.notifier).refresh();
+        await _loadSuggestions();
       },
-      onRemoveItem: (index) {
-        setState(() => _history.removeAt(index));
-        _persistHistory();
-      },
-      onItemTap: (term) {
-        _queryController.text = term;
-        _onSearch(term);
-      },
+      controller: _scrollController,
+      slivers: [
+        SliverToBoxAdapter(
+          child: SearchHistorySection(
+            history: _history,
+            onClearAll: () {
+              setState(() => _history = []);
+              _persistHistory();
+              _loadSuggestions();
+            },
+            onRemoveItem: (index) {
+              setState(() => _history.removeAt(index));
+              _persistHistory();
+              _loadSuggestions();
+            },
+            onItemTap: (term) {
+              _queryController.text = term;
+              _onSearch(term);
+            },
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              20.w,
+              _history.isEmpty ? 20.h : 16.h,
+              20.w,
+              12.h,
+            ),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                'منتجات مقترحة',
+                style: AppTextStyles.searchSectionTitle(),
+              ),
+            ),
+          ),
+        ),
+        if (_loadingSuggestions && _suggestedProducts.isEmpty)
+          const SliverFillRemaining(
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (_suggestedProducts.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: 100.h),
+                child: Text(
+                  'لا توجد منتجات مقترحة حالياً',
+                  style: AppTextStyles.searchEmptyState(),
+                ),
+              ),
+            ),
+          )
+        else ...[
+          _productsGridSliver(_suggestedProducts, keyPrefix: 'suggest'),
+          SliverToBoxAdapter(child: SizedBox(height: 100.h + bottomInset)),
+        ],
+      ],
+    );
+  }
+
+  Widget _productsGridSliver(
+    List<ProductModel> products, {
+    required String keyPrefix,
+  }) {
+    return SliverPadding(
+      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 0),
+      sliver: SliverGrid(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 14.h,
+          crossAxisSpacing: 14.w,
+          childAspectRatio: HomeProductCardMetrics.aspectRatio(),
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final product = products[index];
+            return HomeProductCard(
+              key: ValueKey('${keyPrefix}_${product.id}_$index'),
+              product: product,
+              onTap: () => ProductDetailsWidget.open(context, product),
+              onAddToCart: () => addProductToCart(context, ref, product),
+            );
+          },
+          childCount: products.length,
+        ),
+      ),
     );
   }
 
@@ -401,29 +569,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ),
           ),
         ),
-        SliverPadding(
-          padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 0),
-          sliver: SliverGrid(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 14.h,
-              crossAxisSpacing: 14.w,
-              childAspectRatio: HomeProductCardMetrics.aspectRatio(),
-            ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final product = _results[index];
-                return HomeProductCard(
-                  key: ValueKey('search_${product.id}_$index'),
-                  product: product,
-                  onTap: () => ProductDetailsWidget.open(context, product),
-                  onAddToCart: () => addProductToCart(context, ref, product),
-                );
-              },
-              childCount: _results.length,
-            ),
-          ),
-        ),
+        _productsGridSliver(_results, keyPrefix: 'search'),
         if (_hasMore || _isLoadingMore)
           SliverToBoxAdapter(
             child: PaginationFooter(

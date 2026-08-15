@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:220100841143:android:fbdf52542a2ef1a3a10732",
+        "android_client_info": {
+          "package_name": "com.artinspiration.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDOE7VvnPtSeKG4oUIiFdZn3MNX1nVYQRg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:220100841143:android:e69261665086a2f7a10732",
         "android_client_info": {
           "package_name": "com.example.art_inspiration_app"

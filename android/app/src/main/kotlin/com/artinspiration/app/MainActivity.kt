@@ -1,4 +1,4 @@
-package com.example.art_inspiration_app
+package com.artinspiration.app
 
 import io.flutter.embedding.android.FlutterActivity
 

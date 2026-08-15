@@ -42,10 +42,12 @@ class OrdersListNotifier extends AsyncNotifier<OrdersListState> {
         .map((order) {
           final updated = byId[order.id];
           if (updated == null) return order;
-          if (updated.imageUrl == null || updated.imageUrl == order.imageUrl) {
-            return order;
-          }
-          return order.copyWith(imageUrl: updated.imageUrl);
+          if (_samePreviewImages(order, updated)) return order;
+          return order.copyWith(
+            imageUrl: updated.imageUrl,
+            imageUrls: updated.imageUrls,
+            productIds: updated.productIds,
+          );
         })
         .toList();
   }
@@ -53,9 +55,19 @@ class OrdersListNotifier extends AsyncNotifier<OrdersListState> {
   bool _ordersEqual(List<OrderModel> a, List<OrderModel> b) {
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {
-      if (a[i].id != b[i].id || a[i].imageUrl != b[i].imageUrl) {
+      if (a[i].id != b[i].id || !_samePreviewImages(a[i], b[i])) {
         return false;
       }
+    }
+    return true;
+  }
+
+  bool _samePreviewImages(OrderModel a, OrderModel b) {
+    final aUrls = a.previewImageUrls;
+    final bUrls = b.previewImageUrls;
+    if (aUrls.length != bUrls.length) return false;
+    for (var i = 0; i < aUrls.length; i++) {
+      if (aUrls[i] != bUrls[i]) return false;
     }
     return true;
   }

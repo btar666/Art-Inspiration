@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -90,7 +91,16 @@ class _DraggableFloatingCartButtonState
             showBadge: false,
             showDot: true,
             blurred: true,
-          ),
+          )
+              .animate(onPlay: (controller) => controller.repeat())
+              .shake(
+                delay: 2600.ms,
+                hz: 2.2,
+                duration: 700.ms,
+                rotation: 0.03,
+                offset: const Offset(1.6, 0),
+                curve: Curves.easeInOut,
+              ),
         ),
       ),
     );

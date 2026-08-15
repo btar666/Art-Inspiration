@@ -142,17 +142,23 @@ class CartCircleIconButton extends StatelessWidget {
             ),
           ],
         ),
-        child: ClipOval(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              width: buttonSize,
-              height: buttonSize,
-              decoration: BoxDecoration(
+        child: Container(
+          width: buttonSize,
+          height: buttonSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.primary,
+              width: 0.5,
+            ),
+          ),
+          child: ClipOval(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: ColoredBox(
                 color: Colors.white.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
+                child: content,
               ),
-              child: content,
             ),
           ),
         ),
@@ -164,6 +170,10 @@ class CartCircleIconButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.background,
           shape: BoxShape.circle,
+          border: Border.all(
+            color: AppColors.primary,
+            width: 0.5,
+          ),
           boxShadow: showShadow
               ? [
                   BoxShadow(

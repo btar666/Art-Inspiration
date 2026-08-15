@@ -1,7 +1,7 @@
 name: art_inspiration_app
 description: Art Inspiration - Cosmetics E-Commerce App
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.5.0

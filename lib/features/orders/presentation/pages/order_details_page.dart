@@ -393,6 +393,8 @@ class _OrderLineItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imageUrl = item.imageUrl?.trim();
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -404,9 +406,14 @@ class _OrderLineItemRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(14.r),
           ),
           clipBehavior: Clip.antiAlias,
-          child: item.imageUrl != null
-              ? CachedNetworkImage(
-                  imageUrl: item.imageUrl!,
+          child: imageUrl == null || imageUrl.isEmpty
+              ? Icon(
+                  Icons.spa_outlined,
+                  size: 32.sp,
+                  color: AppColors.primary.withValues(alpha: 0.35),
+                )
+              : CachedNetworkImage(
+                  imageUrl: imageUrl,
                   fit: BoxFit.cover,
                   placeholder: (_, __) => Center(
                     child: Icon(
@@ -422,11 +429,6 @@ class _OrderLineItemRow extends StatelessWidget {
                       color: AppColors.primary.withValues(alpha: 0.35),
                     ),
                   ),
-                )
-              : Icon(
-                  Icons.spa_outlined,
-                  size: 32.sp,
-                  color: AppColors.primary.withValues(alpha: 0.35),
                 ),
         ),
         SizedBox(width: 12.w),

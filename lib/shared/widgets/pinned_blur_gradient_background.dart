@@ -19,6 +19,23 @@ abstract final class PinnedBlurHeaderStyle {
 
   static const List<double> homeFadeStops = [0.0, 0.40, 0.75, 1.0];
 
+  /// تلاشي أخف من الأسفل — للهيدر المثبت بعد السكرول
+  static const List<double> compactFadeStops = [0.0, 0.50, 0.82, 1.0];
+
+  static const List<Color> defaultFadeMaskColors = [
+        Color(0xFFFFFFFF),
+        Color(0xFFFFFFFF),
+        Color(0xAAFFFFFF),
+        Color(0x00FFFFFF),
+      ];
+
+  static const List<Color> compactFadeMaskColors = [
+        Color(0xFFFFFFFF),
+        Color(0xFFFFFFFF),
+        Color(0xE6FFFFFF),
+        Color(0x88FFFFFF),
+      ];
+
   /// تغويش أقوى من الأعلى — للاكسبلور فقط
   static const double exploreStrongBlurSigma = 44;
   static const double exploreMediumBlurSigma = 24;
@@ -30,16 +47,15 @@ abstract final class PinnedBlurHeaderStyle {
   static const double defaultLightBlurSigma = 6;
   static const double defaultStrongBlurMaskEnd = 0.35;
 
-  static Shader fadeMaskShader(Rect bounds, List<double> stops) {
+  static Shader fadeMaskShader(
+    Rect bounds,
+    List<double> stops, {
+    List<Color>? colors,
+  }) {
     return LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: const [
-        Color(0xFFFFFFFF),
-        Color(0xFFFFFFFF),
-        Color(0xAAFFFFFF),
-        Color(0x00FFFFFF),
-      ],
+      colors: colors ?? defaultFadeMaskColors,
       stops: stops,
     ).createShader(bounds);
   }
@@ -50,6 +66,7 @@ class PinnedBlurGradientBackground extends StatelessWidget {
   const PinnedBlurGradientBackground({
     super.key,
     required this.fadeStops,
+    this.fadeMaskColors,
     this.strongBlurSigma = PinnedBlurHeaderStyle.defaultStrongBlurSigma,
     this.mediumBlurSigma = PinnedBlurHeaderStyle.defaultMediumBlurSigma,
     this.lightBlurSigma = PinnedBlurHeaderStyle.defaultLightBlurSigma,
@@ -57,6 +74,7 @@ class PinnedBlurGradientBackground extends StatelessWidget {
   });
 
   final List<double> fadeStops;
+  final List<Color>? fadeMaskColors;
   final double strongBlurSigma;
   final double mediumBlurSigma;
   final double lightBlurSigma;
@@ -67,7 +85,11 @@ class PinnedBlurGradientBackground extends StatelessWidget {
     return ShaderMask(
       blendMode: BlendMode.dstIn,
       shaderCallback: (bounds) =>
-          PinnedBlurHeaderStyle.fadeMaskShader(bounds, fadeStops),
+          PinnedBlurHeaderStyle.fadeMaskShader(
+        bounds,
+        fadeStops,
+        colors: fadeMaskColors,
+      ),
       child: Stack(
         fit: StackFit.expand,
         children: [

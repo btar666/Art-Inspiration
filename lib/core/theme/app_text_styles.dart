@@ -173,7 +173,7 @@ abstract final class AppTextStyles {
         fontSize: fontSize ?? 11.94.sp,
         fontWeight: FontWeight.w700,
         height: 1.5,
-        color: color ?? AppColors.orderFreeDelivery,
+        color: color ?? AppColors.homeDiscount,
       );
 
   static TextStyle homeProductCardPrice({Color? color}) => _base.copyWith(
@@ -249,8 +249,9 @@ abstract final class AppTextStyles {
       );
 
   static TextStyle productDetailsQuantity({Color? color}) => _base.copyWith(
-        fontSize: 16.sp,
+        fontSize: 19.sp,
         fontWeight: FontWeight.w800,
+        height: 1.1,
         color: color ?? AppColors.textPrimary,
       );
 
@@ -259,7 +260,7 @@ abstract final class AppTextStyles {
         fontWeight: FontWeight.w700,
         height: 1.5,
         letterSpacing: 0,
-        color: color ?? const Color(0xFF8C8EFD),
+        color: color ?? AppColors.primary,
       );
 
   static TextStyle productDetailsRating({Color? color}) => _base.copyWith(

@@ -11,13 +11,11 @@ class HomeTopSection extends StatelessWidget {
   const HomeTopSection({
     super.key,
     this.onNotificationTap,
-    this.onFilterTap,
     this.onScannerTap,
     this.onSearchTap,
   });
 
   final VoidCallback? onNotificationTap;
-  final VoidCallback? onFilterTap;
   final VoidCallback? onScannerTap;
   final VoidCallback? onSearchTap;
 
@@ -30,7 +28,6 @@ class HomeTopSection extends StatelessWidget {
           HomeLogoHeader(onNotificationTap: onNotificationTap),
           SizedBox(height: 14.h),
           HomeSearchBar(
-            onFilterTap: onFilterTap,
             onScannerTap: onScannerTap,
             onSearchTap: onSearchTap,
           ),
@@ -66,12 +63,10 @@ class HomeLogoHeader extends StatelessWidget {
 class HomeSearchBar extends StatelessWidget {
   const HomeSearchBar({
     super.key,
-    this.onFilterTap,
     this.onScannerTap,
     this.onSearchTap,
   });
 
-  final VoidCallback? onFilterTap;
   final VoidCallback? onScannerTap;
   final VoidCallback? onSearchTap;
 
@@ -81,7 +76,6 @@ class HomeSearchBar extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: UnifiedSearchBar(
         hintText: 'أبحث عن منتج أو متجر محدد ..',
-        onFilterTap: onFilterTap,
         onScannerTap: onScannerTap,
         onSearchTap: onSearchTap,
       ),

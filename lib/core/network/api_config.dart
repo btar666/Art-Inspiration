@@ -7,9 +7,8 @@ abstract final class ApiConfig {
   static const erpWebLoginUrl = 'https://aman-erp.com/app/login';
   static const apiDocsUrl = 'https://aman-erp.com/app/api-docs';
 
-  /// مفتاح API من Postman (بلا انتهاء صلاحية حسب دليل أمان ERP).
-  static const apiToken =
-      'amanerp_cTbmF4tHrBdVaLTqtBo2GWSzbPmdYPuAHRwIx4iZH6OR0ofm';
+  /// يُمرَّر عند البناء: --dart-define-from-file=dart_defines.json
+  static const apiToken = String.fromEnvironment('AMAN_API_TOKEN');
 
   static const connectTimeout = Duration(seconds: 30);
   static const receiveTimeout = Duration(seconds: 30);

@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.artInspirationApp</string>
+	<string>com.artinspiration.app</string>
 	<key>PROJECT_ID</key>
 	<string>art-inspiration-6d593</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:220100841143:ios:8837717c4e04765aa10732</string>
+	<string>1:220100841143:ios:422c97222a88395fa10732</string>
 </dict>
 </plist>

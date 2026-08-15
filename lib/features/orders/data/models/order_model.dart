@@ -22,6 +22,24 @@ class OrderLineItem {
 
   String get formattedPrice => _formatPrice(price);
 
+  OrderLineItem copyWith({
+    String? productId,
+    String? productName,
+    int? quantity,
+    int? price,
+    String? imageUrl,
+    Color? imageBgColor,
+  }) {
+    return OrderLineItem(
+      productId: productId ?? this.productId,
+      productName: productName ?? this.productName,
+      quantity: quantity ?? this.quantity,
+      price: price ?? this.price,
+      imageUrl: imageUrl ?? this.imageUrl,
+      imageBgColor: imageBgColor ?? this.imageBgColor,
+    );
+  }
+
   static String _formatPrice(int price) {
     final formatted = price.toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -41,8 +59,12 @@ class OrderModel {
     required this.status,
     this.orderDate,
     this.imageUrl,
+    this.imageUrls = const [],
+    this.productIds = const [],
     this.imageBgColor = const Color(0xFFE9E4F5),
   });
+
+  static const int maxPreviewImages = 4;
 
   final String id;
   final String orderName;
@@ -51,7 +73,43 @@ class OrderModel {
   final OrderStatus status;
   final DateTime? orderDate;
   final String? imageUrl;
+  final List<String> imageUrls;
+  final List<String> productIds;
   final Color imageBgColor;
+
+  /// صور المعاينة للبطاقة — حتى 4
+  List<String> get previewImageUrls {
+    if (imageUrls.isNotEmpty) {
+      return uniqueImageUrls(imageUrls);
+    }
+    final single = imageUrl?.trim();
+    if (single != null && single.isNotEmpty) return [single];
+    return const [];
+  }
+
+  static List<String> uniqueImageUrls(Iterable<String?> raw) {
+    final seen = <String>{};
+    final urls = <String>[];
+    for (final value in raw) {
+      final url = value?.trim() ?? '';
+      if (url.isEmpty || !seen.add(url)) continue;
+      urls.add(url);
+      if (urls.length >= maxPreviewImages) break;
+    }
+    return urls;
+  }
+
+  static List<String> uniqueIds(Iterable<String?> raw) {
+    final seen = <String>{};
+    final ids = <String>[];
+    for (final value in raw) {
+      final id = value?.trim() ?? '';
+      if (id.isEmpty || !seen.add(id)) continue;
+      ids.add(id);
+      if (ids.length >= maxPreviewImages) break;
+    }
+    return ids;
+  }
 
   String get formattedPrice => OrderLineItem._formatPrice(price);
 
@@ -66,8 +124,11 @@ class OrderModel {
 
   OrderModel copyWith({
     String? imageUrl,
+    List<String>? imageUrls,
+    List<String>? productIds,
     Color? imageBgColor,
   }) {
+    final urls = imageUrls ?? this.imageUrls;
     return OrderModel(
       id: id,
       orderName: orderName,
@@ -75,7 +136,9 @@ class OrderModel {
       price: price,
       status: status,
       orderDate: orderDate,
-      imageUrl: imageUrl ?? this.imageUrl,
+      imageUrl: imageUrl ?? (urls.isNotEmpty ? urls.first : this.imageUrl),
+      imageUrls: urls,
+      productIds: productIds ?? this.productIds,
       imageBgColor: imageBgColor ?? this.imageBgColor,
     );
   }
@@ -91,6 +154,8 @@ class OrderDetailModel extends OrderModel {
     required super.status,
     required DateTime orderDate,
     super.imageUrl,
+    super.imageUrls,
+    super.productIds,
     super.imageBgColor,
     required this.customerName,
     required this.phone,
@@ -138,11 +203,14 @@ class OrderDetailModel extends OrderModel {
 
   /// أول صورة متوفرة — للمعاينة في قائمة الفواتير
   String? get previewImageUrl {
-    if (imageUrl != null && imageUrl!.isNotEmpty) return imageUrl;
-    for (final item in items) {
-      final url = item.imageUrl;
-      if (url != null && url.isNotEmpty) return url;
-    }
-    return null;
+    final urls = previewImageUrls;
+    return urls.isEmpty ? null : urls.first;
+  }
+
+  @override
+  List<String> get previewImageUrls {
+    final fromItems = OrderModel.uniqueImageUrls(items.map((e) => e.imageUrl));
+    if (fromItems.isNotEmpty) return fromItems;
+    return super.previewImageUrls;
   }
 }

@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDOE7VvnPtSeKG4oUIiFdZn3MNX1nVYQRg',
-    appId: '1:220100841143:android:e69261665086a2f7a10732',
+    appId: '1:220100841143:android:fbdf52542a2ef1a3a10732',
     messagingSenderId: '220100841143',
     projectId: 'art-inspiration-6d593',
     storageBucket: 'art-inspiration-6d593.firebasestorage.app',
@@ -59,10 +59,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyA7xljtBlCunf2DjwWbZ27H--OQ-TiUcYc',
-    appId: '1:220100841143:ios:8837717c4e04765aa10732',
+    appId: '1:220100841143:ios:422c97222a88395fa10732',
     messagingSenderId: '220100841143',
     projectId: 'art-inspiration-6d593',
     storageBucket: 'art-inspiration-6d593.firebasestorage.app',
-    iosBundleId: 'com.example.artInspirationApp',
+    iosBundleId: 'com.artinspiration.app',
   );
 }

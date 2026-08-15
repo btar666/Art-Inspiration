@@ -12,7 +12,7 @@ enum CatalogDataSource {
 
 /// لقطة موحّدة للمنتجات والفئات
 class CatalogSnapshot {
-  const CatalogSnapshot({
+  CatalogSnapshot({
     required this.products,
     required this.categories,
     required this.brands,
@@ -24,8 +24,10 @@ class CatalogSnapshot {
     this.currentPage = 1,
     this.lastPage = 1,
     this.isLoadingMore = false,
-    this.categoryImages = const {},
-  });
+    Map<String, String>? categoryImages,
+    Map<String, String>? brandImages,
+  })  : categoryImages = categoryImages ?? const {},
+        brandImages = brandImages ?? const {};
 
   final List<ProductModel> products;
   final List<String> categories;
@@ -40,7 +42,10 @@ class CatalogSnapshot {
   final bool isLoadingMore;
 
   /// صور الأقسام من ERP — مفتاحها اسم القسم
-  final Map<String, String> categoryImages;
+  final Map<String, String>? categoryImages;
+
+  /// صور البراندات من ERP — مفتاحها اسم البراند
+  final Map<String, String>? brandImages;
 
   bool get hasWarning => warningMessage != null && warningMessage!.isNotEmpty;
   bool get hasMore => currentPage < lastPage;
@@ -50,7 +55,12 @@ class CatalogSnapshot {
       categories.where((c) => c != 'الكل').toList();
 
   String? imageForCategory(String name) {
-    final url = categoryImages[name]?.trim() ?? '';
+    final url = (categoryImages ?? const {})[name]?.trim() ?? '';
+    return url.isEmpty ? null : url;
+  }
+
+  String? imageForBrand(String name) {
+    final url = (brandImages ?? const {})[name]?.trim() ?? '';
     return url.isEmpty ? null : url;
   }
 
@@ -68,6 +78,7 @@ class CatalogSnapshot {
     int? lastPage,
     bool? isLoadingMore,
     Map<String, String>? categoryImages,
+    Map<String, String>? brandImages,
   }) {
     return CatalogSnapshot(
       products: products ?? this.products,
@@ -82,7 +93,8 @@ class CatalogSnapshot {
       currentPage: currentPage ?? this.currentPage,
       lastPage: lastPage ?? this.lastPage,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-      categoryImages: categoryImages ?? this.categoryImages,
+      categoryImages: categoryImages ?? this.categoryImages ?? const {},
+      brandImages: brandImages ?? this.brandImages ?? const {},
     );
   }
 }

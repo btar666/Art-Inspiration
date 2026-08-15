@@ -1,30 +1,140 @@
+import 'dart:async';
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../features/home/presentation/widgets/main_bottom_nav.dart';
+import 'glass_shimmer_sweep.dart';
+
+const _successGreen = Color(0xFF1FAE62);
+const _successGreenSoft = Color(0xFFB8F5D0);
+const _stockIcon = Icons.inventory_2_outlined;
+
+OverlayEntry? _activeSnack;
+Timer? _holdTimer;
 
 /// عرض رسالة نفاد الكمية
 void showOutOfStockSnackBar(BuildContext context) {
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.fromLTRB(
-          16.w,
-          0,
-          16.w,
-          MainBottomNavMetrics.floatingBarReservedHeight.h + 8.h,
+  _showGlassSnackBar(
+    context,
+    const OutOfStockSnackBarContent(),
+  );
+}
+
+/// عرض رسالة إضافة منتج للسلة بتصميم عائم
+void showAddToCartSnackBar(BuildContext context) {
+  _showGlassSnackBar(
+    context,
+    const AddToCartSnackBarContent(),
+  );
+}
+
+void _showGlassSnackBar(BuildContext context, Widget content) {
+  _dismissGlassSnack();
+
+  final overlay = Overlay.maybeOf(context, rootOverlay: true);
+  if (overlay == null) return;
+
+  late OverlayEntry entry;
+  entry = OverlayEntry(
+    builder: (context) => _GlassSnackHost(
+      bottom: MainBottomNavMetrics.floatingBarReservedHeight.h +
+          8.h +
+          MediaQuery.paddingOf(context).bottom,
+      onFinished: _dismissGlassSnack,
+      child: content,
+    ),
+  );
+  _activeSnack = entry;
+  overlay.insert(entry);
+}
+
+void _dismissGlassSnack() {
+  _holdTimer?.cancel();
+  _holdTimer = null;
+  _activeSnack?.remove();
+  _activeSnack = null;
+}
+
+class _GlassSnackHost extends StatefulWidget {
+  const _GlassSnackHost({
+    required this.bottom,
+    required this.child,
+    required this.onFinished,
+  });
+
+  final double bottom;
+  final Widget child;
+  final VoidCallback onFinished;
+
+  @override
+  State<_GlassSnackHost> createState() => _GlassSnackHostState();
+}
+
+class _GlassSnackHostState extends State<_GlassSnackHost>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 280),
+    reverseDuration: const Duration(milliseconds: 220),
+  );
+  late final Animation<double> _fade = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOutCubic,
+    reverseCurve: Curves.easeInCubic,
+  );
+  late final Animation<Offset> _slide = Tween<Offset>(
+    begin: const Offset(0, 0.18),
+    end: Offset.zero,
+  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+  late final Animation<double> _scale = Tween<double>(begin: 0.97, end: 1).animate(
+    CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.forward();
+    _holdTimer = Timer(const Duration(milliseconds: 1800), _close);
+  }
+
+  Future<void> _close() async {
+    if (!mounted) return;
+    await _controller.reverse();
+    if (mounted) widget.onFinished();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: 32.w,
+      right: 32.w,
+      bottom: widget.bottom,
+      child: FadeTransition(
+        opacity: _fade,
+        child: SlideTransition(
+          position: _slide,
+          child: ScaleTransition(
+            scale: _scale,
+            alignment: Alignment.bottomCenter,
+            child: Material(
+              type: MaterialType.transparency,
+              child: widget.child,
+            ),
+          ),
         ),
-        padding: EdgeInsets.zero,
-        duration: const Duration(seconds: 2),
-        content: const OutOfStockSnackBarContent(),
       ),
     );
+  }
 }
 
 /// محتوى سناك بار نفاد الكمية
@@ -33,42 +143,21 @@ class OutOfStockSnackBarContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: AppColors.orderCardBorder),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.orderFreeDelivery.withValues(alpha: 0.12),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return _GlassSnackBarShell(
+      accent: AppColors.homeDiscount,
+      fill: [
+        Colors.white.withValues(alpha: 0.42),
+        const Color(0xFFFFE0E4).withValues(alpha: 0.48),
+        AppColors.homeDiscount.withValues(alpha: 0.16),
+      ],
       child: Row(
         textDirection: TextDirection.rtl,
         children: [
-          Container(
-            width: 42.w,
-            height: 42.w,
-            decoration: BoxDecoration(
-              color: AppColors.orderStatusDeliveredBg,
-              borderRadius: BorderRadius.circular(14.r),
-            ),
-            child: Icon(
-              Icons.inventory_2_outlined,
-              color: AppColors.orderFreeDelivery,
-              size: 24.sp,
-            ),
+          _GlassSnackBadge(
+            background: AppColors.orderStatusCancelledBg.withValues(alpha: 0.72),
+            iconColor: AppColors.homeDiscount,
           ),
-          SizedBox(width: 12.w),
+          SizedBox(width: 10.w),
           Expanded(
             child: Text(
               'عذرا الكمية نافذة حاليا',
@@ -76,9 +165,9 @@ class OutOfStockSnackBarContent extends StatelessWidget {
                 color: AppColors.textPrimary,
               ).copyWith(
                 fontWeight: FontWeight.w700,
-                fontSize: 14.sp,
+                fontSize: 13.sp,
               ),
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -88,110 +177,146 @@ class OutOfStockSnackBarContent extends StatelessWidget {
   }
 }
 
-/// عرض رسالة إضافة منتج للسلة بتصميم عائم
-void showAddToCartSnackBar(BuildContext context, String productName) {
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.fromLTRB(
-          16.w,
-          0,
-          16.w,
-          MainBottomNavMetrics.floatingBarReservedHeight.h + 8.h,
-        ),
-        padding: EdgeInsets.zero,
-        duration: const Duration(seconds: 2),
-        content: AddToCartSnackBarContent(productName: productName),
-      ),
-    );
-}
-
 /// محتوى سناك بار إضافة المنتج للسلة
 class AddToCartSnackBarContent extends StatelessWidget {
-  const AddToCartSnackBarContent({
-    super.key,
-    required this.productName,
-  });
-
-  final String productName;
+  const AddToCartSnackBarContent({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: AppColors.orderCardBorder),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return _GlassSnackBarShell(
+      accent: _successGreen,
+      fill: [
+        Colors.white.withValues(alpha: 0.42),
+        _successGreenSoft.withValues(alpha: 0.5),
+        _successGreen.withValues(alpha: 0.18),
+      ],
       child: Row(
         textDirection: TextDirection.rtl,
         children: [
-          Container(
-            width: 42.w,
-            height: 42.w,
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(14.r),
-            ),
-            child: Icon(
-              Icons.check_rounded,
-              color: AppColors.primary,
-              size: 24.sp,
-            ),
+          _GlassSnackBadge(
+            background: _successGreenSoft.withValues(alpha: 0.72),
+            iconColor: _successGreen,
           ),
-          SizedBox(width: 12.w),
+          SizedBox(width: 10.w),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'تمت الإضافة إلى السلة',
-                  style: AppTextStyles.authField(
-                    color: AppColors.textPrimary,
-                  ).copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14.sp,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  productName,
-                  style: AppTextStyles.authField(
-                    color: AppColors.textSecondary,
-                  ).copyWith(fontSize: 12.sp),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+            child: Text(
+              'تمت الإضافة إلى السلة',
+              style: AppTextStyles.authField(
+                color: AppColors.textPrimary,
+              ).copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 13.sp,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           SizedBox(width: 8.w),
           Icon(
             Icons.shopping_bag_outlined,
-            color: AppColors.primary.withValues(alpha: 0.45),
-            size: 22.sp,
+            color: _successGreen.withValues(alpha: 0.55),
+            size: 18.sp,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _GlassSnackBarShell extends StatelessWidget {
+  const _GlassSnackBarShell({
+    required this.accent,
+    required this.fill,
+    required this.child,
+  });
+
+  final Color accent;
+  final List<Color> fill;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(16.r);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: 0.2),
+            blurRadius: 22,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.62),
+                width: 1.1,
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: fill,
+              ),
+            ),
+            child: Stack(
+              children: [
+                const Positioned.fill(child: GlassShimmerSweep()),
+                Padding(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
+                  child: child,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GlassSnackBadge extends StatelessWidget {
+  const _GlassSnackBadge({
+    required this.background,
+    required this.iconColor,
+  });
+
+  final Color background;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(11.r);
+
+    return ClipRRect(
+      borderRadius: radius,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          width: 32.w,
+          height: 32.w,
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: radius,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.55),
+              width: 1,
+            ),
+          ),
+          child: Icon(
+            _stockIcon,
+            color: iconColor,
+            size: 18.sp,
+          ),
+        ),
       ),
     );
   }

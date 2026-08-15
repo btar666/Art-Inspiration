@@ -18,7 +18,10 @@ class SearchHistoryStorage {
 
     try {
       final decoded = jsonDecode(raw) as List<dynamic>;
-      return decoded.map((e) => e.toString()).toList();
+      return decoded
+          .map((e) => e.toString())
+          .take(AppConstants.maxSearchHistoryItems)
+          .toList();
     } catch (_) {
       return [];
     }
@@ -27,7 +30,7 @@ class SearchHistoryStorage {
   Future<void> save(List<String> history) async {
     await _prefs.setString(
       AppConstants.searchHistoryKey,
-      jsonEncode(history),
+      jsonEncode(history.take(AppConstants.maxSearchHistoryItems).toList()),
     );
   }
 

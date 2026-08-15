@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/storage/onboarding_storage.dart';
+import 'models/order_model.dart';
 
 final orderImageCacheStorageProvider = Provider<OrderImageCacheStorage>((ref) {
   return OrderImageCacheStorage(ref.watch(sharedPreferencesProvider));
@@ -17,16 +18,29 @@ class OrderImageCacheStorage {
   final SharedPreferences _prefs;
 
   String? load(String orderId) {
+    final urls = loadAll(orderId);
+    return urls.isEmpty ? null : urls.first;
+  }
+
+  List<String> loadAll(String orderId) {
     final map = _readMap();
     final entry = map[orderId];
-    if (entry is String && entry.isNotEmpty) return entry;
-    return null;
+    if (entry is String && entry.isNotEmpty) return [entry];
+    if (entry is List) {
+      return OrderModel.uniqueImageUrls(entry.map((e) => e?.toString()));
+    }
+    return const [];
   }
 
   Future<void> save(String orderId, String imageUrl) async {
-    if (orderId.isEmpty || imageUrl.isEmpty) return;
+    await saveAll(orderId, [imageUrl]);
+  }
+
+  Future<void> saveAll(String orderId, List<String> imageUrls) async {
+    final urls = OrderModel.uniqueImageUrls(imageUrls);
+    if (orderId.isEmpty || urls.isEmpty) return;
     final map = _readMap();
-    map[orderId] = imageUrl;
+    map[orderId] = urls;
     await _persist(map);
   }
 

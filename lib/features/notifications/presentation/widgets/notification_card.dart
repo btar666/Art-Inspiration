@@ -25,7 +25,7 @@ abstract final class NotificationCardMetrics {
         ),
       ];
   static double iconSize() => 34.08.w;
-  static double iconAssetSize() => 16.w;
+  static double iconAssetSize() => 22.w;
 }
 
 /// كارد إشعار واحد
@@ -125,11 +125,14 @@ class _NotificationIcon extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
-      child: Image.asset(
-        AppAssets.artNoti,
-        width: assetSize,
-        height: assetSize,
-        fit: BoxFit.contain,
+      child: Transform.translate(
+        offset: Offset(-1.w, 0),
+        child: Image.asset(
+          AppAssets.logo,
+          width: assetSize,
+          height: assetSize,
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }

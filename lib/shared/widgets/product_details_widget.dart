@@ -2,6 +2,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +16,7 @@ import '../../features/favorites/presentation/providers/favorites_provider.dart'
 import '../../features/home/data/models/product_model.dart';
 import 'product_details_app_bar_metrics.dart';
 import 'app_back_button.dart';
+import 'glass_favorite_button.dart';
 import 'product_details_bottom_bar_metrics.dart';
 import 'product_details_gallery_metrics.dart';
 import 'product_image_fullscreen_viewer.dart';
@@ -61,101 +63,82 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomRadius =
-        ProductDetailsBottomBarMetrics.whiteContainerBottomRadius();
     final isFavorite = ref.watch(isProductFavoriteProvider(product.id));
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final bottomBarHeight =
+        ProductDetailsBottomBarMetrics.occupiedHeight() + bottomInset;
 
     return Scaffold(
-      backgroundColor: ProductDetailsBottomBarMetrics.pageBackground,
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           Column(
             children: [
+              SafeArea(
+                bottom: false,
+                child: _ProductDetailsAppBar(
+                  isFavorite: isFavorite,
+                  onBack: () => context.pop(),
+                  onFavoriteTap: () => toggleProductFavorite(ref, product),
+                ),
+              ),
               Expanded(
-                child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(bottomRadius),
-                  bottomRight: Radius.circular(bottomRadius),
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(bottomRadius),
-                  bottomRight: Radius.circular(bottomRadius),
-                ),
-                child: Column(
-                  children: [
-                    SafeArea(
-                      bottom: false,
-                      child: _ProductDetailsAppBar(
-                        isFavorite: isFavorite,
-                        onBack: () => context.pop(),
-                        onFavoriteTap: () =>
-                            toggleProductFavorite(ref, product),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    20.w,
+                    8.h,
+                    20.w,
+                    bottomBarHeight + 16.h,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _ProductDetailsGallery(
+                        product: product,
+                        selectedIndex: _selectedImageIndex,
+                        onThumbnailTap: (i) =>
+                            setState(() => _selectedImageIndex = i),
                       ),
-                    ),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.symmetric(horizontal: 20.w),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            SizedBox(height: 8.h),
-                            _ProductDetailsGallery(
-                              product: product,
-                              selectedIndex: _selectedImageIndex,
-                              onThumbnailTap: (i) =>
-                                  setState(() => _selectedImageIndex = i),
-                            ),
-                            SizedBox(height: 20.h),
-                            Text(
-                              product.name,
-                              style: AppTextStyles.productDetailsName(),
-                              textAlign: TextAlign.right,
-                            ),
-                            SizedBox(height: 14.h),
-                            _ProductDetailsDivider(),
-                            SizedBox(height: 14.h),
-                            Text(
-                              'وصف المنتج',
-                              style:
-                                  AppTextStyles.productDetailsSectionTitle(),
-                              textAlign: TextAlign.right,
-                            ),
-                            SizedBox(height: 8.h),
-                            Text(
-                              product.description,
-                              style: AppTextStyles.productDetailsBody(),
-                              textAlign: TextAlign.right,
-                            ),
-                            SizedBox(height: 24.h),
-                          ],
-                        ),
+                      SizedBox(height: 20.h),
+                      Text(
+                        product.name,
+                        style: AppTextStyles.productDetailsName(),
+                        textAlign: TextAlign.right,
                       ),
-                    ),
-                  ],
+                      SizedBox(height: 14.h),
+                      _ProductDetailsDivider(),
+                      SizedBox(height: 14.h),
+                      Text(
+                        'وصف المنتج',
+                        style: AppTextStyles.productDetailsSectionTitle(),
+                        textAlign: TextAlign.right,
+                      ),
+                      SizedBox(height: 8.h),
+                      Text(
+                        product.description,
+                        style: AppTextStyles.productDetailsBody(),
+                        textAlign: TextAlign.right,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ),
-          ColoredBox(
-            color: ProductDetailsBottomBarMetrics.pageBackground,
-            child: SafeArea(
-              top: false,
-              child: _ProductDetailsBottomBar(
-                price: product.formattedPrice,
-                quantity: _quantity,
-                onDecrement: () {
-                  if (_quantity > 1) setState(() => _quantity--);
-                },
-                onIncrement: () => setState(() => _quantity++),
-                onAddToCart: _handleAddToCart,
-              ),
-            ),
-          ),
             ],
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: ProductDetailsBottomBarMetrics.bottomMargin() + bottomInset,
+            child: _ProductDetailsBottomBar(
+              price: product.formattedPrice,
+              quantity: _quantity,
+              onDecrement: () {
+                if (_quantity > 1) setState(() => _quantity--);
+              },
+              onIncrement: () => setState(() => _quantity++),
+              onQuantitySet: (value) => setState(() => _quantity = value),
+              onAddToCart: _handleAddToCart,
+            ),
           ),
         ],
       ),
@@ -224,25 +207,14 @@ class _ProductDetailsFavoriteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return GlassFavoriteButton(
+      isFavorite: isFavorite,
       onTap: onTap,
-      child: Container(
-        width: ProductDetailsAppBarMetrics.favoriteWidth(),
-        height: ProductDetailsAppBarMetrics.favoriteHeight(),
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.circular(
-            ProductDetailsAppBarMetrics.favoriteRadius(),
-          ),
-          boxShadow: ProductDetailsAppBarMetrics.favoriteShadow(),
-        ),
-        alignment: Alignment.center,
-        child: Icon(
-          isFavorite ? Icons.favorite : Icons.favorite_border,
-          color: ProductDetailsAppBarMetrics.favoriteIconColor(),
-          size: ProductDetailsAppBarMetrics.favoriteIconSize(),
-        ),
-      ),
+      width: ProductDetailsAppBarMetrics.favoriteWidth(),
+      height: ProductDetailsAppBarMetrics.favoriteHeight(),
+      iconSize: ProductDetailsAppBarMetrics.favoriteIconSize(),
+      borderRadius: ProductDetailsAppBarMetrics.favoriteRadius(),
+      iconColor: ProductDetailsAppBarMetrics.favoriteIconColor(),
     );
   }
 }
@@ -273,6 +245,16 @@ class _ProductDetailsGallery extends StatelessWidget {
     final columnGap = ProductDetailsGalleryMetrics.columnGap();
     final visibleSlots = _imageCount > 4 ? 4 : _imageCount;
     final gap = ProductDetailsGalleryMetrics.thumbnailGapForCount(visibleSlots);
+
+    if (_imageCount <= 1) {
+      return SizedBox(
+        height: mainHeight,
+        child: _ProductDetailsMainImage(
+          product: product,
+          imageIndex: 0,
+        ),
+      );
+    }
 
     return SizedBox(
       height: mainHeight,
@@ -328,7 +310,7 @@ class _ProductDetailsMainImage extends StatelessWidget {
       children: [
         DecoratedBox(
           decoration: BoxDecoration(
-            color: product.imageBgColor,
+            color: AppColors.background,
             borderRadius: BorderRadius.circular(
               ProductDetailsGalleryMetrics.mainImageRadius(),
             ),
@@ -497,6 +479,7 @@ class _ProductDetailsBottomBar extends StatelessWidget {
     required this.quantity,
     required this.onDecrement,
     required this.onIncrement,
+    required this.onQuantitySet,
     required this.onAddToCart,
   });
 
@@ -504,78 +487,47 @@ class _ProductDetailsBottomBar extends StatelessWidget {
   final int quantity;
   final VoidCallback onDecrement;
   final VoidCallback onIncrement;
+  final ValueChanged<int> onQuantitySet;
   final VoidCallback onAddToCart;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: ProductDetailsBottomBarMetrics.padding(),
+      padding: EdgeInsets.symmetric(
+        horizontal: ProductDetailsBottomBarMetrics.horizontalMargin(),
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(
-              ProductDetailsBottomBarMetrics.priceRowRadius(),
-            ),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(
-                sigmaX: ProductDetailsBottomBarMetrics.priceRowBlurSigma(),
-                sigmaY: ProductDetailsBottomBarMetrics.priceRowBlurSigma(),
-              ),
-              child: Container(
-                width: ProductDetailsBottomBarMetrics.priceRowWidth(),
-                height: ProductDetailsBottomBarMetrics.priceRowHeight(),
-                padding: ProductDetailsBottomBarMetrics.priceRowPadding(),
-                decoration: BoxDecoration(
-                  color: ProductDetailsBottomBarMetrics.priceRowBackground(),
-                  borderRadius: BorderRadius.circular(
-                    ProductDetailsBottomBarMetrics.priceRowRadius(),
+          _GlassPill(
+            width: ProductDetailsBottomBarMetrics.priceRowWidth(),
+            height: ProductDetailsBottomBarMetrics.priceRowHeight(),
+            child: Padding(
+              padding: ProductDetailsBottomBarMetrics.priceRowPadding(),
+              child: Row(
+                children: [
+                  Text(price, style: AppTextStyles.productDetailsPrice()),
+                  const Spacer(),
+                  _QuantitySelector(
+                    quantity: quantity,
+                    onDecrement: onDecrement,
+                    onIncrement: onIncrement,
+                    onQuantitySet: onQuantitySet,
                   ),
-                  border: Border.all(
-                    color: ProductDetailsBottomBarMetrics.priceRowBorderColor(),
-                    width: ProductDetailsBottomBarMetrics.priceRowBorderWidth(),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Text(price, style: AppTextStyles.productDetailsPrice()),
-                    const Spacer(),
-                    _QuantitySelector(
-                      quantity: quantity,
-                      onDecrement: onDecrement,
-                      onIncrement: onIncrement,
-                    ),
-                  ],
-                ),
+                ],
               ),
             ),
           ),
           SizedBox(height: ProductDetailsBottomBarMetrics.gapBetweenRows()),
-          Container(
+          _GlassPill(
             width: ProductDetailsBottomBarMetrics.addToCartWidth(),
             height: ProductDetailsBottomBarMetrics.addToCartHeight(),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(
-                ProductDetailsBottomBarMetrics.addToCartRadius(),
-              ),
-              boxShadow: ProductDetailsBottomBarMetrics.addToCartShadow(),
-            ),
-            child: Material(
-              color: ProductDetailsBottomBarMetrics.addToCartBackground(),
-              borderRadius: BorderRadius.circular(
-                ProductDetailsBottomBarMetrics.addToCartRadius(),
-              ),
-              child: InkWell(
-                onTap: onAddToCart,
-                borderRadius: BorderRadius.circular(
-                  ProductDetailsBottomBarMetrics.addToCartRadius(),
-                ),
-                child: Center(
-                  child: Text(
-                    'اضافة الى السلة',
-                    style: AppTextStyles.productDetailsAddToCart(),
-                  ),
+            onTap: onAddToCart,
+            child: Center(
+              child: Text(
+                'اضافة الى السلة',
+                style: AppTextStyles.productDetailsAddToCart().copyWith(
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
@@ -586,129 +538,358 @@ class _ProductDetailsBottomBar extends StatelessWidget {
   }
 }
 
-class _QuantitySelector extends StatelessWidget {
+/// كبسولة زجاجية بنفس تصميم زر إكمال الشراء
+class _GlassPill extends StatefulWidget {
+  const _GlassPill({
+    required this.width,
+    required this.height,
+    required this.child,
+    this.onTap,
+  });
+
+  final double width;
+  final double height;
+  final Widget child;
+  final VoidCallback? onTap;
+
+  @override
+  State<_GlassPill> createState() => _GlassPillState();
+}
+
+class _GlassPillState extends State<_GlassPill> {
+  var _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(widget.height);
+    final pressable = widget.onTap != null;
+
+    Widget pill = AnimatedScale(
+      scale: _pressed ? 0.98 : 1,
+      duration: const Duration(milliseconds: 140),
+      curve: Curves.easeOut,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.07),
+              blurRadius: 18,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            border: Border.all(
+              color: Colors.white,
+              width: 1,
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: radius,
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+              child: Container(
+                width: widget.width,
+                height: widget.height,
+                color: const Color(0xFFEAECFC).withValues(alpha: 0.12),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _WhiteInnerShadow(borderRadius: radius),
+                    SizedBox.expand(child: widget.child),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (!pressable) return pill;
+
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap?.call();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: pill,
+    );
+  }
+}
+
+class _QuantitySelector extends StatefulWidget {
   const _QuantitySelector({
     required this.quantity,
     required this.onDecrement,
     required this.onIncrement,
+    required this.onQuantitySet,
   });
 
   final int quantity;
   final VoidCallback onDecrement;
   final VoidCallback onIncrement;
+  final ValueChanged<int> onQuantitySet;
+
+  @override
+  State<_QuantitySelector> createState() => _QuantitySelectorState();
+}
+
+class _QuantitySelectorState extends State<_QuantitySelector> {
+  final _controller = TextEditingController();
+  final _focusNode = FocusNode();
+  var _editing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    _focusNode
+      ..removeListener(_onFocusChange)
+      ..dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    if (!_focusNode.hasFocus && _editing) {
+      _commit();
+    }
+  }
+
+  void _startEditing() {
+    _controller.text = '${widget.quantity}';
+    _controller.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: _controller.text.length,
+    );
+    setState(() => _editing = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
+  }
+
+  void _commit() {
+    if (!_editing) return;
+    final parsed = int.tryParse(_controller.text.trim());
+    final next = (parsed == null || parsed < 1) ? 1 : parsed;
+    widget.onQuantitySet(next);
+    _focusNode.unfocus();
+    setState(() => _editing = false);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final buttonWidth = ProductDetailsBottomBarMetrics.quantityButtonWidth();
-    final buttonHeight = ProductDetailsBottomBarMetrics.quantityButtonHeight();
+    final buttonSize = ProductDetailsBottomBarMetrics.quantityButtonSize();
     final iconSize = ProductDetailsBottomBarMetrics.quantityButtonIconSize();
     final gap = ProductDetailsBottomBarMetrics.quantityGap();
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _ShapeIconButton(
-          width: buttonWidth,
-          height: buttonHeight,
-          borderRadius: BorderRadius.circular(
-            ProductDetailsBottomBarMetrics.quantityButtonRadius(),
-          ),
-          border: Border.all(
-            color: ProductDetailsBottomBarMetrics.quantityButtonBorderColor(),
-            width: ProductDetailsBottomBarMetrics.quantityButtonBorderWidth(),
-          ),
-          color: AppColors.primary,
+        _GlassIconButton(
+          size: buttonSize,
           icon: Icons.remove_rounded,
-          iconColor: AppColors.textOnPrimary,
           iconSize: iconSize,
-          onTap: onDecrement,
+          onTap: () {
+            _commit();
+            widget.onDecrement();
+          },
         ),
         SizedBox(width: gap),
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$quantity',
-              style: AppTextStyles.productDetailsQuantity(),
-            ),
-            SizedBox(height: 2.h),
-            Container(
-              width: ProductDetailsBottomBarMetrics.quantityUnderlineWidth(),
-              height: ProductDetailsBottomBarMetrics.quantityUnderlineHeight(),
-              color: ProductDetailsBottomBarMetrics.quantityUnderlineColor(),
-            ),
-          ],
+        GestureDetector(
+          onTap: _editing ? null : _startEditing,
+          behavior: HitTestBehavior.opaque,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 36.w,
+                child: _editing
+                    ? TextField(
+                        controller: _controller,
+                        focusNode: _focusNode,
+                        autofocus: true,
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        cursorColor: AppColors.primary,
+                        style: AppTextStyles.productDetailsQuantity(),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(4),
+                        ],
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                          border: InputBorder.none,
+                          counterText: '',
+                        ),
+                        onSubmitted: (_) => _commit(),
+                      )
+                    : Text(
+                        '${widget.quantity}',
+                        style: AppTextStyles.productDetailsQuantity(),
+                        textAlign: TextAlign.center,
+                      ),
+              ),
+              SizedBox(height: 2.h),
+              Container(
+                width: ProductDetailsBottomBarMetrics.quantityUnderlineWidth(),
+                height: ProductDetailsBottomBarMetrics.quantityUnderlineHeight(),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(2.r),
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary.withValues(alpha: 0.15),
+                      ProductDetailsBottomBarMetrics.quantityUnderlineColor(),
+                      AppColors.primary.withValues(alpha: 0.15),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         SizedBox(width: gap),
-        _ShapeIconButton(
-          width: buttonWidth,
-          height: buttonHeight,
-          borderRadius: BorderRadius.circular(
-            ProductDetailsBottomBarMetrics.quantityButtonRadius(),
-          ),
-          border: Border.all(
-            color: ProductDetailsBottomBarMetrics.quantityButtonBorderColor(),
-            width: ProductDetailsBottomBarMetrics.quantityButtonBorderWidth(),
-          ),
-          color: AppColors.primary,
+        _GlassIconButton(
+          size: buttonSize,
           icon: Icons.add_rounded,
-          iconColor: AppColors.textOnPrimary,
           iconSize: iconSize,
-          onTap: onIncrement,
+          onTap: () {
+            _commit();
+            widget.onIncrement();
+          },
         ),
       ],
     );
   }
 }
 
-class _ShapeIconButton extends StatelessWidget {
-  const _ShapeIconButton({
-    this.size,
-    this.width,
-    this.height,
-    required this.color,
+/// زر دائري بنفس تصميم زر إكمال الشراء
+class _GlassIconButton extends StatelessWidget {
+  const _GlassIconButton({
+    required this.size,
     required this.icon,
-    required this.iconColor,
     required this.iconSize,
     required this.onTap,
-    this.borderRadius,
-    this.border,
-    this.iconRotation = 0,
   });
 
-  final double? size;
-  final double? width;
-  final double? height;
-  final Color color;
+  final double size;
   final IconData icon;
-  final Color iconColor;
   final double iconSize;
   final VoidCallback onTap;
-  final BorderRadius? borderRadius;
-  final BoxBorder? border;
-  final double iconRotation;
 
   @override
   Widget build(BuildContext context) {
-    final w = width ?? size!;
-    final h = height ?? size!;
-
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: w,
-        height: h,
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          color: color,
-          shape: borderRadius == null ? BoxShape.circle : BoxShape.rectangle,
-          borderRadius: borderRadius,
-          border: border,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.07),
+              blurRadius: 18,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        alignment: Alignment.center,
-        child: Transform.rotate(
-          angle: iconRotation,
-          child: Icon(icon, color: iconColor, size: iconSize),
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white,
+              width: 1,
+            ),
+          ),
+          child: ClipOval(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+              child: ColoredBox(
+                color: const Color(0xFFEAECFC).withValues(alpha: 0.82),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const _WhiteInnerShadow(circle: true),
+                    Center(
+                      child: Icon(
+                        icon,
+                        color: AppColors.primary,
+                        size: iconSize,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
+      ),
+    );
+  }
+}
+
+/// ظل داخلي أبيض خفيف على حواف الزجاج
+class _WhiteInnerShadow extends StatelessWidget {
+  const _WhiteInnerShadow({
+    this.borderRadius,
+    this.circle = false,
+  });
+
+  final BorderRadius? borderRadius;
+  final bool circle;
+
+  @override
+  Widget build(BuildContext context) {
+    final shape = circle ? BoxShape.circle : BoxShape.rectangle;
+
+    return IgnorePointer(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              shape: shape,
+              borderRadius: circle ? null : borderRadius,
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white.withValues(alpha: 0.38),
+                  Colors.white.withValues(alpha: 0),
+                ],
+                stops: const [0, 0.5],
+              ),
+            ),
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              shape: shape,
+              borderRadius: circle ? null : borderRadius,
+              gradient: RadialGradient(
+                radius: 1.08,
+                colors: [
+                  Colors.white.withValues(alpha: 0),
+                  Colors.white.withValues(alpha: 0.28),
+                ],
+                stops: const [0.68, 1],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

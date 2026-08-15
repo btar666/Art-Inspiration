@@ -21,7 +21,6 @@ class OrdersSearchRow extends StatelessWidget {
       child: UnifiedSearchBar(
         hintText: 'أبحث عن طلب ..',
         showScanner: false,
-        showFilter: false,
         controller: controller,
         onChanged: onChanged,
       ),

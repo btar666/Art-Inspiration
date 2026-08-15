@@ -71,7 +71,7 @@ class _SliderBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 6.h, 20.w, 0),
+      padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 0),
       child: Column(
         children: [
           CarouselSlider.builder(
@@ -174,7 +174,7 @@ class _BannerShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 6.h, 20.w, 0),
+      padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 0),
       child: Container(
         height: 150.h,
         width: double.infinity,

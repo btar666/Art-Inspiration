@@ -11,10 +11,8 @@ import '../../../../shared/widgets/product_details_widget.dart';
 import '../../../app_api/presentation/providers/app_api_providers.dart';
 import '../../data/models/catalog_snapshot.dart';
 import '../../../cart/presentation/cart_actions.dart';
-import '../../../search/data/models/search_filter_state.dart';
-import '../../../search/presentation/providers/search_filter_provider.dart';
 import '../providers/products_provider.dart';
-import 'home_category_chips.dart';
+import 'home_catalog_strips.dart';
 import 'home_product_card.dart';
 import 'home_product_card_metrics.dart';
 import 'home_promo_banner.dart';
@@ -54,16 +52,6 @@ class _HomeContentState extends ConsumerState<HomeContent> {
     ref.read(catalogProvider.notifier).loadMore();
   }
 
-  void _onCategorySelected(int index, List<String> categories) {
-    final category = categories[index.clamp(0, categories.length - 1)];
-    ref.read(catalogProvider.notifier).selectCategory(category);
-  }
-
-  int _selectedCategoryIndex(CatalogSnapshot catalog, List<String> categories) {
-    final index = categories.indexOf(catalog.activeCategory);
-    return index >= 0 ? index : 0;
-  }
-
   Future<void> _onRefresh() async {
     // العودة للأعلى حتى يظهر التحديث بعد تحميل صفحات كثيرة
     if (widget.scrollController.hasClients) {
@@ -78,24 +66,6 @@ class _HomeContentState extends ConsumerState<HomeContent> {
 
   void _openScannerFromHome() => context.push(AppRoutes.barcodeScanner);
 
-  Future<void> _openSearchFilterFromHome() async {
-    ref.read(appliedSearchFilterProvider.notifier).state = null;
-
-    final popResult = await context.push<SearchFilterState>(
-      AppRoutes.searchFilter,
-      extra: const SearchFilterState(),
-    );
-
-    if (!mounted) return;
-
-    final applied =
-        ref.read(appliedSearchFilterProvider) ?? popResult;
-    if (applied == null) return;
-
-    ref.read(appliedSearchFilterProvider.notifier).state = applied;
-    context.go(AppRoutes.search);
-  }
-
   List<Widget> _catalogSlivers({
     required double logoSpacerHeight,
     required CatalogSnapshot catalog,
@@ -107,9 +77,8 @@ class _HomeContentState extends ConsumerState<HomeContent> {
               child: SizedBox(height: logoSpacerHeight),
             ),
             SliverToBoxAdapter(
-              child: HomeSearchBar(
+              child:               HomeSearchBar(
                 onSearchTap: _openSearchPage,
-                onFilterTap: _openSearchFilterFromHome,
                 onScannerTap: _openScannerFromHome,
               ),
             ),
@@ -122,14 +91,8 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                       padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 0),
                       child: _CatalogWarningBanner(message: catalog.warningMessage!),
                     ),
-                  HomeCategoryChips(
-                    categories: catalog.categories,
-                    selectedIndex:
-                        _selectedCategoryIndex(catalog, catalog.categories),
-                    onSelected: (i) =>
-                        _onCategorySelected(i, catalog.categories),
-                  ),
                   const HomePromoBanner(),
+                  HomeCatalogStrips(catalog: catalog),
                   Padding(
                     padding: EdgeInsets.fromLTRB(20.w, 6.h, 20.w, 12.h),
                     child: Row(

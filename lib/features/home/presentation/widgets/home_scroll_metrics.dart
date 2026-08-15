@@ -8,7 +8,7 @@ abstract final class HomeScrollMetrics {
 
   static double categoriesBlockHeight() => 20.h + 12.h + 22.h + 38.h;
 
-  static double bannerBlockHeight() => 16.h + 150.h + 10.h;
+  static double bannerBlockHeight() => 24.h + 150.h + 10.h;
 
   /// عند هذا الإزاحة يبدأ الشعار بالاختفاء (وصول قسم المنتجات)
   static double logoHideStartOffset() =>

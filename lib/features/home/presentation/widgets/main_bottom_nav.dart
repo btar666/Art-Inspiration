@@ -4,19 +4,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/constants/app_assets.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
 
 /// أبعاد شريط التنقل العائم
 abstract final class MainBottomNavMetrics {
-  static double width() => 360.w;
-  static double height() => 64.h;
+  static double width() => 340.w;
+  static double height() => 56.h;
   static double radius() => 40.r;
   static double horizontalMargin() => 16.5.w;
   static double bottomMargin() => 16.h;
 
+  /// تصغير خفيف عند السكرول للأسفل
+  static double compactScale() => 0.90;
+  static double compactDy() => 8.h;
+  static double compactAfterPx() => 4;
+  static double expandAfterPx() => 4;
+
   /// ارتفاع محجوز فوق الشريط العائم (هامش + شريط + فراغ)
-  static const double floatingBarReservedHeight = 92;
+  static const double floatingBarReservedHeight = 84;
 }
 
 /// شريط التنقل السفلي العائم
@@ -35,35 +39,35 @@ class MainBottomNav extends StatelessWidget {
       label: 'البحث',
       iconActive: AppAssets.navSearchIn,
       iconInactive: AppAssets.navSearchOut,
-      iconWidth: 23,
-      iconHeight: 23,
+      iconWidth: 26,
+      iconHeight: 26,
     ),
     _NavItem(
       label: 'اكسبلور',
       iconActive: AppAssets.navExploreIn,
       iconInactive: AppAssets.navExploreOut,
-      iconWidth: 22,
-      iconHeight: 20,
+      iconWidth: 26,
+      iconHeight: 24,
     ),
     _NavItem(
       label: 'الرئيسية',
-      iconWidth: 20,
-      iconHeight: 20,
+      iconWidth: 34,
+      iconHeight: 34,
       isHome: true,
     ),
     _NavItem(
       label: 'الفواتير',
       iconActive: AppAssets.navFoaterIn,
       iconInactive: AppAssets.navFoaterOut,
-      iconWidth: 24,
-      iconHeight: 18,
+      iconWidth: 28,
+      iconHeight: 22,
     ),
     _NavItem(
       label: 'الأعدادات',
       iconActive: AppAssets.navSettingsIn,
       iconInactive: AppAssets.navSettingsOut,
-      iconWidth: 20,
-      iconHeight: 19,
+      iconWidth: 26,
+      iconHeight: 25,
     ),
   ];
 
@@ -83,7 +87,7 @@ class MainBottomNav extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(MainBottomNavMetrics.radius()),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
           child: Container(
             width: MainBottomNavMetrics.width(),
             height: MainBottomNavMetrics.height(),
@@ -141,26 +145,19 @@ class _NavBarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? AppColors.primary : AppColors.homeNavInactive;
-
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
         width: 58.w,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _NavIcon(item: item, isActive: isActive),
-            SizedBox(height: 2.h),
-            Text(
-              item.label,
-              style: AppTextStyles.bottomNavLabel(color: color),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+        height: double.infinity,
+        child: Semantics(
+          button: true,
+          selected: isActive,
+          label: item.label,
+          child: Center(
+            child: _NavIcon(item: item, isActive: isActive),
+          ),
         ),
       ),
     );

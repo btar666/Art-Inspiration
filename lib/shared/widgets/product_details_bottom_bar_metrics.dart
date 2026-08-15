@@ -1,63 +1,112 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// أبعاد ذيل وخلفية صفحة تفاصيل المنتج
+import '../../core/theme/app_colors.dart';
+
+/// أبعاد ومظهر شريط أزرار صفحة تفاصيل المنتج العائم
 abstract final class ProductDetailsBottomBarMetrics {
-  static const Color pageBackground = Color(0xFFEAECFC);
-  static const Color background = pageBackground;
+  static double horizontalMargin() => 20.w;
+  static double bottomMargin() => 16.h;
 
-  static double whiteContainerBottomRadius() => 50.r;
+  static double glassBlurSigma() => 52;
+  static double glassBorderWidth() => 1.35;
 
-  static EdgeInsets padding() => EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 8.h);
+  static LinearGradient frostFill() => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withValues(alpha: 0.28),
+          const Color(0xFFE8EBFF).withValues(alpha: 0.22),
+          Colors.white.withValues(alpha: 0.12),
+        ],
+      );
 
-  static double priceRowWidth() => 352.09.w;
-  static double priceRowHeight() => 46.h;
-  static double priceRowRadius() => 20.95.r;
-  static Color priceRowBackground() =>
-      const Color(0xFFFFFFFF).withValues(alpha: 0.3);
-  static Color priceRowBorderColor() =>
-      const Color(0xFF0000FF).withValues(alpha: 0.5);
-  static double priceRowBorderWidth() => 0.5;
-  static double priceRowBlurSigma() => 10;
-  static EdgeInsets priceRowPadding() =>
-      EdgeInsets.symmetric(horizontal: 14.w);
+  static LinearGradient sapphireFill() => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withValues(alpha: 0.26),
+          const Color(0xFF8B97FF).withValues(alpha: 0.28),
+          AppColors.primary.withValues(alpha: 0.22),
+        ],
+      );
 
-  static double gapBetweenRows() => 6.h;
+  static Color frostHaze() => Colors.white.withValues(alpha: 0.18);
 
-  static double quantityButtonWidth() => 27.86.w;
-  static double quantityButtonHeight() => 24.58.h;
-  static double quantityButtonRadius() => 10.r;
-  static double quantityButtonIconSize() => 18.sp;
-  static double quantityButtonBorderWidth() => 2;
-  static Color quantityButtonBorderColor() => const Color(0xFFFFFFFF);
-  static double quantityGap() => 12.w;
-  static double quantityUnderlineWidth() => 14.w;
-  static double quantityUnderlineHeight() => 1.2.h;
-  static Color quantityUnderlineColor() => const Color(0xFFFFFFFF);
+  static LinearGradient frostBorder() => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withValues(alpha: 0.7),
+          Colors.white.withValues(alpha: 0.28),
+          AppColors.primary.withValues(alpha: 0.18),
+        ],
+      );
 
-  /// ارتفاع محجوز فوق الذيل لزر السلة العائم
-  static const double floatingCartReservedHeight = 130;
+  static LinearGradient sapphireBorder() => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withValues(alpha: 0.75),
+          AppColors.primarySoft.withValues(alpha: 0.4),
+          AppColors.primary.withValues(alpha: 0.28),
+        ],
+      );
 
-  static double addToCartWidth() => 352.09.w;
-  static double addToCartHeight() => 46.h;
-  static double addToCartRadius() => 20.95.r;
-  static Color addToCartBackground() => const Color(0xFFFFFFFF);
-  static Color addToCartShadowColor() =>
-      const Color(0xFF3A3F41).withValues(alpha: 0.16);
-
-  /// طبقتان من الظل — حسب Figma
-  static List<BoxShadow> addToCartShadow() => [
+  static List<BoxShadow> frostShadow({required bool pressed}) => [
         BoxShadow(
-          color: addToCartShadowColor(),
-          offset: Offset(0, 21.94.h),
-          blurRadius: 87.77.r,
-          spreadRadius: -3.99.r,
+          color: AppColors.primary.withValues(alpha: pressed ? 0.06 : 0.12),
+          blurRadius: pressed ? 18 : 36,
+          spreadRadius: pressed ? 0 : 2,
+          offset: Offset(0, pressed ? 4 : 8),
         ),
         BoxShadow(
-          color: addToCartShadowColor(),
-          offset: Offset(0, 9.97.h),
-          blurRadius: 27.93.r,
-          spreadRadius: -5.98.r,
+          color: Colors.white.withValues(alpha: 0.55),
+          blurRadius: 16,
+          spreadRadius: -2,
+          offset: const Offset(0, -1),
         ),
       ];
+
+  static List<BoxShadow> sapphireShadow({required bool pressed}) => [
+        BoxShadow(
+          color: AppColors.primary.withValues(alpha: pressed ? 0.14 : 0.24),
+          blurRadius: pressed ? 18 : 36,
+          spreadRadius: pressed ? 0 : 2,
+          offset: Offset(0, pressed ? 5 : 10),
+        ),
+        BoxShadow(
+          color: const Color(0xFF9AABFF).withValues(alpha: 0.28),
+          blurRadius: 24,
+          offset: const Offset(0, 4),
+        ),
+        BoxShadow(
+          color: Colors.white.withValues(alpha: 0.45),
+          blurRadius: 12,
+          offset: const Offset(0, -2),
+        ),
+      ];
+
+  static double priceRowWidth() => 352.09.w;
+  static double priceRowHeight() => 50.h;
+  static EdgeInsets priceRowPadding() =>
+      EdgeInsets.symmetric(horizontal: 12.w);
+
+  static double gapBetweenRows() => 10.h;
+
+  static double quantityButtonSize() => 32.w;
+  static double quantityButtonIconSize() => 18.sp;
+  static double quantityGap() => 10.w;
+  static double quantityUnderlineWidth() => 16.w;
+  static double quantityUnderlineHeight() => 2.h;
+  static Color quantityUnderlineColor() => AppColors.primary;
+
+  /// ارتفاع محجوز فوق الأزرار العائمة لزر السلة
+  static const double floatingCartReservedHeight = 142;
+
+  static double addToCartWidth() => 352.09.w;
+  static double addToCartHeight() => 52.h;
+
+  static double occupiedHeight() =>
+      priceRowHeight() + gapBetweenRows() + addToCartHeight() + bottomMargin();
 }

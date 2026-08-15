@@ -37,7 +37,8 @@ class CatalogOfflineStorage {
       'savedAt': DateTime.now().toIso8601String(),
       'categories': snapshot.categories,
       'brands': snapshot.brands,
-      'categoryImages': snapshot.categoryImages,
+      'categoryImages': snapshot.categoryImages ?? const {},
+      'brandImages': snapshot.brandImages ?? const {},
       'stats': {
         'totalProducts': snapshot.stats.totalProducts,
         'brandCount': snapshot.stats.brandCount,
@@ -95,6 +96,7 @@ class CatalogOfflineStorage {
           'categories': map['categories'],
           'brands': map['brands'],
           'categoryImages': map['categoryImages'],
+          'brandImages': map['brandImages'],
           'stats': map['stats'],
           'storeSettings': map['storeSettings'],
           'byCategory': {
@@ -131,6 +133,17 @@ class CatalogOfflineStorage {
           final url = value?.toString().trim() ?? '';
           if (url.isNotEmpty) {
             categoryImages[key.toString()] = url;
+          }
+        });
+      }
+
+      final brandImagesRaw = root['brandImages'];
+      final brandImages = <String, String>{};
+      if (brandImagesRaw is Map) {
+        brandImagesRaw.forEach((key, value) {
+          final url = value?.toString().trim() ?? '';
+          if (url.isNotEmpty) {
+            brandImages[key.toString()] = url;
           }
         });
       }
@@ -174,6 +187,7 @@ class CatalogOfflineStorage {
         categories: categories,
         brands: brands,
         categoryImages: categoryImages,
+        brandImages: brandImages,
         stats: stats,
         storeSettings: storeSettings,
         source: CatalogDataSource.offline,

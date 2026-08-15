@@ -96,45 +96,133 @@ class _OrderImage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final directUrl = order.imageUrl?.trim();
-    final hasDirect = directUrl != null && directUrl.isNotEmpty;
+    var urls = order.previewImageUrls;
+    if (urls.isEmpty) {
+      final fallback = ref.watch(orderPreviewImageProvider(order.id)).value;
+      final trimmed = fallback?.trim();
+      if (trimmed != null && trimmed.isNotEmpty) {
+        urls = [trimmed];
+      }
+    }
 
-    final resolvedUrl = hasDirect
-        ? directUrl
-        : ref.watch(orderPreviewImageProvider(order.id)).value;
+    return _OrderPreviewCollage(
+      urls: urls.take(OrderModel.maxPreviewImages).toList(),
+      background: order.imageBgColor,
+    );
+  }
+}
 
-    final imageUrl = (resolvedUrl != null && resolvedUrl.isNotEmpty)
-        ? resolvedUrl
-        : null;
+/// شبكة صور الفاتورة: صورة واحدة، أو 2 / 3 / 4 كحد أقصى
+class _OrderPreviewCollage extends StatelessWidget {
+  const _OrderPreviewCollage({
+    required this.urls,
+    required this.background,
+  });
 
+  final List<String> urls;
+  final Color background;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       width: 96.w,
       height: 96.w,
       decoration: BoxDecoration(
-        color: order.imageBgColor,
+        color: background,
         borderRadius: BorderRadius.circular(16.r),
       ),
       clipBehavior: Clip.antiAlias,
-      child: imageUrl != null
-          ? CachedNetworkImage(
-              imageUrl: imageUrl,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => _placeholderIcon(),
-              errorWidget: (_, __, ___) => _placeholderIcon(),
-            )
-          : _placeholderIcon(),
+      child: urls.isEmpty
+          ? _placeholderIcon()
+          : urls.length == 1
+              ? _thumb(urls.first)
+              : ColoredBox(
+                  color: Colors.white,
+                  child: _grid(urls),
+                ),
     );
   }
 
-  Widget _placeholderIcon() {
+  Widget _grid(List<String> urls) {
+    final gap = 1.5.w;
+    switch (urls.length) {
+      case 2:
+        return Row(
+          textDirection: TextDirection.rtl,
+          children: [
+            Expanded(child: _thumb(urls[0])),
+            SizedBox(width: gap),
+            Expanded(child: _thumb(urls[1])),
+          ],
+        );
+      case 3:
+        return Row(
+          textDirection: TextDirection.rtl,
+          children: [
+            Expanded(child: _thumb(urls[0])),
+            SizedBox(width: gap),
+            Expanded(
+              child: Column(
+                children: [
+                  Expanded(child: _thumb(urls[1])),
+                  SizedBox(height: gap),
+                  Expanded(child: _thumb(urls[2])),
+                ],
+              ),
+            ),
+          ],
+        );
+      default:
+        return Column(
+          children: [
+            Expanded(
+              child: Row(
+                textDirection: TextDirection.rtl,
+                children: [
+                  Expanded(child: _thumb(urls[0])),
+                  SizedBox(width: gap),
+                  Expanded(child: _thumb(urls[1])),
+                ],
+              ),
+            ),
+            SizedBox(height: gap),
+            Expanded(
+              child: Row(
+                textDirection: TextDirection.rtl,
+                children: [
+                  Expanded(child: _thumb(urls[2])),
+                  SizedBox(width: gap),
+                  Expanded(child: _thumb(urls[3])),
+                ],
+              ),
+            ),
+          ],
+        );
+    }
+  }
+
+  Widget _thumb(String url) {
+    return ClipRect(
+      child: CachedNetworkImage(
+        imageUrl: url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        placeholder: (_, __) => _placeholderIcon(compact: true),
+        errorWidget: (_, __, ___) => _placeholderIcon(compact: true),
+      ),
+    );
+  }
+
+  Widget _placeholderIcon({bool compact = false}) {
     return Stack(
       alignment: Alignment.center,
       children: [
         Positioned(
-          bottom: 12.h,
+          bottom: compact ? 4.h : 12.h,
           child: Container(
-            width: 56.w,
-            height: 56.w,
+            width: compact ? 28.w : 56.w,
+            height: compact ? 28.w : 56.w,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white.withValues(alpha: 0.45),
@@ -143,7 +231,7 @@ class _OrderImage extends ConsumerWidget {
         ),
         Icon(
           Icons.spa_outlined,
-          size: 40.sp,
+          size: compact ? 22.sp : 40.sp,
           color: AppColors.primary.withValues(alpha: 0.35),
         ),
       ],

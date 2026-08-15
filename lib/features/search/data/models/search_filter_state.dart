@@ -21,9 +21,6 @@ class SearchFilterState {
     if (selectedBrand != 'الكل') {
       labels.add('براند: $selectedBrand');
     }
-    if (!onlyActive) {
-      labels.add('يشمل غير النشط');
-    }
     return labels;
   }
 
