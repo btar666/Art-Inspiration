@@ -4,11 +4,11 @@ import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../firebase_options.dart';
 import 'notification_payload.dart';
+import 'pending_product_store.dart';
 
 /// معالج الإشعارات عندما يكون التطبيق في الخلفية أو مغلقاً
 @pragma('vm:entry-point')
@@ -16,21 +16,28 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  debugPrint('FCM background: ${message.messageId}');
+  await PushNotifications.handleIncomingMessage(
+    message,
+    fromBackground: true,
+  );
 }
 
-/// تهيئة Firebase Cloud Messaging + إشعارات محلية للعرض في المقدمة
+/// تهيئة Firebase Cloud Messaging + إشعار واحد قابل للفتح للمنتج
 class PushNotifications {
   PushNotifications._();
 
   static final FlutterLocalNotificationsPlugin _local =
       FlutterLocalNotificationsPlugin();
 
-  /// يُستدعى عند وصول إشعار في المقدمة — لتحديث قائمة الإشعارات
   static void Function()? onForegroundMessage;
-
   static void Function(Map<String, dynamic> data)? _onNotificationTap;
   static String? _pendingProductId;
+  static StreamSubscription<RemoteMessage>? _onMessageSub;
+  static StreamSubscription<RemoteMessage>? _onOpenedSub;
+  static bool _initialized = false;
+  static bool _localReady = false;
+
+  static const _collapsedNotificationId = 71001;
 
   static void Function(Map<String, dynamic> data)? get onNotificationTap =>
       _onNotificationTap;
@@ -47,15 +54,15 @@ class PushNotifications {
     _pendingProductId = value;
   }
 
-  static String? takePendingProductId() {
-    final id = _pendingProductId;
+  static Future<String?> takePendingProductId() async {
+    final memory = _pendingProductId;
     _pendingProductId = null;
-    return id;
+    if (memory != null && memory.isNotEmpty) {
+      await PendingProductStore.take();
+      return memory;
+    }
+    return PendingProductStore.take();
   }
-
-  static StreamSubscription<RemoteMessage>? _onMessageSub;
-  static StreamSubscription<RemoteMessage>? _onOpenedSub;
-  static bool _initialized = false;
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'art_inspiration_default',
@@ -69,19 +76,7 @@ class PushNotifications {
     _initialized = true;
 
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
-    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosInit = DarwinInitializationSettings();
-    await _local.initialize(
-      settings: const InitializationSettings(android: androidInit, iOS: iosInit),
-      onDidReceiveNotificationResponse: _onLocalNotificationTap,
-    );
-
-    final androidPlugin = _local
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
-    await androidPlugin?.createNotificationChannel(_channel);
-    await androidPlugin?.requestNotificationsPermission();
+    await _ensureLocalReady();
 
     final messaging = FirebaseMessaging.instance;
     await messaging.requestPermission(alert: true, badge: true, sound: true);
@@ -93,14 +88,16 @@ class PushNotifications {
 
     await _onMessageSub?.cancel();
     await _onOpenedSub?.cancel();
-    _onMessageSub =
-        FirebaseMessaging.onMessage.listen(_showForegroundNotification);
+    _onMessageSub = FirebaseMessaging.onMessage.listen((message) {
+      onForegroundMessage?.call();
+      handleIncomingMessage(message);
+    });
     _onOpenedSub =
         FirebaseMessaging.onMessageOpenedApp.listen(_handleRemoteMessage);
 
     final initial = await messaging.getInitialMessage();
     if (initial != null) {
-      _rememberOrDispatch(initial.data);
+      await _handleRemoteMessage(initial);
     }
 
     await _handleLaunchFromLocalNotification();
@@ -117,85 +114,95 @@ class PushNotifications {
     }
   }
 
-  static void _onLocalNotificationTap(NotificationResponse response) {
-    final payload = response.payload;
-    if (payload == null || payload.isEmpty) return;
-    try {
-      final data = jsonDecode(payload);
-      if (data is Map) {
-        _rememberOrDispatch(Map<String, dynamic>.from(data));
-      }
-    } catch (_) {}
-  }
+  static Future<void> _ensureLocalReady() async {
+    if (_localReady) return;
 
-  static Future<void> _handleLaunchFromLocalNotification() async {
-    final details = await _local.getNotificationAppLaunchDetails();
-    final payload = details?.notificationResponse?.payload;
-    if (details == null ||
-        !details.didNotificationLaunchApp ||
-        payload == null ||
-        payload.isEmpty) {
-      return;
-    }
-
-    try {
-      final data = jsonDecode(payload);
-      if (data is Map) {
-        _rememberOrDispatch(Map<String, dynamic>.from(data));
-      }
-    } catch (_) {}
-  }
-
-  static void _handleRemoteMessage(RemoteMessage message) {
-    _rememberOrDispatch(message.data);
-  }
-
-  static void _rememberOrDispatch(Map<String, dynamic> data) {
-    final itemId = NotificationPayload.itemIdFrom(data);
-    if (itemId != null) {
-      _pendingProductId = itemId;
-    }
-
-    final tap = _onNotificationTap;
-    if (tap != null) {
-      tap(data);
-      return;
-    }
-  }
-
-  static void _showForegroundNotification(RemoteMessage message) {
-    debugPrint(
-      'FCM foreground: ${message.messageId} '
-      'title=${message.notification?.title} data=${message.data}',
+    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosInit = DarwinInitializationSettings();
+    await _local.initialize(
+      settings: const InitializationSettings(android: androidInit, iOS: iosInit),
+      onDidReceiveNotificationResponse: _onLocalNotificationTap,
     );
 
-    onForegroundMessage?.call();
+    await _local
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(_channel);
+    await _local
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
 
-    // في الخلفية النظام يعرض إشعار FCM — لا نكرر محلياً
-    final lifecycle = WidgetsBinding.instance.lifecycleState;
-    if (lifecycle != null && lifecycle != AppLifecycleState.resumed) {
+    _localReady = true;
+  }
+
+  static Map<String, dynamic> _mapFromMessage(RemoteMessage message) {
+    return {
+      ...message.data,
+      if (message.notification?.title != null)
+        'title': message.notification!.title,
+      if (message.notification?.body != null) 'body': message.notification!.body,
+    };
+  }
+
+  static Future<void> handleIncomingMessage(
+    RemoteMessage message, {
+    bool fromBackground = false,
+  }) async {
+    debugPrint(
+      'FCM incoming bg=$fromBackground data=${message.data} '
+      'title=${message.notification?.title}',
+    );
+
+    final data = _mapFromMessage(message);
+    var itemId = NotificationPayload.itemIdFrom(data);
+    if (itemId != null) {
+      _pendingProductId = itemId;
+      await PendingProductStore.save(itemId);
+    } else {
+      itemId = await PendingProductStore.peek();
+      if (itemId != null) {
+        data['item_id'] = itemId;
+        _pendingProductId = itemId;
+      }
+    }
+
+    // في الخلفية أندرويد يعرض إشعار FCM تلقائياً إن وُجد حقل notification.
+    // إشعار محلي إضافي هنا هو سبب ظهور إشعارين: الأول بدون item_id والثاني معه.
+    if (fromBackground && message.notification != null) {
+      debugPrint('FCM skip local duplicate; saved item_id=$itemId');
       return;
     }
 
+    await _ensureLocalReady();
+    await _showCollapsedNotification(message, data);
+  }
+
+  static Future<void> _showCollapsedNotification(
+    RemoteMessage message,
+    Map<String, dynamic> data,
+  ) async {
     final title = message.notification?.title ??
         message.data['title'] ??
-        message.data['subject'];
+        message.data['subject'] ??
+        'إشعار';
     final body = message.notification?.body ??
         message.data['body'] ??
-        message.data['message'];
-    if (title == null && body == null) return;
+        message.data['message'] ??
+        '';
 
-    _local.show(
-      id: message.hashCode.abs().clamp(1, 2147483647),
+    await _local.show(
+      id: _collapsedNotificationId,
       title: title,
       body: body,
-      payload: message.data.isEmpty ? null : jsonEncode(message.data),
+      payload: jsonEncode(data),
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           _channel.id,
           _channel.name,
           channelDescription: _channel.description,
           icon: '@mipmap/ic_launcher',
+          tag: 'art_inspiration_fcm',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
@@ -204,5 +211,63 @@ class PushNotifications {
         ),
       ),
     );
+  }
+
+  static void _onLocalNotificationTap(NotificationResponse response) {
+    final payload = response.payload;
+    if (payload == null || payload.isEmpty) {
+      _rememberOrDispatch({});
+      return;
+    }
+    try {
+      final data = jsonDecode(payload);
+      if (data is Map) {
+        _rememberOrDispatch(Map<String, dynamic>.from(data));
+        return;
+      }
+    } catch (_) {}
+    _rememberOrDispatch({});
+  }
+
+  static Future<void> _handleLaunchFromLocalNotification() async {
+    final details = await _local.getNotificationAppLaunchDetails();
+    final payload = details?.notificationResponse?.payload;
+    if (details == null || !details.didNotificationLaunchApp) return;
+
+    if (payload == null || payload.isEmpty) {
+      await _rememberOrDispatch({});
+      return;
+    }
+
+    try {
+      final data = jsonDecode(payload);
+      if (data is Map) {
+        await _rememberOrDispatch(Map<String, dynamic>.from(data));
+        return;
+      }
+    } catch (_) {}
+    await _rememberOrDispatch({});
+  }
+
+  static Future<void> _handleRemoteMessage(RemoteMessage message) async {
+    debugPrint('FCM opened: data=${message.data}');
+    await _rememberOrDispatch(_mapFromMessage(message));
+  }
+
+  static Future<void> _rememberOrDispatch(Map<String, dynamic> data) async {
+    var itemId = NotificationPayload.itemIdFrom(data);
+    if (itemId != null) {
+      _pendingProductId = itemId;
+      await PendingProductStore.save(itemId);
+    } else {
+      itemId = await PendingProductStore.peek();
+      if (itemId != null) {
+        data = {...data, 'item_id': itemId};
+        _pendingProductId = itemId;
+      }
+    }
+
+    debugPrint('FCM item_id=$itemId data=$data');
+    _onNotificationTap?.call(data);
   }
 }

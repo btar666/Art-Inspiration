@@ -49,8 +49,9 @@ class _NotificationNavigationBinderState
 
   void _onTap(Map<String, dynamic> data) {
     final itemId = NotificationPayload.itemIdFrom(data);
-    if (itemId == null) return;
-    PushNotifications.pendingProductId = itemId;
+    if (itemId != null) {
+      PushNotifications.pendingProductId = itemId;
+    }
     _tryOpenPending();
   }
 
@@ -66,31 +67,54 @@ class _NotificationNavigationBinderState
     final path = widget.router.state.uri.path;
     if (!_canOpenProduct(path)) return;
 
-    final itemId = PushNotifications.takePendingProductId();
+    final itemId = await PushNotifications.takePendingProductId();
     if (itemId == null) return;
 
-    await openProductByItemId(context, ref, itemId);
+    await openProductByItemId(
+      ref: ref,
+      itemId: itemId,
+      router: widget.router,
+    );
   }
 
   @override
   Widget build(BuildContext context) => widget.child;
 }
 
-Future<void> openProductByItemId(
-  BuildContext context,
-  WidgetRef ref,
-  String itemId,
-) async {
+Future<void> openProductByItemId({
+  required WidgetRef ref,
+  required String itemId,
+  GoRouter? router,
+  BuildContext? context,
+}) async {
   final product =
       await ref.read(productsRepositoryProvider).fetchProductById(itemId);
-  if (!context.mounted) return;
+
+  final GoRouter? goRouter = router ??
+      (context != null ? GoRouter.maybeOf(context) : null) ??
+      (rootNavigatorKey.currentContext != null
+          ? GoRouter.maybeOf(rootNavigatorKey.currentContext!)
+          : null);
 
   if (product == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تعذر فتح المنتج')),
+    final messengerContext = context ?? rootNavigatorKey.currentContext;
+    if (messengerContext != null && messengerContext.mounted) {
+      ScaffoldMessenger.of(messengerContext).showSnackBar(
+        const SnackBar(content: Text('تعذر فتح المنتج')),
+      );
+    }
+    return;
+  }
+
+  if (goRouter != null) {
+    goRouter.push(
+      AppRoutes.productDetailsPath(product.id),
+      extra: product,
     );
     return;
   }
 
-  ProductDetailsWidget.open(context, product);
+  if (context != null && context.mounted) {
+    ProductDetailsWidget.open(context, product);
+  }
 }

@@ -14,6 +14,10 @@ abstract final class AppConstants {
   static const String catalogOfflineCacheKey = 'catalog_offline_cache';
   static const String taxonomyCacheKey = 'catalog_taxonomy_cache';
   static const String orderImageCacheKey = 'order_preview_image_cache';
+  static const String pendingNotificationProductIdKey =
+      'pending_product_id_from_notification';
+  static const String pendingNotificationProductAtKey =
+      'pending_product_id_from_notification_at';
   static const String searchHistoryKey = 'search_history';
   static const int maxSearchHistoryItems = 5;
   static const int catalogOfflineCacheVersion = 9;

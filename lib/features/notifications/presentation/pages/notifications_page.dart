@@ -101,8 +101,11 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                                 .where((item) => item.group == group)) ...[
                               NotificationCard(
                                 notification: notification,
-                                onOpenProduct: (itemId) =>
-                                    openProductByItemId(context, ref, itemId),
+                                onOpenProduct: (itemId) => openProductByItemId(
+                                  context: context,
+                                  ref: ref,
+                                  itemId: itemId,
+                                ),
                               ),
                               SizedBox(height: 12.h),
                             ],

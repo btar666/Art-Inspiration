@@ -29,6 +29,7 @@ import '../../features/settings/presentation/pages/select_address_for_order_page
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/search/presentation/pages/barcode_scanner_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
+import '../../shared/widgets/product_details_loader_page.dart';
 import '../../shared/widgets/product_details_widget.dart';
 import 'app_swipe_page.dart';
 
@@ -163,10 +164,18 @@ GoRouter createAppRouter() {
         path: AppRoutes.productDetails,
         name: 'product-details',
         pageBuilder: (context, state) {
-          final product = state.extra! as ProductModel;
+          final extra = state.extra;
+          if (extra is ProductModel) {
+            return AppSwipePage(
+              key: state.pageKey,
+              child: ProductDetailsWidget(product: extra),
+            );
+          }
+
+          final id = state.pathParameters['id']!;
           return AppSwipePage(
             key: state.pageKey,
-            child: ProductDetailsWidget(product: product),
+            child: ProductDetailsLoaderPage(productId: id),
           );
         },
       ),
