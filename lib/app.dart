@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/constants/app_constants.dart';
+import 'core/notifications/notification_navigation.dart';
 import 'core/theme/app_scroll_behavior.dart';
 import 'core/theme/app_theme.dart';
 import 'shared/widgets/global_floating_cart_overlay.dart';
@@ -41,7 +42,9 @@ class ArtInspirationApp extends ConsumerWidget {
           builder: (context, child) {
             return Directionality(
               textDirection: TextDirection.rtl,
-              child: Stack(
+              child: NotificationNavigationBinder(
+                router: router,
+                child: Stack(
                 fit: StackFit.expand,
                 clipBehavior: Clip.none,
                 children: [
@@ -56,6 +59,7 @@ class ArtInspirationApp extends ConsumerWidget {
                     },
                   ),
                 ],
+              ),
               ),
             );
           },

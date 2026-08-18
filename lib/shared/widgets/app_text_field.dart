@@ -23,6 +23,8 @@ class AppTextField extends StatefulWidget {
     this.borderRadius,
     this.errorText,
     this.showErrorBorder = false,
+    this.errorActionLabel,
+    this.onErrorAction,
   });
 
   final String hint;
@@ -39,6 +41,8 @@ class AppTextField extends StatefulWidget {
   final double? borderRadius;
   final String? errorText;
   final bool showErrorBorder;
+  final String? errorActionLabel;
+  final VoidCallback? onErrorAction;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -116,7 +120,11 @@ class _AppTextFieldState extends State<AppTextField> {
       children: [
         fieldWidget,
         if (hasError && widget.errorText != null && widget.errorText!.isNotEmpty)
-          AppFieldErrorHint(message: widget.errorText!),
+          AppFieldErrorHint(
+            message: widget.errorText!,
+            actionLabel: widget.errorActionLabel,
+            onAction: widget.onErrorAction,
+          ),
       ],
     );
   }

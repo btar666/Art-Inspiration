@@ -3,14 +3,17 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/router/app_router.dart';
+import '../../../../core/utils/whatsapp_link.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/auth_footer_link.dart';
 import '../../../../shared/widgets/auth_header.dart';
 import '../../../../shared/widgets/decorative_background.dart';
 import '../../../../shared/widgets/form_error_animator.dart';
+import '../../../app_api/presentation/providers/app_api_providers.dart';
 import '../providers/auth_provider.dart';
 
 /// صفحة تسجيل الدخول
@@ -30,6 +33,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   String? _usernameError;
   String? _passwordError;
   bool _usernameErrorBorder = false;
+  bool _showContactUs = false;
 
   @override
   void dispose() {
@@ -46,6 +50,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     _usernameError = null;
     _passwordError = null;
     _usernameErrorBorder = false;
+    _showContactUs = false;
   }
 
   bool _isCredentialLoginError(String error) {
@@ -64,6 +69,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       if (isCredentialError) {
         _usernameErrorBorder = true;
         _passwordError = error;
+        _showContactUs = true;
         _usernameShakeTick++;
         _passwordShakeTick++;
       } else {
@@ -108,6 +114,38 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
   }
 
+  Future<void> _openWhatsApp() async {
+    try {
+      final info = await ref.read(appInfoProvider.future);
+      if (!mounted) return;
+      final uri = WhatsAppLink.buildUri(
+        info.whatsapp,
+        fallbackPhone: info.phone,
+      );
+      if (uri == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فتح واتساب')),
+        );
+        return;
+      }
+
+      var launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فتح واتساب')),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر فتح واتساب')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(authNotifierProvider, (previous, next) {
@@ -120,6 +158,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     });
 
     final isLoading = ref.watch(authNotifierProvider).isLoading;
+    ref.watch(appInfoProvider);
 
     return Scaffold(
       body: DecorativeBackground(
@@ -172,11 +211,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       icon: Icons.lock_outline,
                       obscureText: true,
                       errorText: _passwordError,
+                      errorActionLabel: _showContactUs ? 'تواصل معنا' : null,
+                      onErrorAction: _showContactUs ? _openWhatsApp : null,
                       onChanged: (_) {
-                        if (_passwordError != null) {
+                        if (_passwordError != null || _showContactUs) {
                           setState(() {
                             _passwordError = null;
                             _usernameErrorBorder = false;
+                            _showContactUs = false;
                           });
                         }
                       },

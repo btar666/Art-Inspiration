@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/notifications/notification_navigation.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/page_back_header.dart';
 import '../../data/models/notification_model.dart';
@@ -98,7 +99,11 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                             SizedBox(height: 12.h),
                             for (final notification in notifications
                                 .where((item) => item.group == group)) ...[
-                              NotificationCard(notification: notification),
+                              NotificationCard(
+                                notification: notification,
+                                onOpenProduct: (itemId) =>
+                                    openProductByItemId(context, ref, itemId),
+                              ),
                               SizedBox(height: 12.h),
                             ],
                             SizedBox(height: 8.h),

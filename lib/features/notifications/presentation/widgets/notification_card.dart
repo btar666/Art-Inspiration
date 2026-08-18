@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -33,89 +34,150 @@ class NotificationCard extends StatelessWidget {
   const NotificationCard({
     super.key,
     required this.notification,
+    this.onOpenProduct,
   });
 
   final AppNotificationModel notification;
+  final ValueChanged<String>? onOpenProduct;
 
   @override
   Widget build(BuildContext context) {
     final isUnread = notification.isHighlighted;
+    final hasProduct = notification.hasProduct;
+    final imageUrl = notification.productImageUrl;
 
-    return Container(
+    return GestureDetector(
+      onTap: hasProduct && notification.itemId != null
+          ? () => onOpenProduct?.call(notification.itemId!)
+          : null,
+      child: Container(
       padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(NotificationCardMetrics.cardRadius()),
         boxShadow: NotificationCardMetrics.cardShadow(),
       ),
-      child: Row(
-        textDirection: TextDirection.rtl,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _NotificationIcon(),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  notification.title,
-                  style: AppTextStyles.notificationTitle(
-                    color: isUnread
-                        ? NotificationCardMetrics.titleColor
-                        : NotificationCardMetrics.titleColor.withValues(
-                            alpha: 0.5,
-                          ),
-                  ),
-                  textAlign: TextAlign.right,
-                  textDirection: TextDirection.rtl,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  notification.description,
-                  style: AppTextStyles.notificationBody(
-                    color: isUnread
-                        ? NotificationCardMetrics.titleColor
-                        : NotificationCardMetrics.titleColor.withValues(
-                            alpha: 0.5,
-                          ),
-                  ),
-                  textAlign: TextAlign.right,
-                  textDirection: TextDirection.rtl,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          SizedBox(width: 8.w),
-          Text(
-            notification.timeLabel,
-            style: AppTextStyles.notificationTime(
-              color: isUnread
-                  ? NotificationCardMetrics.titleColor
-                  : NotificationCardMetrics.titleColor.withValues(
-                      alpha: 0.5,
-                    ),
-            ),
-            textAlign: TextAlign.left,
+          Row(
             textDirection: TextDirection.rtl,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _NotificationIcon(imageUrl: imageUrl),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      notification.title,
+                      style: AppTextStyles.notificationTitle(
+                        color: isUnread
+                            ? NotificationCardMetrics.titleColor
+                            : NotificationCardMetrics.titleColor.withValues(
+                                alpha: 0.5,
+                              ),
+                      ),
+                      textAlign: TextAlign.right,
+                      textDirection: TextDirection.rtl,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      notification.description,
+                      style: AppTextStyles.notificationBody(
+                        color: isUnread
+                            ? NotificationCardMetrics.titleColor
+                            : NotificationCardMetrics.titleColor.withValues(
+                                alpha: 0.5,
+                              ),
+                      ),
+                      textAlign: TextAlign.right,
+                      textDirection: TextDirection.rtl,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                notification.timeLabel,
+                style: AppTextStyles.notificationTime(
+                  color: isUnread
+                      ? NotificationCardMetrics.titleColor
+                      : NotificationCardMetrics.titleColor.withValues(
+                          alpha: 0.5,
+                        ),
+                ),
+                textAlign: TextAlign.left,
+                textDirection: TextDirection.rtl,
+              ),
+            ],
           ),
+          if (hasProduct) ...[
+            SizedBox(height: 12.h),
+            Align(
+              alignment: Alignment.center,
+              child: Material(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(20.r),
+                child: InkWell(
+                  onTap: () {
+                    final itemId = notification.itemId;
+                    if (itemId == null) return;
+                    onOpenProduct?.call(itemId);
+                  },
+                  borderRadius: BorderRadius.circular(20.r),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 22.w,
+                      vertical: 8.h,
+                    ),
+                    child: Text(
+                      'عرض المنتج',
+                      style: AppTextStyles.notificationTitle(
+                        color: AppColors.textOnPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
+      ),
       ),
     );
   }
 }
 
 class _NotificationIcon extends StatelessWidget {
-  const _NotificationIcon();
+  const _NotificationIcon({this.imageUrl});
+
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
     final size = NotificationCardMetrics.iconSize();
     final assetSize = NotificationCardMetrics.iconAssetSize();
+
+    Widget child;
+    if (imageUrl != null && imageUrl!.isNotEmpty) {
+      child = ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: imageUrl!,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorWidget: (_, __, ___) => _LogoMark(size: assetSize),
+        ),
+      );
+    } else {
+      child = _LogoMark(size: assetSize);
+    }
 
     return Container(
       width: size,
@@ -125,14 +187,26 @@ class _NotificationIcon extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
-      child: Transform.translate(
-        offset: Offset(-1.w, 0),
-        child: Image.asset(
-          AppAssets.logo,
-          width: assetSize,
-          height: assetSize,
-          fit: BoxFit.contain,
-        ),
+      clipBehavior: Clip.antiAlias,
+      child: child,
+    );
+  }
+}
+
+class _LogoMark extends StatelessWidget {
+  const _LogoMark({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.translate(
+      offset: Offset(-1.w, 0),
+      child: Image.asset(
+        AppAssets.logo,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
       ),
     );
   }

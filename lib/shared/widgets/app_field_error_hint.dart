@@ -6,12 +6,21 @@ import '../../core/theme/app_text_styles.dart';
 
 /// تلميح خطأ أحمر أسفل حقل الإدخال
 class AppFieldErrorHint extends StatelessWidget {
-  const AppFieldErrorHint({super.key, required this.message});
+  const AppFieldErrorHint({
+    super.key,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
 
   final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
+    final hasAction = actionLabel != null && onAction != null;
+
     return Padding(
       padding: EdgeInsets.only(top: 8.h, right: 10.w, left: 10.w),
       child: Row(
@@ -39,6 +48,20 @@ class AppFieldErrorHint extends StatelessWidget {
               textAlign: TextAlign.right,
             ),
           ),
+          if (hasAction) ...[
+            SizedBox(width: 8.w),
+            GestureDetector(
+              onTap: onAction,
+              child: Text(
+                actionLabel!,
+                style: AppTextStyles.authField(color: AppColors.primary).copyWith(
+                  fontWeight: FontWeight.w700,
+                  decoration: TextDecoration.underline,
+                  decorationColor: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

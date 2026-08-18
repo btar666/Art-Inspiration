@@ -147,6 +147,9 @@ class NotificationsNotifier
       description: item.body.isEmpty ? item.title : item.body,
       timeLabel: timeLabel,
       isRead: isRead,
+      itemId: item.itemId,
+      productName: item.productName,
+      productImageUrl: item.productImageUrl,
     );
   }
 

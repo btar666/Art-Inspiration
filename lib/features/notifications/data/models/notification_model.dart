@@ -18,6 +18,9 @@ class AppNotificationModel {
     required this.description,
     required this.timeLabel,
     this.isRead = true,
+    this.itemId,
+    this.productName,
+    this.productImageUrl,
   });
 
   final String id;
@@ -26,8 +29,16 @@ class AppNotificationModel {
   final String description;
   final String timeLabel;
   final bool isRead;
+  final String? itemId;
+  final String? productName;
+  final String? productImageUrl;
 
   bool get isHighlighted => !isRead;
+
+  bool get hasProduct {
+    final id = itemId?.trim() ?? '';
+    return id.isNotEmpty && id != '0';
+  }
 
   AppNotificationModel copyWith({
     bool? isRead,
@@ -39,6 +50,9 @@ class AppNotificationModel {
       description: description,
       timeLabel: timeLabel,
       isRead: isRead ?? this.isRead,
+      itemId: itemId,
+      productName: productName,
+      productImageUrl: productImageUrl,
     );
   }
 }

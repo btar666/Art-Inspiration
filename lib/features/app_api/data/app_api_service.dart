@@ -235,12 +235,18 @@ class AppNotificationItem {
     required this.title,
     required this.body,
     required this.createdAt,
+    this.itemId,
+    this.productName,
+    this.productImageUrl,
   });
 
   final String id;
   final String title;
   final String body;
   final DateTime? createdAt;
+  final String? itemId;
+  final String? productName;
+  final String? productImageUrl;
 
   factory AppNotificationItem.fromJson(Map<String, dynamic> json) {
     return AppNotificationItem(
@@ -251,7 +257,25 @@ class AppNotificationItem {
       createdAt: _parseCreatedAt(
         json['created_at'] ?? json['createdAt'] ?? json['date'],
       ),
+      itemId: _parseItemId(json['item_id'] ?? json['itemId']),
+      productName: _nonEmpty(json['product_name'] ?? json['productName']),
+      productImageUrl: _nonEmpty(
+        json['product_image'] ?? json['productImage'],
+      ),
     );
+  }
+
+  static String? _parseItemId(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    if (text.isEmpty || text == '0' || text == 'null') return null;
+    return text;
+  }
+
+  static String? _nonEmpty(dynamic value) {
+    final text = value?.toString().trim() ?? '';
+    if (text.isEmpty || text == '#' || text == 'null') return null;
+    return text;
   }
 
   /// يحوّل وقت السيرفر (غالباً UTC بدون Z) إلى التوقيت المحلي

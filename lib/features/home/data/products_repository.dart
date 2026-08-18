@@ -1083,6 +1083,43 @@ class ProductsRepository {
     return result.products;
   }
 
+  /// جلب منتج بالمعرف — من الكاش أولاً ثم `/products/:id`
+  Future<ProductModel?> fetchProductById(String id) async {
+    final trimmed = id.trim();
+    if (trimmed.isEmpty || trimmed == '0') return null;
+
+    ProductModel? fromList(List<ProductModel>? products) {
+      if (products == null) return null;
+      for (final product in products) {
+        if (product.id == trimmed) return product;
+      }
+      return null;
+    }
+
+    final cached = fromList(_memoryCache?.products);
+    if (cached != null) return cached;
+
+    final offline = fromList(_offlineStorage.loadDefault()?.products);
+    if (offline != null) return offline;
+
+    if (!_hasToken) {
+      return fromList(HomeMockData.products);
+    }
+
+    try {
+      final record = await _api.getById(ApiEndpoints.product(trimmed));
+      final lookups = _lookups ?? await _fetchLookups();
+      _lookups = lookups;
+      return ErpProductMapper.fromRecord(
+        record,
+        categoryNames: lookups.categoryNames,
+        brandNames: lookups.brandNames,
+      );
+    } on ApiException {
+      return fromList(HomeMockData.products);
+    }
+  }
+
   /// البحث عن منتج واحد بالباركود عبر API
   Future<ProductModel?> findProductByBarcode(String barcode) async {
     final trimmed = barcode.trim();
