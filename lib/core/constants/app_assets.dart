@@ -35,6 +35,8 @@ abstract final class AppAssets {
   static const String addressDeleteIcon = 'assets/images/delt.png';
   static const String addressEditIcon = 'assets/images/deltloc.png';
   static const String confirmOrderIllustration = 'assets/images/conform_order.png';
+  static const String productGuaranteeBadge =
+      'assets/images/product_guarantee_badge.png';
   static const String orderTrackingIllustration = 'assets/images/order_check.png';
   static const String noAddressesIllustration = 'assets/images/dxfzxz.png';
 

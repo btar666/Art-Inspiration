@@ -10,6 +10,7 @@ import '../../../../shared/widgets/add_to_cart_snackbar.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../checkout/data/checkout_provider.dart';
+import '../cart_actions.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/cart_checkout_footer.dart';
 import '../widgets/cart_confirm_dialog.dart';
@@ -52,9 +53,13 @@ class CartPage extends ConsumerWidget {
     ref.read(cartNotifierProvider.notifier).clearAll();
   }
 
-  void _startCheckout(BuildContext context, WidgetRef ref) {
+  void _startCheckout(BuildContext context, WidgetRef ref) async {
     final items = ref.read(cartNotifierProvider);
     if (items.isEmpty) return;
+
+    final canProceed = await ensureCartReadyForCheckout(context, ref);
+    if (!canProceed || !context.mounted) return;
+
     ref.read(checkoutDraftProvider.notifier).startFromCart(items);
     context.push(AppRoutes.checkout);
   }
@@ -89,7 +94,7 @@ class CartPage extends ConsumerWidget {
                         builder: (context, constraints) {
                           return SingleChildScrollView(
                             physics: const AlwaysScrollableScrollPhysics(
-                              parent: BouncingScrollPhysics(),
+                              parent: ClampingScrollPhysics(),
                             ),
                             child: ConstrainedBox(
                               constraints: BoxConstraints(
@@ -117,7 +122,7 @@ class CartPage extends ConsumerWidget {
                       onRefresh: onRefresh,
                       child: ListView(
                         physics: const AlwaysScrollableScrollPhysics(
-                          parent: BouncingScrollPhysics(),
+                          parent: ClampingScrollPhysics(),
                         ),
                         padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
                         children: [
@@ -141,8 +146,10 @@ class CartPage extends ConsumerWidget {
                                   index,
                                 ),
                                 onIncrement: () {
+                                  final product = item.product;
+                                  if (!product.isInStock) return;
                                   final max =
-                                      item.product.maxOrderQuantity;
+                                      product.maxOrderQuantity;
                                   if (max != null &&
                                       item.quantity >= max) {
                                     showStockLimitSnackBar(context, max);

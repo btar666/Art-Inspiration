@@ -175,6 +175,8 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                       );
                     },
                     childCount: products.length,
+                    addAutomaticKeepAlives: false,
+                    addRepaintBoundaries: true,
                   ),
                 ),
               ),

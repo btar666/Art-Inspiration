@@ -78,7 +78,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                           ref.read(notificationsProvider.notifier).refresh(),
                       child: ListView(
                         physics: const AlwaysScrollableScrollPhysics(
-                          parent: BouncingScrollPhysics(),
+                          parent: ClampingScrollPhysics(),
                         ),
                         children: [
                           SizedBox(height: 160.h),
@@ -98,7 +98,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                         ref.read(notificationsProvider.notifier).refresh(),
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(
-                        parent: BouncingScrollPhysics(),
+                        parent: ClampingScrollPhysics(),
                       ),
                       padding: EdgeInsets.fromLTRB(
                         20.w,

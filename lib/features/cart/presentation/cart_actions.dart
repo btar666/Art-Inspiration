@@ -3,11 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/add_to_cart_snackbar.dart';
+import '../../auth/presentation/providers/auth_provider.dart';
 import '../../home/data/models/product_model.dart';
 import '../../home/presentation/providers/user_price_policy_provider.dart';
 import '../../orders/data/models/order_model.dart';
+import 'cart_availability.dart';
 import 'providers/cart_provider.dart';
+import 'widgets/cart_confirm_dialog.dart';
 
 /// إضافة منتج للسلة مع رسالة تأكيد
 void addProductToCart(
@@ -45,36 +49,59 @@ void addProductToCart(
   showAddToCartSnackBar(context);
 }
 
-/// تحويل عنصر طلب إلى منتج للسلة
-ProductModel orderLineItemToProduct(OrderLineItem item) {
-  return ProductModel(
-    id: item.productId ?? 'reorder-${item.productName.hashCode}',
-    name: item.productName,
-    categoryName: '',
-    description: '',
-    price: item.price,
-    rating: 0,
-    imageUrl: item.imageUrl,
-    imageBgColor: item.imageBgColor,
-  );
-}
-
-/// إعادة طلب — إضافة منتجات الطلب للسلة والانتقال لصفحة السلة
-void reorderToCart(
+/// إعادة طلب — تفريغ السلة وإضافة منتجات هذا الطلب فقط مع مراجعة المخزون
+Future<void> reorderToCart(
   BuildContext context,
   WidgetRef ref,
   OrderDetailModel order,
-) {
+) async {
   if (order.items.isEmpty) return;
 
-  final cart = ref.read(cartNotifierProvider.notifier);
-  for (final item in order.items) {
-    cart.addProduct(
-      orderLineItemToProduct(item),
-      quantity: item.quantity,
+  if (!context.mounted) return;
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: Colors.black.withValues(alpha: 0.25),
+    builder: (_) => const Center(
+      child: CircularProgressIndicator(color: AppColors.primary),
+    ),
+  );
+
+  try {
+    await ref.read(authNotifierProvider.notifier).syncPricePolicyFromErp();
+    final items = await resolveReorderCartItems(ref, order);
+    ref.read(cartNotifierProvider.notifier).replaceItems(items);
+
+    if (!context.mounted) return;
+    Navigator.of(context).pop();
+
+    await context.push(AppRoutes.cart);
+
+    if (!context.mounted) return;
+    if (cartContainsOutOfStock(items)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'تمت إضافة المنتجات — يوجد منتجات نافذة في السلة',
+          ),
+        ),
+      );
+    }
+  } catch (_) {
+    if (!context.mounted) return;
+    Navigator.of(context).pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تعذر إعادة الطلب، حاول مرة أخرى')),
     );
   }
+}
 
-  if (!context.mounted) return;
-  context.push(AppRoutes.cart);
+/// يمنع إكمال الشراء إذا وُجدت منتجات نافذة — يعرض تحذيراً
+Future<bool> ensureCartReadyForCheckout(BuildContext context, WidgetRef ref) async {
+  final items = ref.read(cartNotifierProvider);
+  if (items.isEmpty) return false;
+  if (!cartContainsOutOfStock(items)) return true;
+
+  await CartConfirmDialog.showOutOfStockCheckoutWarning(context);
+  return false;
 }

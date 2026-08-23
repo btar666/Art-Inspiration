@@ -29,6 +29,8 @@ class CheckoutProductRow extends StatelessWidget {
                 ? CachedNetworkImage(
                     imageUrl: product.imageUrl!,
                     fit: BoxFit.cover,
+                    fadeInDuration: Duration.zero,
+                    fadeOutDuration: Duration.zero,
                   )
                 : Icon(Icons.image_outlined, color: AppColors.textSecondary),
           ),

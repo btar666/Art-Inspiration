@@ -30,7 +30,7 @@ class RequestSuccessPage extends StatelessWidget {
             final bottomPad = short ? 20.h : 32.h;
 
             return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: const ClampingScrollPhysics(),
               padding: EdgeInsets.symmetric(horizontal: 32.w),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),

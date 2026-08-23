@@ -238,11 +238,12 @@ class _CategoryVisual extends StatelessWidget {
       return CachedNetworkImage(
         imageUrl: url,
         fit: BoxFit.contain,
-        fadeInDuration: const Duration(milliseconds: 120),
+        fadeInDuration: Duration.zero,
         placeholder: (_, __) => SkeletonImagePlaceholder(
           borderRadius: BorderRadius.circular(
             HomeCatalogStripsMetrics.categoryRadius(),
           ),
+          animated: false,
         ),
         errorWidget: (_, __, ___) => _LetterMark(label: label),
       );
@@ -289,11 +290,12 @@ class _BrandItem extends StatelessWidget {
                 width: double.infinity,
                 height: double.infinity,
                 fit: BoxFit.cover,
-                fadeInDuration: const Duration(milliseconds: 120),
+                fadeInDuration: Duration.zero,
                 placeholder: (_, __) => SkeletonImagePlaceholder(
                   borderRadius: BorderRadius.circular(
                     HomeCatalogStripsMetrics.brandRadius(),
                   ),
+                  animated: false,
                 ),
                 errorWidget: (_, __, ___) => _BrandName(label: label),
               )

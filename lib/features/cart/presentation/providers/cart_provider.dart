@@ -57,6 +57,13 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
     ref.read(cartStorageProvider).clear();
   }
 
+  /// استبدال محتوى السلة بالكامل — إعادة الطلب
+  void replaceItems(List<CartItemModel> items) {
+    state = [...items];
+    _persist();
+    ref.read(cartAnimationTickProvider.notifier).state++;
+  }
+
   bool incrementQuantity(int index) {
     if (index < 0 || index >= state.length) return false;
     final item = state[index];

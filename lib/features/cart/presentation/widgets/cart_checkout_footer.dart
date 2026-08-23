@@ -33,15 +33,16 @@ class CartCheckoutFooter extends StatelessWidget {
     this.glassy = false,
   });
 
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final String label;
   final double? height;
   final bool glassy;
 
   @override
   Widget build(BuildContext context) {
-    if (glassy) return _buildGlassy(context);
-    return _buildSolid(context);
+    final enabled = onTap != null;
+    final child = glassy ? _buildGlassy(context) : _buildSolid(context);
+    return Opacity(opacity: enabled ? 1 : 0.6, child: child);
   }
 
   Widget _buildGlassy(BuildContext context) {

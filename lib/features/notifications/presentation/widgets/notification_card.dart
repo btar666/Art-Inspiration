@@ -305,7 +305,8 @@ class _ProductThumb extends StatelessWidget {
         child: CachedNetworkImage(
           imageUrl: url,
           fit: BoxFit.cover,
-          fadeInDuration: const Duration(milliseconds: 120),
+          fadeInDuration: Duration.zero,
+          fadeOutDuration: Duration.zero,
           placeholder: (_, __) => SkeletonImagePlaceholder(borderRadius: radius),
           errorWidget: (_, __, ___) => Container(
             color: AppColors.surface,

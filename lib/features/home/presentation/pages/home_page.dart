@@ -31,7 +31,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _onScroll() {
     final offset = _scrollController.offset;
-    if ((offset - _scrollOffset.value).abs() < 1) return;
+    if ((offset - _scrollOffset.value).abs() < 3) return;
 
     final hideEnd = HomeScrollMetrics.logoHideStartOffset() +
         HomeScrollMetrics.logoHideAnimationRange();

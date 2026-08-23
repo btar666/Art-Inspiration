@@ -346,7 +346,7 @@ class _ProductDetailsGallery extends StatelessWidget {
                 child: ListView.separated(
                   padding: EdgeInsets.zero,
                   physics: _imageCount > 4
-                      ? const BouncingScrollPhysics()
+                      ? const ClampingScrollPhysics()
                       : const NeverScrollableScrollPhysics(),
                   itemCount: _imageCount,
                   separatorBuilder: (_, __) => SizedBox(height: gap),
@@ -506,6 +506,8 @@ class _ProductImageContent extends StatelessWidget {
         fit: BoxFit.contain,
         width: double.infinity,
         height: double.infinity,
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
         placeholder: (_, __) => Center(
           child: SizedBox(
             width: compact ? 16.sp : 28.sp,

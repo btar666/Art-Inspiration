@@ -43,7 +43,7 @@ class AppRefreshScrollView extends StatelessWidget {
       child: CustomScrollView(
         controller: controller,
         physics: const AlwaysScrollableScrollPhysics(
-          parent: BouncingScrollPhysics(),
+          parent: ClampingScrollPhysics(),
         ),
         cacheExtent: 480,
         slivers: slivers,

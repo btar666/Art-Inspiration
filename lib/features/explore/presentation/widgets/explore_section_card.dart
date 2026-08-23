@@ -42,9 +42,10 @@ class ExploreSectionCard extends StatelessWidget {
                         imageUrl: section.imageUrl!,
                         width: double.infinity,
                         fit: BoxFit.contain,
-                        fadeInDuration: const Duration(milliseconds: 120),
+                        fadeInDuration: Duration.zero,
                         placeholder: (_, __) => SkeletonImagePlaceholder(
                           borderRadius: BorderRadius.circular(12.r),
+                          animated: false,
                         ),
                         errorWidget: (_, __, ___) => Icon(
                           Icons.broken_image_outlined,

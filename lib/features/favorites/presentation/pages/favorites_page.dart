@@ -45,7 +45,7 @@ class FavoritesPage extends ConsumerWidget {
                       onRefresh: onRefresh,
                       child: ListView(
                         physics: const AlwaysScrollableScrollPhysics(
-                          parent: BouncingScrollPhysics(),
+                          parent: ClampingScrollPhysics(),
                         ),
                         children: const [
                           SettingsEmptyState(
@@ -65,7 +65,7 @@ class FavoritesPage extends ConsumerWidget {
                           24.h + bottomInset,
                         ),
                         physics: const AlwaysScrollableScrollPhysics(
-                          parent: BouncingScrollPhysics(),
+                          parent: ClampingScrollPhysics(),
                         ),
                         gridDelegate:
                             SliverGridDelegateWithFixedCrossAxisCount(

@@ -189,7 +189,7 @@ class _SliderSlide extends StatelessWidget {
                     (MediaQuery.sizeOf(context).height * 0.5 * dpr)
                         .round()
                         .clamp(1, 2048),
-                fadeInDuration: const Duration(milliseconds: 120),
+                fadeInDuration: Duration.zero,
                 fadeOutDuration: Duration.zero,
                 placeholder: (_, __) => const Center(
                   child: CircularProgressIndicator(strokeWidth: 2),

@@ -1,5 +1,6 @@
 import '../../../core/network/models/erp_price_policy.dart';
 import '../../checkout/data/checkout_provider.dart';
+import '../../../core/network/api_exception.dart';
 
 /// بناء جسم فاتورة مبيعات لأمان ERP — POST /sales_invoices
 abstract final class ErpInvoiceRequestBuilder {
@@ -26,17 +27,24 @@ abstract final class ErpInvoiceRequestBuilder {
       if (address.isNotEmpty) 'عنوان: $address',
     ].join(' | ');
 
-    final items = draft.items.map((item) {
-      final productId = int.tryParse(item.product.id);
-      return {
-        'product_id': productId,
-        'name': item.product.name,
-        'quantity': item.quantity,
-        'unit_price': item.product.price,
-        'discount': 0,
-        'tax': 0,
-      };
-    }).toList();
+    final items = draft.items
+        .map((item) {
+          final productId = int.tryParse(item.product.id);
+          return {
+            'product_id': productId,
+            'name': item.product.name,
+            'quantity': item.quantity,
+            'unit_price': item.product.price,
+            'discount': 0,
+            'tax': 0,
+          };
+        })
+        .where((item) => item['product_id'] != null)
+        .toList();
+
+    if (items.isEmpty) {
+      throw const ApiException(message: 'لا توجد منتجات صالحة في الطلب');
+    }
 
     return {
       if (partyId != null) 'party_id': partyId,

@@ -9,6 +9,7 @@ import '../../../../core/theme/app_text_styles.dart';
 enum CartConfirmType {
   clearCart,
   removeItem,
+  outOfStockCheckout,
 }
 
 /// حوار تأكيد أفرغ السلة أو حذف منتج — مطابق للتصميم
@@ -24,6 +25,11 @@ class CartConfirmDialog extends StatelessWidget {
     BuildContext context,
     CartConfirmType type,
   ) async {
+    if (type == CartConfirmType.outOfStockCheckout) {
+      await showOutOfStockCheckoutWarning(context);
+      return false;
+    }
+
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
@@ -33,17 +39,40 @@ class CartConfirmDialog extends StatelessWidget {
     return result ?? false;
   }
 
+  /// تحذير: منتجات نافذة تمنع إكمال الشراء
+  static Future<void> showOutOfStockCheckoutWarning(BuildContext context) {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.45),
+      builder: (_) => const CartConfirmDialog(
+        type: CartConfirmType.outOfStockCheckout,
+      ),
+    );
+  }
+
   static const _accentColor = AppColors.homeDiscount;
 
   String get _title => switch (type) {
         CartConfirmType.clearCart => 'أفرغ السلة',
         CartConfirmType.removeItem => 'حذف المنتج من السلة',
+        CartConfirmType.outOfStockCheckout => 'لا يمكن إكمال الشراء',
+      };
+
+  String get _body => switch (type) {
+        CartConfirmType.clearCart => 'هل أنت متأكد ؟',
+        CartConfirmType.removeItem => 'هل أنت متأكد ؟',
+        CartConfirmType.outOfStockCheckout =>
+          'يوجد منتجات نافذة في السلة. يرجى حذفها قبل إكمال الشراء.',
       };
 
   String get _confirmLabel => switch (type) {
         CartConfirmType.clearCart => 'أفرغ السلة',
         CartConfirmType.removeItem => 'حذف المنتج',
+        CartConfirmType.outOfStockCheckout => 'حسناً',
       };
+
+  bool get _isWarningOnly => type == CartConfirmType.outOfStockCheckout;
 
   @override
   Widget build(BuildContext context) {
@@ -66,12 +95,18 @@ class CartConfirmDialog extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16.r),
               ),
               alignment: Alignment.center,
-              child: Image.asset(
-                AppAssets.settingsDeleteAccount,
-                width: 28.w,
-                height: 28.w,
-                fit: BoxFit.contain,
-              ),
+              child: _isWarningOnly
+                  ? Icon(
+                      Icons.inventory_2_outlined,
+                      size: 28.sp,
+                      color: _accentColor,
+                    )
+                  : Image.asset(
+                      AppAssets.settingsDeleteAccount,
+                      width: 28.w,
+                      height: 28.w,
+                      fit: BoxFit.contain,
+                    ),
             ),
             SizedBox(height: 20.h),
             Text(
@@ -84,7 +119,7 @@ class CartConfirmDialog extends StatelessWidget {
             ),
             SizedBox(height: 10.h),
             Text(
-              'هل أنت متأكد ؟',
+              _body,
               style: AppTextStyles.cartDialogBody(
                 color: AppColors.textSecondary,
               ).copyWith(
@@ -94,7 +129,30 @@ class CartConfirmDialog extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 28.h),
-            Row(
+            if (_isWarningOnly)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _accentColor,
+                    foregroundColor: AppColors.background,
+                    elevation: 0,
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
+                  ),
+                  child: Text(
+                    _confirmLabel,
+                    style: AppTextStyles.cartDialogConfirm(
+                      color: AppColors.background,
+                    ),
+                  ),
+                ),
+              )
+            else
+              Row(
               textDirection: TextDirection.ltr,
               children: [
                 Expanded(

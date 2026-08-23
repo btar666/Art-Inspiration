@@ -25,6 +25,13 @@ abstract final class OrderDetailsPageMetrics {
 
   static EdgeInsets footerPadding() => EdgeInsets.symmetric(horizontal: 24.w);
 
+  static EdgeInsets checkoutFooterPadding() => EdgeInsets.fromLTRB(
+        24.w,
+        14.h,
+        24.w,
+        16.h,
+      );
+
   static List<BoxShadow> cardShadow() => [
         BoxShadow(
           color: const Color(0xFF659AB9).withValues(alpha: 0.38),
@@ -416,6 +423,8 @@ class _OrderLineItemRow extends StatelessWidget {
               : CachedNetworkImage(
                   imageUrl: imageUrl,
                   fit: BoxFit.cover,
+                  fadeInDuration: Duration.zero,
+                  fadeOutDuration: Duration.zero,
                   placeholder: (_, __) => Center(
                     child: Icon(
                       Icons.spa_outlined,

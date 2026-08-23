@@ -189,7 +189,7 @@ class _SavedAddressesPageState extends ConsumerState<SavedAddressesPage> {
                             : ListView.separated(
                                 padding:
                                     SavedAddressesPageMetrics.listPadding(),
-                                physics: const BouncingScrollPhysics(),
+                                physics: const ClampingScrollPhysics(),
                                 itemCount: addresses.length,
                                 separatorBuilder: (_, __) => Divider(
                                   height: 1,

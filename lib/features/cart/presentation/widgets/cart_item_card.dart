@@ -4,12 +4,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/product_out_of_stock_badge.dart';
 import '../../../home/data/models/product_model.dart';
 import '../../data/models/cart_item_model.dart';
 
 /// مقاييس كارد منتج السلة
 abstract final class CartItemCardMetrics {
-  static double cardHeight() => 106.h;
+  static double cardHeight({bool withStockNote = false}) =>
+      (withStockNote ? 120 : 106).h;
 
   static double borderRadius() => 20.r;
 
@@ -17,11 +19,10 @@ abstract final class CartItemCardMetrics {
 
   static double imageInsetEnd() => 15.w;
 
-  static double productNameTopInset() => 26.h;
-
   static double contentPadding() => 12.w;
 
-  static double thumbSize() => cardHeight() - imageInsetVertical() * 2;
+  static double thumbSize({required double cardHeight}) =>
+      cardHeight - imageInsetVertical() * 2;
 
   static double qtyButtonWidth() => 22.w;
 
@@ -60,34 +61,40 @@ class CartItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final product = item.product;
-    final thumbSize = CartItemCardMetrics.thumbSize();
+    final isOutOfStock = !product.isInStock;
+    final cardHeight = CartItemCardMetrics.cardHeight(withStockNote: isOutOfStock);
+    final thumbSize = CartItemCardMetrics.thumbSize(cardHeight: cardHeight);
+    final maxQty = product.maxOrderQuantity;
+    final atStockLimit = maxQty != null && item.quantity >= maxQty;
+    final canIncrement = !isOutOfStock && !atStockLimit;
 
-    return Container(
-      height: CartItemCardMetrics.cardHeight(),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius:
-            BorderRadius.circular(CartItemCardMetrics.borderRadius()),
-        boxShadow: CartItemCardMetrics.cardShadow(),
-      ),
-      child: ClipRRect(
-        borderRadius:
-            BorderRadius.circular(CartItemCardMetrics.borderRadius()),
-        child: Row(
-          textDirection: TextDirection.ltr,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: Padding(
+    return Opacity(
+      opacity: isOutOfStock ? 0.72 : 1,
+      child: Container(
+        height: cardHeight,
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius:
+              BorderRadius.circular(CartItemCardMetrics.borderRadius()),
+          boxShadow: CartItemCardMetrics.cardShadow(),
+        ),
+        child: ClipRRect(
+          borderRadius:
+              BorderRadius.circular(CartItemCardMetrics.borderRadius()),
+          child: Row(
+            textDirection: TextDirection.ltr,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
                       padding: EdgeInsets.fromLTRB(
                         CartItemCardMetrics.contentPadding(),
-                        CartItemCardMetrics.productNameTopInset(),
+                        12.h,
                         8.w,
-                        4.h,
+                        0,
                       ),
                       child: Row(
                         textDirection: TextDirection.ltr,
@@ -115,58 +122,82 @@ class CartItemCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(
-                      left: CartItemCardMetrics.contentPadding(),
-                      right: 8.w,
-                    ),
-                    child: Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: AppColors.dotGrid.withValues(alpha: 0.45),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      CartItemCardMetrics.contentPadding(),
-                      6.h,
-                      8.w,
-                      8.h,
-                    ),
-                    child: Row(
-                      textDirection: TextDirection.ltr,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _QuantitySelector(
-                          quantity: item.quantity,
-                          onIncrement: onIncrement,
-                          onDecrement: onDecrement,
+                    if (isOutOfStock)
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          CartItemCardMetrics.contentPadding(),
+                          4.h,
+                          8.w,
+                          0,
                         ),
-                        const Spacer(),
-                        Text(
-                          'السعر : ${product.formattedPrice}',
-                          style: AppTextStyles.cartItemPrice(),
+                        child: Text(
+                          'ملاحظة: المنتج نافذ حالياً',
+                          style: AppTextStyles.cartItemPrice().copyWith(
+                            fontSize: 10.5.sp,
+                            height: 1.2,
+                            color: AppColors.homeDiscount,
+                            fontWeight: FontWeight.w600,
+                          ),
                           textAlign: TextAlign.right,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
+                      ),
+                    const Spacer(),
+                    Padding(
+                      padding: EdgeInsets.only(
+                        left: CartItemCardMetrics.contentPadding(),
+                        right: 8.w,
+                      ),
+                      child: Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: AppColors.dotGrid.withValues(alpha: 0.45),
+                      ),
                     ),
-                  ),
-                ],
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        CartItemCardMetrics.contentPadding(),
+                        6.h,
+                        8.w,
+                        8.h,
+                      ),
+                      child: Row(
+                        textDirection: TextDirection.ltr,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _QuantitySelector(
+                            quantity: item.quantity,
+                            onIncrement: canIncrement ? onIncrement : () {},
+                            onDecrement: onDecrement,
+                            incrementEnabled: canIncrement,
+                          ),
+                          const Spacer(),
+                          Text(
+                            'السعر : ${product.formattedPrice}',
+                            style: AppTextStyles.cartItemPrice(),
+                            textAlign: TextAlign.right,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.only(
-                top: CartItemCardMetrics.imageInsetVertical(),
-                right: CartItemCardMetrics.imageInsetEnd(),
-                bottom: CartItemCardMetrics.imageInsetVertical(),
+              Padding(
+                padding: EdgeInsets.only(
+                  top: CartItemCardMetrics.imageInsetVertical(),
+                  right: CartItemCardMetrics.imageInsetEnd(),
+                  bottom: CartItemCardMetrics.imageInsetVertical(),
+                ),
+                child: _ProductThumb(
+                  product: product,
+                  size: thumbSize,
+                  isOutOfStock: isOutOfStock,
+                ),
               ),
-              child: _ProductThumb(
-                product: product,
-                size: thumbSize,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -177,33 +208,48 @@ class _ProductThumb extends StatelessWidget {
   const _ProductThumb({
     required this.product,
     required this.size,
+    required this.isOutOfStock,
   });
 
   final ProductModel product;
   final double size;
+  final bool isOutOfStock;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: product.imageBgColor,
-        borderRadius: BorderRadius.circular(12.r),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: product.imageUrl != null
-          ? CachedNetworkImage(
-              imageUrl: product.imageUrl!,
-              fit: BoxFit.cover,
-            )
-          : Center(
-              child: Icon(
-                Icons.image_outlined,
-                color: AppColors.primarySoft,
-                size: 24.sp,
-              ),
-            ),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: product.imageBgColor,
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: product.imageUrl != null
+              ? CachedNetworkImage(
+                  imageUrl: product.imageUrl!,
+                  fit: BoxFit.cover,
+                  fadeInDuration: Duration.zero,
+                  fadeOutDuration: Duration.zero,
+                )
+              : Center(
+                  child: Icon(
+                    Icons.image_outlined,
+                    color: AppColors.primarySoft,
+                    size: 24.sp,
+                  ),
+                ),
+        ),
+        if (isOutOfStock)
+          Positioned(
+            top: 4.h,
+            right: 4.w,
+            child: const ProductOutOfStockBadge(compact: true),
+          ),
+      ],
     );
   }
 }
@@ -213,11 +259,13 @@ class _QuantitySelector extends StatelessWidget {
     required this.quantity,
     required this.onIncrement,
     required this.onDecrement,
+    required this.incrementEnabled,
   });
 
   final int quantity;
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
+  final bool incrementEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -227,6 +275,7 @@ class _QuantitySelector extends StatelessWidget {
         _QtyButton(
           isPlus: false,
           filled: false,
+          enabled: true,
           onTap: onDecrement,
         ),
         Padding(
@@ -238,7 +287,8 @@ class _QuantitySelector extends StatelessWidget {
         ),
         _QtyButton(
           isPlus: true,
-          filled: true,
+          filled: incrementEnabled,
+          enabled: incrementEnabled,
           onTap: onIncrement,
         ),
       ],
@@ -250,29 +300,37 @@ class _QtyButton extends StatelessWidget {
   const _QtyButton({
     required this.isPlus,
     required this.filled,
+    required this.enabled,
     required this.onTap,
   });
 
   final bool isPlus;
   final bool filled;
+  final bool enabled;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final symbolColor = filled
+        ? AppColors.background
+        : AppColors.textPrimary.withValues(alpha: enabled ? 1 : 0.45);
+
     return GestureDetector(
-      onTap: onTap,
+      onTap: enabled ? onTap : null,
       child: Container(
         width: CartItemCardMetrics.qtyButtonWidth(),
         height: CartItemCardMetrics.qtyButtonHeight(),
         decoration: BoxDecoration(
-          color: filled ? AppColors.primary : const Color(0xFFF0F2F8),
+          color: filled
+              ? AppColors.primary
+              : const Color(0xFFF0F2F8).withValues(alpha: enabled ? 1 : 0.65),
           borderRadius:
               BorderRadius.circular(CartItemCardMetrics.qtyButtonRadius()),
         ),
         alignment: Alignment.center,
         child: _QtySymbol(
           isPlus: isPlus,
-          color: filled ? AppColors.background : AppColors.textPrimary,
+          color: symbolColor,
         ),
       ),
     );

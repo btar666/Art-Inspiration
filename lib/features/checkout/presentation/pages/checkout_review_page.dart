@@ -13,13 +13,17 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/page_back_header.dart';
 import '../../../cart/data/models/cart_item_model.dart';
+import '../../../cart/presentation/cart_availability.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../orders/data/orders_repository.dart';
 import '../../../orders/presentation/providers/orders_provider.dart';
+import '../../../cart/presentation/widgets/cart_checkout_footer.dart';
+import '../../../cart/presentation/widgets/cart_page_metrics.dart';
 import '../../../orders/presentation/pages/order_details_page.dart';
-import '../../../orders/presentation/widgets/order_details_action_bar.dart';
 import '../../data/checkout_provider.dart';
 import '../../data/local_orders_storage.dart';
+import '../widgets/checkout_review_overlay_metrics.dart';
+import '../widgets/checkout_policy_sections.dart';
 
 /// الخطوة 2 — مراجعة وتأكيد الطلب
 class CheckoutReviewPage extends ConsumerStatefulWidget {
@@ -31,6 +35,40 @@ class CheckoutReviewPage extends ConsumerStatefulWidget {
 
 class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
   bool _submitting = false;
+  bool _returnPolicyAccepted = false;
+  bool _guaranteePolicyAccepted = false;
+  final _policySectionsKey = GlobalKey<CheckoutPolicySectionsState>();
+
+  bool get _policiesAccepted =>
+      _returnPolicyAccepted && _guaranteePolicyAccepted;
+
+  void _onConfirmTap() {
+    if (_submitting) return;
+
+    if (!_policiesAccepted) {
+      _policySectionsKey.currentState?.openPendingPolicies();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'يرجى فتح السياسات وقراءتها والموافقة عليها قبل تأكيد الطلب',
+            style: AppTextStyles.ordersDetailLabel().copyWith(
+              color: AppColors.background,
+              fontSize: 13.sp,
+            ),
+          ),
+          backgroundColor: AppColors.homeDiscount,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.fromLTRB(16.w, 0, 16.w, 88.h),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14.r),
+          ),
+        ),
+      );
+      return;
+    }
+
+    _confirmOrder();
+  }
 
   Future<void> _confirmOrder() async {
     if (_submitting) return;
@@ -41,6 +79,18 @@ class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
     setState(() => _submitting = true);
 
     try {
+      final availabilityIssues =
+          await findCheckoutAvailabilityIssues(ref, draft.items);
+      if (availabilityIssues.isNotEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(formatCheckoutAvailabilityMessage(availabilityIssues)),
+          ),
+        );
+        return;
+      }
+
       final order =
           await ref.read(ordersRepositoryProvider).createInvoice(draft);
 
@@ -54,6 +104,16 @@ class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
       context.go(AppRoutes.checkoutSuccessPath(order.id));
     } on ApiException catch (error) {
       if (!mounted) return;
+      if (error.statusCode == 500 || error.type == ApiExceptionType.server) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'تعذر تأكيد الطلب من الخادم. تحقق من كميات المنتجات وتوفرها ثم حاول مرة أخرى.',
+            ),
+          ),
+        );
+        return;
+      }
       if (ConnectivityErrorHandler.shouldShow(error)) {
         await ConnectivityErrorHandler.promptRetry(
           context: context,
@@ -82,7 +142,7 @@ class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
     final draft = ref.watch(checkoutDraftProvider);
     if (draft == null) {
       return Scaffold(
-        backgroundColor: OrderDetailsPageMetrics.pageBackground,
+        backgroundColor: AppColors.background,
         body: SafeArea(
           child: PageBackHeader(
             title: 'التأكد من المعلومات',
@@ -96,40 +156,30 @@ class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
     final orderDate = DateTime.now();
     final formattedDate =
         '${orderDate.year} - ${orderDate.month} - ${orderDate.day}';
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final footerHeight =
-        screenHeight * OrderDetailsPageMetrics.footerHeightFraction;
-    final bottomRadius = OrderDetailsPageMetrics.whiteContainerBottomRadius();
+
+    final footerPadding = CartPageMetrics.footerPadding();
 
     return Scaffold(
-      backgroundColor: OrderDetailsPageMetrics.pageBackground,
-      body: Column(
+      backgroundColor: AppColors.background,
+      body: Stack(
         children: [
-          Expanded(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(bottomRadius),
-                  bottomRight: Radius.circular(bottomRadius),
+          SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                PageBackHeader(
+                  title: 'التأكد من المعلومات',
+                  onBack: () => context.pop(),
                 ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(bottomRadius),
-                  bottomRight: Radius.circular(bottomRadius),
-                ),
-                child: SafeArea(
-                  bottom: false,
+                Expanded(
                   child: ListView(
-                    padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 16.h),
+                    padding: EdgeInsets.fromLTRB(
+                      16.w,
+                      0,
+                      16.w,
+                      CheckoutReviewOverlayMetrics.scrollBottomInset(context),
+                    ),
                     children: [
-                      Text(
-                        'التأكد من المعلومات',
-                        style: AppTextStyles.ordersPageTitle(),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 12.h),
                       _InfoCard(
                         children: [
                           _InlineInfoRow(
@@ -207,35 +257,33 @@ class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
                           ),
                         ],
                       ),
+                      SizedBox(height: 20.h),
+                      CheckoutPolicySections(
+                        key: _policySectionsKey,
+                        returnAccepted: _returnPolicyAccepted,
+                        guaranteeAccepted: _guaranteePolicyAccepted,
+                        onReturnAcceptedChanged: (value) {
+                          setState(() => _returnPolicyAccepted = value);
+                        },
+                        onGuaranteeAcceptedChanged: (value) {
+                          setState(() => _guaranteePolicyAccepted = value);
+                        },
+                      ),
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
           ),
-          SizedBox(
-            height: footerHeight,
-            child: ColoredBox(
-              color: OrderDetailsPageMetrics.pageBackground,
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: OrderDetailsPageMetrics.footerPadding(),
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: Transform.translate(
-                      offset: Offset(0, 5.h),
-                      child: OrderDetailsActionBar(
-                        primaryLabel:
-                            _submitting ? 'جاري التأكيد...' : 'تأكيد الطلب',
-                        secondaryLabel: 'عودة',
-                        onPrimary: _submitting ? () {} : _confirmOrder,
-                        onSecondary: _submitting ? () {} : () => context.pop(),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+          // الافتراضي: زر السلة الزجاجي. **تصميم 2**: CheckoutReviewFooterDesign2
+          Positioned(
+            left: footerPadding.left,
+            right: footerPadding.right,
+            bottom: CheckoutReviewOverlayMetrics.overlayBottomOffset(context),
+            child: CartCheckoutFooter(
+              label: _submitting ? 'جاري التأكيد...' : 'تأكيد الطلب',
+              onTap: _submitting ? null : _onConfirmTap,
+              glassy: true,
             ),
           ),
         ],
@@ -390,6 +438,8 @@ class _CheckoutLineItemRow extends StatelessWidget {
               ? CachedNetworkImage(
                   imageUrl: product.imageUrl!,
                   fit: BoxFit.cover,
+                  fadeInDuration: Duration.zero,
+                  fadeOutDuration: Duration.zero,
                 )
               : Icon(
                   Icons.spa_outlined,

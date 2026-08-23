@@ -1189,7 +1189,12 @@ class ProductsRepository {
   }
 
   /// جلب منتج بالمعرف — من الكاش أولاً ثم `/products/:id`
-  Future<ProductModel?> fetchProductById(String id) async {
+  ///
+  /// [forceRefresh] يتجاوز الكاش — مطلوب عند إعادة الطلب والتحقق قبل الدفع.
+  Future<ProductModel?> fetchProductById(
+    String id, {
+    bool forceRefresh = false,
+  }) async {
     final trimmed = id.trim();
     if (trimmed.isEmpty || trimmed == '0') return null;
 
@@ -1201,11 +1206,13 @@ class ProductsRepository {
       return null;
     }
 
-    final cached = fromList(_memoryCache?.products);
-    if (cached != null) return cached;
+    if (!forceRefresh) {
+      final cached = fromList(_memoryCache?.products);
+      if (cached != null) return cached;
 
-    final offline = fromList(_offlineStorage.loadDefault()?.products);
-    if (offline != null) return offline;
+      final offline = fromList(_offlineStorage.loadDefault()?.products);
+      if (offline != null) return offline;
+    }
 
     if (!_hasToken) {
       return fromList(HomeMockData.products);
@@ -1215,14 +1222,34 @@ class ProductsRepository {
       final record = await _api.getById(ApiEndpoints.product(trimmed));
       final lookups = _lookups ?? await _fetchLookups();
       _lookups = lookups;
-      return ErpProductMapper.fromRecord(
+      final product = ErpProductMapper.fromRecord(
         record,
         categoryNames: lookups.categoryNames,
         brandNames: lookups.brandNames,
       );
+      if (product != null) {
+        _upsertProductInMemoryCache(product);
+      }
+      return product;
     } on ApiException {
+      if (forceRefresh) return null;
       return fromList(HomeMockData.products);
     }
+  }
+
+  void _upsertProductInMemoryCache(ProductModel product) {
+    final cache = _memoryCache;
+    if (cache == null) return;
+
+    final products = [...cache.products];
+    final index = products.indexWhere((item) => item.id == product.id);
+    if (index >= 0) {
+      products[index] = product;
+    } else {
+      products.add(product);
+    }
+
+    _memoryCache = cache.copyWith(products: products);
   }
 
   /// البحث عن منتج واحد بالباركود عبر API

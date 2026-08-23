@@ -209,10 +209,11 @@ class _HomeProductImage extends StatelessWidget {
         fit: BoxFit.cover,
         memCacheWidth: cacheW,
         memCacheHeight: cacheH,
-        fadeInDuration: const Duration(milliseconds: 120),
+        fadeInDuration: Duration.zero,
         fadeOutDuration: Duration.zero,
         placeholder: (_, __) => SkeletonImagePlaceholder(
           borderRadius: BorderRadius.circular(12.r),
+          animated: false,
         ),
         errorWidget: (_, __, ___) => ColoredBox(
           color: product.imageBgColor,

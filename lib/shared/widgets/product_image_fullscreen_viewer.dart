@@ -97,6 +97,8 @@ class _ProductImageFullscreenViewerState
                         imageUrl: widget.imageUrls[index],
                         fit: BoxFit.contain,
                         width: double.infinity,
+                        fadeInDuration: Duration.zero,
+                        fadeOutDuration: Duration.zero,
                         placeholder: (_, __) => const Center(
                           child: CircularProgressIndicator(
                             color: Colors.white,

@@ -208,6 +208,8 @@ class _OrderPreviewCollage extends StatelessWidget {
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
         placeholder: (_, __) => _placeholderIcon(compact: true),
         errorWidget: (_, __, ___) => _placeholderIcon(compact: true),
       ),

@@ -65,9 +65,10 @@ class _BrandLogoContainer extends StatelessWidget {
           ? CachedNetworkImage(
               imageUrl: brand.imageUrl!,
               fit: BoxFit.contain,
-              fadeInDuration: const Duration(milliseconds: 120),
+              fadeInDuration: Duration.zero,
               placeholder: (_, __) => const SkeletonImagePlaceholder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
+                animated: false,
               ),
               errorWidget: (_, __, ___) => Icon(
                 Icons.broken_image_outlined,

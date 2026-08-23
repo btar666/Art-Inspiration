@@ -111,6 +111,8 @@ class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
               );
             },
             childCount: state.products.length,
+            addAutomaticKeepAlives: false,
+            addRepaintBoundaries: true,
           ),
         ),
       ),
