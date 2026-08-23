@@ -80,7 +80,7 @@ class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
 
     try {
       final availabilityIssues =
-          await findCheckoutAvailabilityIssues(ref, draft.items);
+          await findCheckoutAvailabilityIssues(draft.items);
       if (availabilityIssues.isNotEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

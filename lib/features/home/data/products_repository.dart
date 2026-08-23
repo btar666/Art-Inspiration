@@ -1190,7 +1190,7 @@ class ProductsRepository {
 
   /// جلب منتج بالمعرف — من الكاش أولاً ثم `/products/:id`
   ///
-  /// [forceRefresh] يتجاوز الكاش — مطلوب عند إعادة الطلب والتحقق قبل الدفع.
+  /// [forceRefresh] يتجاوز الكاش عند الحاجة لجلب مباشر من `/products/:id`.
   Future<ProductModel?> fetchProductById(
     String id, {
     bool forceRefresh = false,

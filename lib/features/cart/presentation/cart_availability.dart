@@ -18,13 +18,10 @@ class CartAvailabilityIssue {
   final String message;
 }
 
-/// مراجعة المخزون والكميات قبل تأكيد الطلب
+/// مراجعة المخزون والكميات قبل تأكيد الطلب — من بيانات المنتج في السلة (مثل الرئيسية)
 Future<List<CartAvailabilityIssue>> findCheckoutAvailabilityIssues(
-  WidgetRef ref,
   Iterable<CartItemModel> items,
 ) async {
-  final repo = ref.read(productsRepositoryProvider);
-  final policy = ref.read(userPricePolicyProvider);
   final issues = <CartAvailabilityIssue>[];
 
   for (final item in items) {
@@ -39,24 +36,7 @@ Future<List<CartAvailabilityIssue>> findCheckoutAvailabilityIssues(
       continue;
     }
 
-    ProductModel? fresh;
-    try {
-      fresh = await repo.fetchProductById(item.product.id, forceRefresh: true);
-    } catch (_) {
-      fresh = null;
-    }
-
-    if (fresh == null) {
-      issues.add(
-        CartAvailabilityIssue(
-          productName: item.product.name,
-          message: 'تعذر التحقق من توفر المنتج',
-        ),
-      );
-      continue;
-    }
-
-    final product = fresh.withPriceFor(policy);
+    final product = item.product;
     if (!product.isInStock) {
       issues.add(
         CartAvailabilityIssue(
@@ -107,7 +87,7 @@ int clampReorderQuantity(ProductModel product, int requested) {
   return safeRequested.clamp(1, max);
 }
 
-/// تحويل بنود الطلب إلى عناصر سلة مع جلب المخزون الحالي
+/// تحويل بنود الطلب إلى عناصر سلة — مخزون من كتالوج الكاش مثل الصفحة الرئيسية
 Future<List<CartItemModel>> resolveReorderCartItems(
   WidgetRef ref,
   OrderDetailModel order,
@@ -133,7 +113,7 @@ Future<ProductModel> _resolveReorderProduct(
   final id = line.productId?.trim();
   if (id != null && id.isNotEmpty) {
     try {
-      final fetched = await repo.fetchProductById(id, forceRefresh: true);
+      final fetched = await repo.fetchProductById(id);
       if (fetched != null) {
         var product = fetched.withPriceFor(policy);
         final imageUrl = product.imageUrl?.trim() ?? '';
@@ -171,14 +151,11 @@ Future<ProductModel> _resolveReorderProduct(
     }
   }
 
-  return orderLineItemToProduct(line, treatMissingStockAsOutOfStock: true);
+  return orderLineItemToProduct(line);
 }
 
-/// تحويل عنصر طلب إلى منتج للسلة
-ProductModel orderLineItemToProduct(
-  OrderLineItem item, {
-  bool treatMissingStockAsOutOfStock = false,
-}) {
+/// تحويل عنصر طلب إلى منتج للسلة (بدون مخزون محدث — مثل الرئيسية عند غياب الكاش)
+ProductModel orderLineItemToProduct(OrderLineItem item) {
   return ProductModel(
     id: item.productId ?? 'reorder-${item.productName.hashCode}',
     name: item.productName,
@@ -188,7 +165,5 @@ ProductModel orderLineItemToProduct(
     rating: 0,
     imageUrl: item.imageUrl,
     imageBgColor: item.imageBgColor,
-    stockQuantity: treatMissingStockAsOutOfStock ? 0 : null,
-    trackStock: treatMissingStockAsOutOfStock,
   );
 }
