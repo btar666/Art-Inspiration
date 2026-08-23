@@ -24,7 +24,7 @@ class DraggableFloatingCartButton extends ConsumerStatefulWidget {
 
 class _DraggableFloatingCartButtonState
     extends ConsumerState<DraggableFloatingCartButton> {
-  Offset? _position;
+  Offset? _dragOffset;
 
   double get _buttonSize => 50.w;
 
@@ -45,7 +45,7 @@ class _DraggableFloatingCartButtonState
     EdgeInsets padding,
   ) {
     final defaultPos = _defaultPosition(screenSize, padding);
-    final current = _position ?? defaultPos;
+    final current = _dragOffset ?? defaultPos;
     final maxTop = screenSize.height -
         padding.bottom -
         widget.bottomReservedHeight.h -
@@ -53,7 +53,7 @@ class _DraggableFloatingCartButtonState
     final maxLeft = screenSize.width - _buttonSize;
 
     setState(() {
-      _position = Offset(
+      _dragOffset = Offset(
         (current.dx + details.delta.dx).clamp(0.0, maxLeft),
         (current.dy + details.delta.dy).clamp(padding.top, maxTop),
       );
@@ -64,7 +64,7 @@ class _DraggableFloatingCartButtonState
   void didUpdateWidget(DraggableFloatingCartButton oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.bottomReservedHeight != widget.bottomReservedHeight) {
-      _position = null;
+      _dragOffset = null;
     }
   }
 
@@ -72,7 +72,7 @@ class _DraggableFloatingCartButtonState
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.sizeOf(context);
     final padding = MediaQuery.paddingOf(context);
-    final position = _position ?? _defaultPosition(screenSize, padding);
+    final position = _dragOffset ?? _defaultPosition(screenSize, padding);
     final itemCount = ref.watch(cartItemCountProvider);
     final animationTick = ref.watch(cartAnimationTickProvider);
 

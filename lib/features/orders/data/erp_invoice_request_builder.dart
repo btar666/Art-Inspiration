@@ -1,9 +1,11 @@
+import '../../../core/network/models/erp_price_policy.dart';
 import '../../checkout/data/checkout_provider.dart';
 
 /// بناء جسم فاتورة مبيعات لأمان ERP — POST /sales_invoices
 abstract final class ErpInvoiceRequestBuilder {
   static Map<String, dynamic> build({
     required CheckoutDraft draft,
+    required ErpPricePolicy pricePolicy,
     int? partyId,
   }) {
     final now = DateTime.now();
@@ -39,7 +41,7 @@ abstract final class ErpInvoiceRequestBuilder {
     return {
       if (partyId != null) 'party_id': partyId,
       'date': date,
-      'price_policy': 'retail',
+      'price_policy': pricePolicy.erpValue,
       'discount': 0,
       'tax': 0,
       'paid_amount': 0,

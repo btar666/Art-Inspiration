@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/skeleton/skeleton_image_placeholder.dart';
 import '../../data/models/explore_models.dart';
 import 'explore_section_card_metrics.dart';
 
@@ -42,8 +43,8 @@ class ExploreSectionCard extends StatelessWidget {
                         width: double.infinity,
                         fit: BoxFit.contain,
                         fadeInDuration: const Duration(milliseconds: 120),
-                        placeholder: (_, __) => const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                        placeholder: (_, __) => SkeletonImagePlaceholder(
+                          borderRadius: BorderRadius.circular(12.r),
                         ),
                         errorWidget: (_, __, ___) => Icon(
                           Icons.broken_image_outlined,

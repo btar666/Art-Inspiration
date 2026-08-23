@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/notifications/notification_navigation.dart';
+import '../../../../core/network/connectivity_error_handler.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/page_back_header.dart';
+import '../../../../shared/widgets/skeleton/notification_card_skeleton.dart';
 import '../../data/models/notification_model.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/notification_card.dart';
@@ -48,13 +50,25 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
             ),
             Expanded(
               child: async.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
-                error: (_, __) => Center(
-                  child: TextButton(
-                    onPressed: () =>
-                        ref.read(notificationsProvider.notifier).refresh(),
-                    child: const Text('إعادة المحاولة'),
+                loading: () => NotificationsListSkeleton(
+                  padding: EdgeInsets.fromLTRB(
+                    20.w,
+                    0,
+                    20.w,
+                    24.h + bottomInset,
+                  ),
+                ),
+                error: (error, _) => ConnectivityErrorGate(
+                  error: error,
+                  onRetry: () async =>
+                      ref.read(notificationsProvider.notifier).refresh(),
+                  child: NotificationsListSkeleton(
+                    padding: EdgeInsets.fromLTRB(
+                      20.w,
+                      0,
+                      20.w,
+                      24.h + bottomInset,
+                    ),
                   ),
                 ),
                 data: (notifications) {

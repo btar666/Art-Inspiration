@@ -97,7 +97,8 @@ abstract final class ProductDetailsBottomBarMetrics {
   static double quantityButtonSize() => 32.w;
   static double quantityButtonIconSize() => 18.sp;
   static double quantityGap() => 10.w;
-  static double quantityUnderlineWidth() => 16.w;
+  static double quantityValueWidth() => 72.w;
+  static double quantityUnderlineWidth() => 40.w;
   static double quantityUnderlineHeight() => 2.h;
   static Color quantityUnderlineColor() => AppColors.primary;
 
@@ -109,4 +110,17 @@ abstract final class ProductDetailsBottomBarMetrics {
 
   static double occupiedHeight() =>
       priceRowHeight() + gapBetweenRows() + addToCartHeight() + bottomMargin();
+
+  /// موضع شريط السعر فوق زر السلة، أو فوق الكيبورد عند ظهوره
+  static double priceRowBottom({
+    required double safeBottom,
+    required double keyboardInset,
+  }) {
+    final rest = bottomMargin() +
+        safeBottom +
+        addToCartHeight() +
+        gapBetweenRows();
+    if (keyboardInset <= 0) return rest;
+    return keyboardInset + bottomMargin();
+  }
 }

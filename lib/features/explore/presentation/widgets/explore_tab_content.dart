@@ -37,7 +37,7 @@ abstract final class ExploreTabSlivers {
           onAddToCart,
           onLoadMore,
         ),
-      ExploreTab.brands => _brandsGrid(bottomInset, brands),
+      ExploreTab.brands => _brandsGrid(bottomInset, brands, catalog),
       ExploreTab.sections => _sectionsGrid(bottomInset, categories, catalog),
     };
   }
@@ -101,7 +101,11 @@ abstract final class ExploreTabSlivers {
     );
   }
 
-  static Widget _brandsGrid(double bottomInset, List<String> brands) {
+  static Widget _brandsGrid(
+    double bottomInset,
+    List<String> brands,
+    CatalogSnapshot? catalog,
+  ) {
     if (brands.isEmpty) {
       return SliverFillRemaining(
         hasScrollBody: false,
@@ -132,7 +136,11 @@ abstract final class ExploreTabSlivers {
           (context, index) {
             final name = brands[index];
             return ExploreBrandCard(
-              brand: ExploreBrandModel(id: name, name: name),
+              brand: ExploreBrandModel(
+                id: name,
+                name: name,
+                imageUrl: catalog?.imageForBrand(name),
+              ),
               onTap: () => context.push(
                 AppRoutes.exploreSectionPath(name),
               ),

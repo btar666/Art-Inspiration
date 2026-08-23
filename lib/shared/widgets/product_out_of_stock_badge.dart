@@ -7,7 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import 'glass_shimmer_sweep.dart';
 
-/// تاك «غير متوفر» زجاجي على كارت/صورة المنتج
+/// تاك «نافذ» زجاجي على كارت/صورة المنتج
 class ProductOutOfStockBadge extends StatelessWidget {
   const ProductOutOfStockBadge({super.key, this.compact = false});
 
@@ -60,12 +60,15 @@ class ProductOutOfStockBadge extends StatelessWidget {
                 const Positioned.fill(
                   child: GlassShimmerSweep(highlightAlpha: 0.42),
                 ),
-                Text(
-                  'غير متوفر',
-                  style: AppTextStyles.homeProductCardOutOfStock(
-                    fontSize: compact ? 10.sp : 11.94.sp,
+                Transform.translate(
+                  offset: Offset(0, -2.h),
+                  child: Text(
+                    'نافذ',
+                    style: AppTextStyles.homeProductCardOutOfStock(
+                      fontSize: compact ? 10.sp : 11.94.sp,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ],
             ),

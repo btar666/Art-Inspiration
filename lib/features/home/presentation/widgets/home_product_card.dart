@@ -5,12 +5,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/skeleton/skeleton_image_placeholder.dart';
 import '../../../../shared/widgets/glass_favorite_button.dart';
 import '../../../../shared/widgets/product_out_of_stock_badge.dart';
 import '../../../cart/presentation/widgets/cart_icon_button.dart';
 import '../../../favorites/presentation/favorites_actions.dart';
 import '../../../favorites/presentation/providers/favorites_provider.dart';
 import '../../data/models/product_model.dart';
+import '../providers/user_price_policy_provider.dart';
 import 'home_product_card_metrics.dart';
 
 /// كارت منتج بحجم ثابت — مطابق لأبعاد التصميم
@@ -35,6 +37,8 @@ class _HomeProductCardState extends ConsumerState<HomeProductCard> {
   Widget build(BuildContext context) {
     final product = widget.product;
     final isFavorite = ref.watch(isProductFavoriteProvider(product.id));
+    final priceLabel =
+        product.formattedPriceFor(ref.watch(userPricePolicyProvider));
 
     return RepaintBoundary(
       child: GestureDetector(
@@ -96,7 +100,7 @@ class _HomeProductCardState extends ConsumerState<HomeProductCard> {
                   Padding(
                     padding: HomeProductCardMetrics.priceBarMargin(),
                     child: _HomeProductPriceBar(
-                      price: product.formattedPrice,
+                      price: priceLabel,
                       isOutOfStock: !product.isInStock,
                       onAddToCart: widget.onAddToCart,
                     ),
@@ -207,15 +211,8 @@ class _HomeProductImage extends StatelessWidget {
         memCacheHeight: cacheH,
         fadeInDuration: const Duration(milliseconds: 120),
         fadeOutDuration: Duration.zero,
-        placeholder: (_, __) => ColoredBox(
-          color: product.imageBgColor,
-          child: Center(
-            child: Icon(
-              Icons.image_outlined,
-              size: 40.sp,
-              color: AppColors.primary.withValues(alpha: 0.25),
-            ),
-          ),
+        placeholder: (_, __) => SkeletonImagePlaceholder(
+          borderRadius: BorderRadius.circular(12.r),
         ),
         errorWidget: (_, __, ___) => ColoredBox(
           color: product.imageBgColor,
@@ -308,8 +305,19 @@ class _HomeProductPriceBar extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: HomeProductCardMetrics.priceBarBackground(),
-                borderRadius: BorderRadius.circular(
-                  HomeProductCardMetrics.priceBarRadius(),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(
+                    HomeProductCardMetrics.priceBarLeftRadius(),
+                  ),
+                  bottomLeft: Radius.circular(
+                    HomeProductCardMetrics.priceBarLeftRadius(),
+                  ),
+                  topRight: Radius.circular(
+                    HomeProductCardMetrics.priceBarRadius(),
+                  ),
+                  bottomRight: Radius.circular(
+                    HomeProductCardMetrics.priceBarRadius(),
+                  ),
                 ),
               ),
               child: Align(

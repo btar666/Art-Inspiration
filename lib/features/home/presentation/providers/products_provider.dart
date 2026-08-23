@@ -51,6 +51,8 @@ class CatalogNotifier extends AsyncNotifier<CatalogSnapshot> {
           categories: updated.categories,
           brands: updated.brands,
           stats: updated.stats,
+          categoryImages: updated.categoryImages,
+          brandImages: updated.brandImages,
           warningMessage: updated.warningMessage,
           clearWarning: updated.warningMessage == null,
         ),

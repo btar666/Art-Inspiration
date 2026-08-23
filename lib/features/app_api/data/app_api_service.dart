@@ -32,8 +32,48 @@ class AppApiService {
     return data
         .whereType<Map>()
         .map((item) => SliderItemModel.fromJson(Map<String, dynamic>.from(item)))
-        .where((item) => item.imageUrl.isNotEmpty)
+        .where((item) => item.mediaUrl.isNotEmpty)
         .toList();
+  }
+
+  /// معرفات الأقسام المميزة في الرئيسية — من art-inspiration.com
+  Future<List<int>> fetchFeaturedCategoryIds() async {
+    return _fetchFeaturedIds(AppApiEndpoints.categories);
+  }
+
+  /// معرفات البراندات المميزة في الرئيسية — من art-inspiration.com
+  Future<List<int>> fetchFeaturedBrandIds() async {
+    return _fetchFeaturedIds(AppApiEndpoints.brands);
+  }
+
+  Future<List<int>> _fetchFeaturedIds(String path) async {
+    final response = await safeRequest(
+      () => _dio.get<Map<String, dynamic>>(path),
+    );
+    final root = ApiResponseParser.asMap(response.data);
+    final data = root['data'];
+    if (data is! List) return const [];
+
+    final ids = <int>[];
+    for (final item in data) {
+      final id = _asFeaturedId(item);
+      if (id != null) ids.add(id);
+    }
+    return ids;
+  }
+
+  int? _asFeaturedId(dynamic item) {
+    if (item is int) return item;
+    if (item is num) return item.toInt();
+    if (item is String) return int.tryParse(item.trim());
+    if (item is Map) {
+      final raw = item['id'] ?? item['erp_id'] ?? item['category_id'] ??
+          item['brand_id'];
+      if (raw is int) return raw;
+      if (raw is num) return raw.toInt();
+      if (raw is String) return int.tryParse(raw.trim());
+    }
+    return null;
   }
 
   Future<AuthSession> login({

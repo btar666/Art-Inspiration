@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../network/connectivity_error_handler.dart';
 import '../../features/home/data/products_repository.dart';
 import '../../shared/widgets/product_details_widget.dart';
 import '../router/app_router.dart';
@@ -87,20 +88,30 @@ Future<void> openProductByItemId({
   GoRouter? router,
   BuildContext? context,
 }) async {
+  final messengerContext = context ?? rootNavigatorKey.currentContext;
+
   final product =
       await ref.read(productsRepositoryProvider).fetchProductById(itemId);
 
   final GoRouter? goRouter = router ??
-      (context != null ? GoRouter.maybeOf(context) : null) ??
+      (context != null && context.mounted ? GoRouter.maybeOf(context) : null) ??
       (rootNavigatorKey.currentContext != null
           ? GoRouter.maybeOf(rootNavigatorKey.currentContext!)
           : null);
 
   if (product == null) {
-    final messengerContext = context ?? rootNavigatorKey.currentContext;
     if (messengerContext != null && messengerContext.mounted) {
-      ScaffoldMessenger.of(messengerContext).showSnackBar(
-        const SnackBar(content: Text('تعذر فتح المنتج')),
+      await ConnectivityErrorHandler.promptRetry(
+        context: messengerContext,
+        ref: ref,
+        onRetry: () async {
+          await openProductByItemId(
+            ref: ref,
+            itemId: itemId,
+            router: router,
+            context: context,
+          );
+        },
       );
     }
     return;

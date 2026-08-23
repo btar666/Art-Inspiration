@@ -8,6 +8,7 @@ import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../cart/presentation/cart_actions.dart';
 import '../../../home/data/erp_catalog_metadata.dart';
 import '../../../home/data/home_mock_data.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../home/presentation/providers/products_provider.dart';
 import '../../data/models/explore_models.dart';
 import '../providers/explore_tab_provider.dart';
@@ -68,7 +69,10 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
   }
 
   Future<void> _onRefresh() async {
-    await ref.read(catalogProvider.notifier).refresh();
+    await Future.wait([
+      ref.read(authNotifierProvider.notifier).syncPricePolicyFromErp(),
+      ref.read(catalogProvider.notifier).refresh(),
+    ]);
   }
 
   @override

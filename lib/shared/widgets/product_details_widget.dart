@@ -14,8 +14,10 @@ import '../../features/cart/presentation/cart_actions.dart';
 import '../../features/favorites/presentation/favorites_actions.dart';
 import '../../features/favorites/presentation/providers/favorites_provider.dart';
 import '../../features/home/data/models/product_model.dart';
+import '../../features/home/presentation/providers/user_price_policy_provider.dart';
 import 'product_details_app_bar_metrics.dart';
 import 'app_back_button.dart';
+import 'add_to_cart_snackbar.dart';
 import 'glass_favorite_button.dart';
 import 'product_details_bottom_bar_metrics.dart';
 import 'product_details_gallery_metrics.dart';
@@ -51,12 +53,52 @@ class ProductDetailsWidget extends ConsumerStatefulWidget {
 class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
   late int _quantity;
   late int _selectedImageIndex;
+  final _quantitySelectorKey = GlobalKey<_QuantitySelectorState>();
 
   @override
   void initState() {
     super.initState();
-    _quantity = widget.initialQuantity;
+    _quantity = _clampedQuantity(widget.initialQuantity);
     _selectedImageIndex = 0;
+  }
+
+  int _clampedQuantity(int value) {
+    final max = product.maxOrderQuantity;
+    var next = value < 1 ? 1 : value;
+    if (max != null && next > max) next = max < 1 ? 1 : max;
+    return next;
+  }
+
+  bool _blockIfOutOfStock() {
+    if (product.isInStock) return false;
+    showOutOfStockSnackBar(context);
+    return true;
+  }
+
+  void _tryIncrement() {
+    if (_blockIfOutOfStock()) return;
+    final max = product.maxOrderQuantity;
+    if (max != null && _quantity >= max) {
+      showStockLimitSnackBar(context, max);
+      return;
+    }
+    setState(() => _quantity++);
+  }
+
+  void _tryDecrement() {
+    if (_blockIfOutOfStock()) return;
+    if (_quantity > 1) setState(() => _quantity--);
+  }
+
+  void _setQuantity(int value) {
+    if (_blockIfOutOfStock()) return;
+    final max = product.maxOrderQuantity;
+    if (max != null && value > max) {
+      showStockLimitSnackBar(context, max);
+      setState(() => _quantity = max < 1 ? 1 : max);
+      return;
+    }
+    setState(() => _quantity = value < 1 ? 1 : value);
   }
 
   ProductModel get product => widget.product;
@@ -64,12 +106,15 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
   @override
   Widget build(BuildContext context) {
     final isFavorite = ref.watch(isProductFavoriteProvider(product.id));
+    final priceLabel =
+        product.formattedPriceFor(ref.watch(userPricePolicyProvider));
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final bottomBarHeight =
         ProductDetailsBottomBarMetrics.occupiedHeight() + bottomInset;
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           Column(
@@ -128,16 +173,26 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: ProductDetailsBottomBarMetrics.bottomMargin() + bottomInset,
-            child: _ProductDetailsBottomBar(
-              price: product.formattedPrice,
+            bottom: ProductDetailsBottomBarMetrics.bottomMargin() +
+                bottomInset,
+            child: _AddToCartBar(onAddToCart: _handleAddToCart),
+          ),
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            left: 0,
+            right: 0,
+            bottom: ProductDetailsBottomBarMetrics.priceRowBottom(
+              safeBottom: bottomInset,
+              keyboardInset: MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            child: _PriceQuantityBar(
+              quantitySelectorKey: _quantitySelectorKey,
+              price: priceLabel,
               quantity: _quantity,
-              onDecrement: () {
-                if (_quantity > 1) setState(() => _quantity--);
-              },
-              onIncrement: () => setState(() => _quantity++),
-              onQuantitySet: (value) => setState(() => _quantity = value),
-              onAddToCart: _handleAddToCart,
+              onDecrement: _tryDecrement,
+              onIncrement: _tryIncrement,
+              onQuantitySet: _setQuantity,
             ),
           ),
         ],
@@ -146,14 +201,18 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
   }
 
   void _handleAddToCart() {
+    final pending =
+        _quantitySelectorKey.currentState?.peekPendingQuantity();
+    _quantitySelectorKey.currentState?.commitIfEditing();
+    final quantity = pending ?? _quantity;
     if (widget.onAddToCart != null) {
-      widget.onAddToCart!.call(_quantity);
+      widget.onAddToCart!.call(quantity);
     } else {
       addProductToCart(
         context,
         ref,
         product,
-        quantity: _quantity,
+        quantity: quantity,
       );
     }
   }
@@ -239,57 +298,72 @@ class _ProductDetailsGallery extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mainHeight = ProductDetailsGalleryMetrics.mainImageHeight();
     final thumbWidth = ProductDetailsGalleryMetrics.thumbnailWidth();
     final thumbHeight = ProductDetailsGalleryMetrics.thumbnailHeight();
     final columnGap = ProductDetailsGalleryMetrics.columnGap();
     final visibleSlots = _imageCount > 4 ? 4 : _imageCount;
-    final gap = ProductDetailsGalleryMetrics.thumbnailGapForCount(visibleSlots);
 
-    if (_imageCount <= 1) {
-      return SizedBox(
-        height: mainHeight,
-        child: _ProductDetailsMainImage(
-          product: product,
-          imageIndex: 0,
-        ),
-      );
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final hasThumbs = _imageCount > 1;
+        final mainSide = ProductDetailsGalleryMetrics.mainImageSide(
+          constraints.maxWidth,
+          hasThumbs: hasThumbs,
+        );
+        final gap = ProductDetailsGalleryMetrics.thumbnailGapForCount(
+          visibleSlots,
+          mainSide,
+        );
 
-    return SizedBox(
-      height: mainHeight,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
+        if (!hasThumbs) {
+          return SizedBox(
+            width: mainSide,
+            height: mainSide,
             child: _ProductDetailsMainImage(
               product: product,
-              imageIndex: selectedIndex,
+              imageIndex: 0,
             ),
-          ),
-          SizedBox(width: columnGap),
-          SizedBox(
-            width: thumbWidth,
-            height: mainHeight,
-            child: ListView.separated(
-              padding: EdgeInsets.zero,
-              physics: _imageCount > 4
-                  ? const BouncingScrollPhysics()
-                  : const NeverScrollableScrollPhysics(),
-              itemCount: _imageCount,
-              separatorBuilder: (_, __) => SizedBox(height: gap),
-              itemBuilder: (context, index) => _ProductDetailsThumbnail(
-                product: product,
-                index: index,
-                isSelected: selectedIndex == index,
-                onTap: () => onThumbnailTap(index),
-                width: thumbWidth,
-                height: thumbHeight,
+          );
+        }
+
+        return SizedBox(
+          height: mainSide,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: mainSide,
+                height: mainSide,
+                child: _ProductDetailsMainImage(
+                  product: product,
+                  imageIndex: selectedIndex,
+                ),
               ),
-            ),
+              SizedBox(width: columnGap),
+              SizedBox(
+                width: thumbWidth,
+                height: mainSide,
+                child: ListView.separated(
+                  padding: EdgeInsets.zero,
+                  physics: _imageCount > 4
+                      ? const BouncingScrollPhysics()
+                      : const NeverScrollableScrollPhysics(),
+                  itemCount: _imageCount,
+                  separatorBuilder: (_, __) => SizedBox(height: gap),
+                  itemBuilder: (context, index) => _ProductDetailsThumbnail(
+                    product: product,
+                    index: index,
+                    isSelected: selectedIndex == index,
+                    onTap: () => onThumbnailTap(index),
+                    width: thumbWidth,
+                    height: thumbHeight,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -473,21 +547,56 @@ class _ProductDetailsDivider extends StatelessWidget {
   }
 }
 
-class _ProductDetailsBottomBar extends StatelessWidget {
-  const _ProductDetailsBottomBar({
+class _PriceQuantityBar extends StatelessWidget {
+  const _PriceQuantityBar({
+    required this.quantitySelectorKey,
     required this.price,
     required this.quantity,
     required this.onDecrement,
     required this.onIncrement,
     required this.onQuantitySet,
-    required this.onAddToCart,
   });
 
+  final GlobalKey<_QuantitySelectorState> quantitySelectorKey;
   final String price;
   final int quantity;
   final VoidCallback onDecrement;
   final VoidCallback onIncrement;
   final ValueChanged<int> onQuantitySet;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: ProductDetailsBottomBarMetrics.horizontalMargin(),
+      ),
+      child: _GlassPill(
+        width: ProductDetailsBottomBarMetrics.priceRowWidth(),
+        height: ProductDetailsBottomBarMetrics.priceRowHeight(),
+        child: Padding(
+          padding: ProductDetailsBottomBarMetrics.priceRowPadding(),
+          child: Row(
+            children: [
+              Text(price, style: AppTextStyles.productDetailsPrice()),
+              const Spacer(),
+              _QuantitySelector(
+                key: quantitySelectorKey,
+                quantity: quantity,
+                onDecrement: onDecrement,
+                onIncrement: onIncrement,
+                onQuantitySet: onQuantitySet,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AddToCartBar extends StatelessWidget {
+  const _AddToCartBar({required this.onAddToCart});
+
   final VoidCallback onAddToCart;
 
   @override
@@ -496,43 +605,18 @@ class _ProductDetailsBottomBar extends StatelessWidget {
       padding: EdgeInsets.symmetric(
         horizontal: ProductDetailsBottomBarMetrics.horizontalMargin(),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _GlassPill(
-            width: ProductDetailsBottomBarMetrics.priceRowWidth(),
-            height: ProductDetailsBottomBarMetrics.priceRowHeight(),
-            child: Padding(
-              padding: ProductDetailsBottomBarMetrics.priceRowPadding(),
-              child: Row(
-                children: [
-                  Text(price, style: AppTextStyles.productDetailsPrice()),
-                  const Spacer(),
-                  _QuantitySelector(
-                    quantity: quantity,
-                    onDecrement: onDecrement,
-                    onIncrement: onIncrement,
-                    onQuantitySet: onQuantitySet,
-                  ),
-                ],
-              ),
+      child: _GlassPill(
+        width: ProductDetailsBottomBarMetrics.addToCartWidth(),
+        height: ProductDetailsBottomBarMetrics.addToCartHeight(),
+        onTap: onAddToCart,
+        child: Center(
+          child: Text(
+            'اضافة الى السلة',
+            style: AppTextStyles.productDetailsAddToCart().copyWith(
+              fontWeight: FontWeight.w800,
             ),
           ),
-          SizedBox(height: ProductDetailsBottomBarMetrics.gapBetweenRows()),
-          _GlassPill(
-            width: ProductDetailsBottomBarMetrics.addToCartWidth(),
-            height: ProductDetailsBottomBarMetrics.addToCartHeight(),
-            onTap: onAddToCart,
-            child: Center(
-              child: Text(
-                'اضافة الى السلة',
-                style: AppTextStyles.productDetailsAddToCart().copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -627,6 +711,7 @@ class _GlassPillState extends State<_GlassPill> {
 
 class _QuantitySelector extends StatefulWidget {
   const _QuantitySelector({
+    super.key,
     required this.quantity,
     required this.onDecrement,
     required this.onIncrement,
@@ -642,19 +727,23 @@ class _QuantitySelector extends StatefulWidget {
   State<_QuantitySelector> createState() => _QuantitySelectorState();
 }
 
-class _QuantitySelectorState extends State<_QuantitySelector> {
+class _QuantitySelectorState extends State<_QuantitySelector>
+    with WidgetsBindingObserver {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   var _editing = false;
+  double _lastKeyboardInset = 0;
 
   @override
   void initState() {
     super.initState();
     _focusNode.addListener(_onFocusChange);
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _focusNode
       ..removeListener(_onFocusChange)
       ..dispose();
@@ -662,9 +751,19 @@ class _QuantitySelectorState extends State<_QuantitySelector> {
     super.dispose();
   }
 
+  @override
+  void didChangeMetrics() {
+    if (!mounted) return;
+    final inset = View.of(context).viewInsets.bottom;
+    if (_editing && _lastKeyboardInset > 0 && inset <= 0) {
+      commitIfEditing();
+    }
+    _lastKeyboardInset = inset;
+  }
+
   void _onFocusChange() {
-    if (!_focusNode.hasFocus && _editing) {
-      _commit();
+    if (!_focusNode.hasFocus) {
+      commitIfEditing();
     }
   }
 
@@ -680,13 +779,21 @@ class _QuantitySelectorState extends State<_QuantitySelector> {
     });
   }
 
-  void _commit() {
+  int? peekPendingQuantity() {
+    if (!_editing) return null;
+    final parsed = int.tryParse(_controller.text.trim());
+    if (parsed == null || parsed < 1) return 1;
+    return parsed;
+  }
+
+  void commitIfEditing() {
     if (!_editing) return;
     final parsed = int.tryParse(_controller.text.trim());
     final next = (parsed == null || parsed < 1) ? 1 : parsed;
-    widget.onQuantitySet(next);
+    _editing = false;
     _focusNode.unfocus();
-    setState(() => _editing = false);
+    if (mounted) setState(() {});
+    widget.onQuantitySet(next);
   }
 
   @override
@@ -703,7 +810,7 @@ class _QuantitySelectorState extends State<_QuantitySelector> {
           icon: Icons.remove_rounded,
           iconSize: iconSize,
           onTap: () {
-            _commit();
+            commitIfEditing();
             widget.onDecrement();
           },
         ),
@@ -715,7 +822,7 @@ class _QuantitySelectorState extends State<_QuantitySelector> {
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
-                width: 36.w,
+                width: ProductDetailsBottomBarMetrics.quantityValueWidth(),
                 child: _editing
                     ? TextField(
                         controller: _controller,
@@ -723,11 +830,12 @@ class _QuantitySelectorState extends State<_QuantitySelector> {
                         autofocus: true,
                         keyboardType: TextInputType.number,
                         textAlign: TextAlign.center,
+                        maxLines: 1,
                         cursorColor: AppColors.primary,
                         style: AppTextStyles.productDetailsQuantity(),
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(4),
+                          LengthLimitingTextInputFormatter(6),
                         ],
                         decoration: const InputDecoration(
                           isDense: true,
@@ -735,12 +843,18 @@ class _QuantitySelectorState extends State<_QuantitySelector> {
                           border: InputBorder.none,
                           counterText: '',
                         ),
-                        onSubmitted: (_) => _commit(),
+                        onSubmitted: (_) => commitIfEditing(),
                       )
-                    : Text(
-                        '${widget.quantity}',
-                        style: AppTextStyles.productDetailsQuantity(),
-                        textAlign: TextAlign.center,
+                    : FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          '${widget.quantity}',
+                          style: AppTextStyles.productDetailsQuantity()
+                              .copyWith(height: 1),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          softWrap: false,
+                        ),
                       ),
               ),
               SizedBox(height: 2.h),
@@ -767,7 +881,7 @@ class _QuantitySelectorState extends State<_QuantitySelector> {
           icon: Icons.add_rounded,
           iconSize: iconSize,
           onTap: () {
-            _commit();
+            commitIfEditing();
             widget.onIncrement();
           },
         ),

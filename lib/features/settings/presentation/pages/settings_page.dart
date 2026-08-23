@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/network/connectivity_error_handler.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -152,6 +153,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       return;
     }
     final error = ref.read(authNotifierProvider).errorMessage;
+    if (ConnectivityErrorHandler.shouldShowMessage(error)) {
+      await ConnectivityErrorHandler.promptRetry(
+        context: context,
+        ref: ref,
+        onRetry: _deleteAccount,
+      );
+      return;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(error ?? 'تعذر حذف الحساب')),
     );

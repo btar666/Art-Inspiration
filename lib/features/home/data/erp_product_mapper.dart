@@ -40,12 +40,11 @@ abstract final class ErpProductMapper {
         : 'منتج';
     final brandName = brandId != null ? (brandNames[brandId] ?? '') : '';
 
-    final price = _parsePrice(
-      record['price_retail'] ??
-          record['catalog_price'] ??
-          record['price_wholesale'] ??
-          record['price_half_wholesale'],
+    final priceRetail = _parsePrice(
+      record['price_retail'] ?? record['catalog_price'],
     );
+    final priceHalfWholesale = _parsePrice(record['price_half_wholesale']);
+    final priceWholesale = _parsePrice(record['price_wholesale']);
 
     final description = (record['description'] ?? '').toString().trim();
     final image = record['image']?.toString().trim();
@@ -74,7 +73,10 @@ abstract final class ErpProductMapper {
       name: name,
       categoryName: categoryName,
       description: description.isEmpty ? name : description,
-      price: price,
+      price: priceRetail,
+      priceRetail: priceRetail,
+      priceHalfWholesale: priceHalfWholesale,
+      priceWholesale: priceWholesale,
       rating: 4.5,
       imageUrl: imageUrl,
       imageBgColor: _colorFromSeed(id),

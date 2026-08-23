@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
 import '../../../shared/widgets/add_to_cart_snackbar.dart';
 import '../../home/data/models/product_model.dart';
+import '../../home/presentation/providers/user_price_policy_provider.dart';
 import '../../orders/data/models/order_model.dart';
 import 'providers/cart_provider.dart';
 
@@ -20,12 +21,27 @@ void addProductToCart(
     return;
   }
 
-  ref.read(cartNotifierProvider.notifier).addProduct(
-        product,
-        quantity: quantity,
-      );
+  final cart = ref.read(cartNotifierProvider.notifier);
+  final max = product.maxOrderQuantity;
+  var qtyToAdd = quantity;
+  var hitStockLimit = false;
+  if (max != null) {
+    final current = cart.quantityOf(product.id);
+    if (current + qtyToAdd > max) {
+      hitStockLimit = true;
+      if (context.mounted) showStockLimitSnackBar(context, max);
+      final remaining = max - current;
+      if (remaining <= 0) return;
+      qtyToAdd = remaining;
+    }
+  }
 
-  if (!context.mounted) return;
+  cart.addProduct(
+    product.withPriceFor(ref.read(userPricePolicyProvider)),
+    quantity: qtyToAdd,
+  );
+
+  if (!context.mounted || hitStockLimit) return;
   showAddToCartSnackBar(context);
 }
 

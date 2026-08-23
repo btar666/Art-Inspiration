@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/app_notification_icon_button.dart';
 import '../../../../shared/widgets/pinned_blur_gradient_background.dart';
@@ -138,20 +139,22 @@ class _HomeCompactHeaderOverlayState extends State<HomeCompactHeaderOverlay>
                 child: Row(
                   children: [
                     Expanded(
-                      child: Padding(
-                        padding: EdgeInsetsDirectional.only(start: 20.w),
-                        child: UnifiedSearchBar(
-                          hintText: 'أبحث عن منتج أو متجر محدد ..',
-                          showScanner: false,
-                          height: 42.h,
-                          blurred: true,
-                          onSearchTap: _openSearch,
-                        ),
+                      child: UnifiedSearchBar(
+                        hintText: 'ابحث عن منتج محدد',
+                        showScanner: false,
+                        height: HomeScrollMetrics.searchBarHeight(),
+                        dense: true,
+                        blurred: true,
+                        searchIconAsset: AppAssets.searchIcon,
+                        fontSize: 16.sp,
+                        textOffsetY: -3.h,
+                        onSearchTap: _openSearch,
                       ),
                     ),
                     SizedBox(width: 8.w),
                     AppNotificationIconButton(
                       onTap: widget.onNotificationTap,
+                      size: 32.w,
                     ),
                   ],
                 ),

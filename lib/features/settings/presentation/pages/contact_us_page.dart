@@ -10,6 +10,7 @@ import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/whatsapp_link.dart';
+import '../../../../core/network/connectivity_error_handler.dart';
 import '../../../../shared/widgets/page_back_header.dart';
 import '../../../app_api/models/app_info_model.dart';
 import '../../../app_api/presentation/providers/app_api_providers.dart';
@@ -38,11 +39,10 @@ class ContactUsPage extends ConsumerWidget {
               child: infoAsync.when(
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
-                error: (_, __) => Center(
-                  child: TextButton(
-                    onPressed: () => ref.invalidate(appInfoProvider),
-                    child: const Text('إعادة المحاولة'),
-                  ),
+                error: (error, _) => ConnectivityErrorGate(
+                  error: error,
+                  onRetry: () async => ref.invalidate(appInfoProvider),
+                  child: const Center(child: CircularProgressIndicator()),
                 ),
                 data: (info) => _ContactBody(
                   info: info,
@@ -507,7 +507,7 @@ class _ContactSupportNote extends StatelessWidget {
           SizedBox(width: 12.w),
           Expanded(
             child: Text(
-              'أوقات الاستجابة: يومياً من 9 صباحاً حتى 10 مساءً. نسعد بخدمتك دائماً.',
+              'أوقات الاستجابة: يومياً من 9 صباحاً حتى 12 مساءً. نسعد بخدمتك دائماً.',
               style: AppTextStyles.settingsMenuItem(
                 color: AppColors.textSecondary,
               ).copyWith(

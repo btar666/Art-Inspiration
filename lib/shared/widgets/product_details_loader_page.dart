@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_colors.dart';
+import '../../core/network/connectivity_error_handler.dart';
 import '../../features/home/data/models/product_model.dart';
 import '../../features/home/data/products_repository.dart';
 import 'product_details_widget.dart';
+import 'skeleton/product_details_skeleton.dart';
 
 /// يحمّل المنتج بالمعرف ثم يعرض صفحة التفاصيل — للفتح من الإشعار
 class ProductDetailsLoaderPage extends ConsumerStatefulWidget {
@@ -19,37 +20,44 @@ class ProductDetailsLoaderPage extends ConsumerStatefulWidget {
 
 class _ProductDetailsLoaderPageState
     extends ConsumerState<ProductDetailsLoaderPage> {
-  late final Future<ProductModel?> _future;
+  late Future<ProductModel?> _future;
 
   @override
   void initState() {
     super.initState();
-    _future =
-        ref.read(productsRepositoryProvider).fetchProductById(widget.productId);
+    _reload();
+  }
+
+  void _reload() {
+    setState(() {
+      _future =
+          ref.read(productsRepositoryProvider).fetchProductById(widget.productId);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
+    return FutureBuilder<ProductModel?>(
       future: _future,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(
-            backgroundColor: AppColors.background,
-            body: Center(child: CircularProgressIndicator()),
+          return const ProductDetailsSkeleton();
+        }
+
+        if (snapshot.hasError) {
+          return ConnectivityErrorGate(
+            error: snapshot.error,
+            onRetry: () async => _reload(),
+            child: const ProductDetailsSkeleton(),
           );
         }
 
         final product = snapshot.data;
         if (product == null) {
-          return Scaffold(
-            backgroundColor: AppColors.background,
-            body: Center(
-              child: TextButton(
-                onPressed: () => Navigator.of(context).maybePop(),
-                child: const Text('تعذر فتح المنتج'),
-              ),
-            ),
+          return ConnectivityErrorGate(
+            error: Exception('product_not_found'),
+            onRetry: () async => _reload(),
+            child: const ProductDetailsSkeleton(),
           );
         }
 

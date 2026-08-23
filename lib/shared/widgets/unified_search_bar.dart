@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../core/constants/app_assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 
@@ -10,7 +11,8 @@ import '../../core/theme/app_text_styles.dart';
 class UnifiedSearchBar extends StatelessWidget {
   const UnifiedSearchBar({
     super.key,
-    required this.hintText,
+    this.hintText = '',
+    this.hintChild,
     this.onScannerTap,
     this.onSearchTap,
     this.controller,
@@ -18,9 +20,15 @@ class UnifiedSearchBar extends StatelessWidget {
     this.showScanner = true,
     this.height,
     this.blurred = false,
+    this.showBorder = true,
+    this.dense = false,
+    this.searchIconAsset,
+    this.fontSize,
+    this.textOffsetY,
   });
 
   final String hintText;
+  final Widget? hintChild;
   final VoidCallback? onScannerTap;
   final VoidCallback? onSearchTap;
   final TextEditingController? controller;
@@ -28,60 +36,84 @@ class UnifiedSearchBar extends StatelessWidget {
   final bool showScanner;
   final double? height;
   final bool blurred;
+  final bool showBorder;
+  final bool dense;
+  final String? searchIconAsset;
+  final double? fontSize;
+  final double? textOffsetY;
 
   bool get _isEditable => controller != null;
 
   @override
   Widget build(BuildContext context) {
-    final barHeight = height ?? 50.h;
-    final radius = BorderRadius.circular(28.r);
+    final barHeight = height ?? (dense ? 42.h : 50.h);
+    final radius = BorderRadius.circular(dense ? 24.r : 28.r);
+    final searchIconSize = dense ? 24.sp : 28.sp;
+    final textStyle = AppTextStyles.authField().copyWith(
+      fontSize: fontSize ?? (dense ? 13.5.sp : null),
+    );
     final content = Row(
       children: [
-        if (showScanner) SearchBarcodeButton(onTap: onScannerTap),
+        if (showScanner)
+          SearchBarcodeButton(onTap: onScannerTap, dense: dense),
         Expanded(
           child: Padding(
-            padding: EdgeInsets.only(left: showScanner ? 0 : 16.w),
+            padding: EdgeInsets.only(left: showScanner ? 0 : (dense ? 12.w : 16.w)),
             child: Transform.translate(
-              offset: Offset(0, -2.h),
-              child: Align(
-              alignment: Alignment.centerRight,
-              child: _isEditable
-                  ? TextField(
-                      controller: controller,
-                      onChanged: onChanged,
-                      textDirection: TextDirection.rtl,
-                      textAlign: TextAlign.right,
-                      style: AppTextStyles.authField(),
-                      cursorColor: AppColors.primary,
-                      decoration: InputDecoration(
-                        isDense: true,
-                        hintText: hintText,
-                        hintStyle: AppTextStyles.authField(),
-                        hintTextDirection: TextDirection.rtl,
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    )
-                  : Text(
-                      hintText,
-                      style: AppTextStyles.authField(),
-                      textDirection: TextDirection.rtl,
-                      textAlign: TextAlign.right,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+              offset: Offset(0, textOffsetY ?? (dense ? -1.h : -2.h)),
+              child: SizedBox(
+                width: double.infinity,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: _isEditable
+                      ? TextField(
+                          controller: controller,
+                          onChanged: onChanged,
+                          textDirection: TextDirection.rtl,
+                          textAlign: TextAlign.right,
+                          style: textStyle,
+                          cursorColor: AppColors.primary,
+                          decoration: InputDecoration(
+                            isDense: true,
+                            hintText: hintText,
+                            hintStyle: textStyle,
+                            hintTextDirection: TextDirection.rtl,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        )
+                      : (hintChild ??
+                          Text(
+                            hintText,
+                            style: textStyle,
+                            textDirection: TextDirection.rtl,
+                            textAlign: TextAlign.right,
+                            overflow: TextOverflow.ellipsis,
+                          )),
+                ),
               ),
             ),
           ),
         ),
         Padding(
-          padding: EdgeInsets.only(right: 16.w),
-          child: Icon(
-            Icons.search,
-            color: AppColors.textPrimary,
-            size: 24.sp,
+          padding: EdgeInsets.only(
+            left: dense ? 16.w : 14.w,
+            right: dense ? 12.w : 16.w,
           ),
+          child: searchIconAsset != null
+              ? Image.asset(
+                  searchIconAsset!,
+                  width: searchIconSize,
+                  height: searchIconSize,
+                  fit: BoxFit.contain,
+                )
+              : Icon(
+                  Icons.search,
+                  color: AppColors.textPrimary,
+                  size: searchIconSize,
+                ),
         ),
       ],
     );
@@ -120,7 +152,9 @@ class UnifiedSearchBar extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.background,
           borderRadius: radius,
-          border: Border.all(color: AppColors.dotGrid, width: 1.2),
+          border: showBorder
+              ? Border.all(color: AppColors.dotGrid, width: 1.2)
+              : null,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -146,56 +180,54 @@ class UnifiedSearchBar extends StatelessWidget {
   }
 }
 
-/// زر الباركود الزجاجي — ثلاث زوايا دائرية وزاوية حادة
+/// زر الباركود — شكل مربع بزاوية أعلى يمين حادة وباقي الزوايا دائرية
 class SearchBarcodeButton extends StatelessWidget {
-  const SearchBarcodeButton({super.key, this.onTap});
+  const SearchBarcodeButton({
+    super.key,
+    this.onTap,
+    this.dense = false,
+    this.width,
+  });
 
   final VoidCallback? onTap;
+  final bool dense;
+  final double? width;
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.only(
-      topLeft: Radius.circular(28.r),
-      bottomLeft: Radius.circular(28.r),
-      bottomRight: Radius.circular(28.r),
-      topRight: Radius.zero,
-    );
+    final buttonWidth = (width ?? (dense ? 42.w : 52.w)) + 4.w;
+    final iconSize = dense ? 18.sp : 22.sp;
 
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 52.w,
-        height: double.infinity,
-        child: ClipRRect(
-          borderRadius: radius,
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: radius,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.45),
-                  width: 1.1,
+      child: Transform.translate(
+        offset: Offset(-1.w, 0),
+        child: SizedBox(
+          width: buttonWidth,
+          height: double.infinity,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final round = Radius.circular(constraints.maxHeight / 2);
+              return DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.only(
+                    topLeft: round,
+                    bottomLeft: round,
+                    bottomRight: round,
+                    topRight: Radius.zero,
+                  ),
                 ),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    const Color(0xFF4D5DFF).withValues(alpha: 0.82),
-                    AppColors.primary.withValues(alpha: 0.88),
-                    const Color(0xFF000AA8).withValues(alpha: 0.92),
-                  ],
+                child: Center(
+                  child: Icon(
+                    Icons.qr_code_scanner_rounded,
+                    color: Colors.white,
+                    size: iconSize,
+                  ),
                 ),
-              ),
-              child: Center(
-                child: Icon(
-                  Icons.qr_code_scanner_rounded,
-                  color: Colors.white,
-                  size: 22.sp,
-                ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),

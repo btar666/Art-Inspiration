@@ -1,6 +1,8 @@
 /// مسارات الباكند الخاص — art-inspiration.com/api
 abstract final class AppApiEndpoints {
   static const slider = 'api/slider';
+  static const categories = 'api/categories';
+  static const brands = 'api/brands';
   static const customerLogin = 'api/customers/login';
   static const customerAdd = 'api/customers/add';
   static const customerEdit = 'api/customers/edit';

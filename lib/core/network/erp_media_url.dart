@@ -156,6 +156,23 @@ abstract final class ErpMediaUrl {
     return 'https://aman-erp.com/storage/$encodedTable/$encodedName';
   }
 
+  /// صور taxonomy من `/brands` و `/categories` — قد تكون رابطاً كاملاً أو `brands/file.png`
+  static String? lookupImage(dynamic raw, {required String folder}) {
+    var text = raw?.toString().trim() ?? '';
+    if (text.isEmpty || text == 'null') return null;
+    if (text.startsWith('http://')) {
+      text = 'https://${text.substring(7)}';
+    }
+    if (text.startsWith('https://')) return text;
+    if (text.startsWith('/')) {
+      return 'https://aman-erp.com$text';
+    }
+    if (text.startsWith('$folder/')) {
+      return 'https://aman-erp.com/storage/$text';
+    }
+    return 'https://aman-erp.com/storage/$folder/$text';
+  }
+
   /// ERP غالباً يرجع http — نحوّله لـ https ليتوافق مع Android
   static String? _normalizeUrl(String? value) {
     final text = value?.trim() ?? '';

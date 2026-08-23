@@ -5,30 +5,21 @@
       "name": "Art Inspiration",
       "request": "launch",
       "type": "dart",
-      "program": "lib/main.dart",
-      "toolArgs": [
-        "--dart-define-from-file=dart_defines.json"
-      ]
+      "program": "lib/main.dart"
     },
     {
       "name": "Art Inspiration (profile)",
       "request": "launch",
       "type": "dart",
       "flutterMode": "profile",
-      "program": "lib/main.dart",
-      "toolArgs": [
-        "--dart-define-from-file=dart_defines.json"
-      ]
+      "program": "lib/main.dart"
     },
     {
       "name": "Art Inspiration (release)",
       "request": "launch",
       "type": "dart",
       "flutterMode": "release",
-      "program": "lib/main.dart",
-      "toolArgs": [
-        "--dart-define-from-file=dart_defines.json"
-      ]
+      "program": "lib/main.dart"
     }
   ]
 }

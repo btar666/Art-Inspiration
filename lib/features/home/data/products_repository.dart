@@ -4,11 +4,13 @@ import '../../../core/network/aman_rest_api.dart';
 import '../../../core/network/api_config.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/api_exception.dart';
+import '../../../core/network/erp_media_url.dart';
 import '../../auth/data/auth_storage.dart';
 import 'catalog_offline_storage.dart';
 import 'erp_catalog_metadata.dart';
 import 'erp_product_mapper.dart';
 import 'home_mock_data.dart';
+import 'models/home_featured_section.dart';
 import 'models/catalog_snapshot.dart';
 import 'models/catalog_stats.dart';
 import 'models/product_model.dart';
@@ -96,6 +98,7 @@ class ProductsRepository {
   final Map<String, _CategoryProductsCache> _categoryProductsCache = {};
 
   static const _cacheTtl = Duration(minutes: 10);
+  static const _featuredSectionProductsLimit = 12;
 
   bool get _hasToken {
     final token = _authStorage.accessToken;
@@ -489,6 +492,8 @@ class ProductsRepository {
         categories: metadata.categories,
         brands: metadata.brands,
         stats: metadata.stats,
+        categoryImages: lookups.categoryImages ?? const {},
+        brandImages: lookups.brandImages ?? const {},
         source: CatalogDataSource.api,
         clearWarning: true,
       );
@@ -806,31 +811,11 @@ class ProductsRepository {
     );
   }
 
-  String? _normalizeCategoryImage(dynamic raw) {
-    var text = raw?.toString().trim() ?? '';
-    if (text.isEmpty || text == 'null') return null;
-    if (text.startsWith('http://')) {
-      text = 'https://${text.substring(7)}';
-    }
-    if (text.startsWith('https://')) return text;
-    if (text.startsWith('/')) {
-      return 'https://aman-erp.com$text';
-    }
-    return 'https://aman-erp.com/storage/categories/$text';
-  }
+  String? _normalizeCategoryImage(dynamic raw) =>
+      ErpMediaUrl.lookupImage(raw, folder: 'categories');
 
-  String? _normalizeBrandImage(dynamic raw) {
-    var text = raw?.toString().trim() ?? '';
-    if (text.isEmpty || text == 'null') return null;
-    if (text.startsWith('http://')) {
-      text = 'https://${text.substring(7)}';
-    }
-    if (text.startsWith('https://')) return text;
-    if (text.startsWith('/')) {
-      return 'https://aman-erp.com$text';
-    }
-    return 'https://aman-erp.com/storage/brands/$text';
-  }
+  String? _normalizeBrandImage(dynamic raw) =>
+      ErpMediaUrl.lookupImage(raw, folder: 'brands');
 
   Future<_ProductsPageResult> _fetchProductsPage(
     int page,
@@ -917,6 +902,126 @@ class ProductsRepository {
     );
     _cacheSectionPageIfNeeded(sectionName, page, pageResult);
     return pageResult;
+  }
+
+  /// قسم مميز بالمعرف — للعرض في الرئيسية
+  Future<HomeFeaturedSection?> fetchFeaturedCategorySection(int categoryId) async {
+    if (!_hasToken) return null;
+
+    final lookups = _lookups ?? await _fetchLookups();
+    _lookups = lookups;
+
+    final name = await _resolveCategoryName(categoryId, lookups);
+    if (name == null) return null;
+
+    final pageResult = await _fetchProductsPageByErpIds(
+      lookups,
+      categoryId: categoryId,
+    );
+    if (pageResult.products.isEmpty) return null;
+
+    return HomeFeaturedSection(
+      erpId: categoryId,
+      name: name,
+      kind: HomeFeaturedSectionKind.category,
+      products: pageResult.products,
+    );
+  }
+
+  /// براند مميز بالمعرف — للعرض في الرئيسية
+  Future<HomeFeaturedSection?> fetchFeaturedBrandSection(int brandId) async {
+    if (!_hasToken) return null;
+
+    final lookups = _lookups ?? await _fetchLookups();
+    _lookups = lookups;
+
+    final name = await _resolveBrandName(brandId, lookups);
+    if (name == null) return null;
+
+    final pageResult = await _fetchProductsPageByErpIds(
+      lookups,
+      brandId: brandId,
+    );
+    if (pageResult.products.isEmpty) return null;
+
+    return HomeFeaturedSection(
+      erpId: brandId,
+      name: name,
+      kind: HomeFeaturedSectionKind.brand,
+      products: pageResult.products,
+    );
+  }
+
+  Future<_ProductsPageResult> _fetchProductsPageByErpIds(
+    _LookupMaps lookups, {
+    int? categoryId,
+    int? brandId,
+    int page = 1,
+    int perPage = _featuredSectionProductsLimit,
+  }) async {
+    final query = <String, dynamic>{};
+    if (categoryId != null) query['category_id'] = categoryId;
+    if (brandId != null) query['brand_id'] = brandId;
+
+    final result = await _api.list(
+      path: ApiEndpoints.products,
+      page: page,
+      perPage: perPage,
+      query: query.isEmpty ? null : query,
+    );
+
+    return _ProductsPageResult(
+      products: ErpProductMapper.fromRecords(
+        result.items,
+        categoryNames: lookups.categoryNames,
+        brandNames: lookups.brandNames,
+      ),
+      currentPage: result.currentPage,
+      lastPage: result.lastPage,
+      totalProducts: result.total,
+    );
+  }
+
+  /// اسم قسم ERP للتنقل من السلايدر
+  Future<String?> categoryNameByErpId(int categoryId) async {
+    if (!_hasToken) return null;
+    final lookups = _lookups ?? await _fetchLookups();
+    _lookups = lookups;
+    return _resolveCategoryName(categoryId, lookups);
+  }
+
+  /// اسم براند ERP للتنقل من السلايدر
+  Future<String?> brandNameByErpId(int brandId) async {
+    if (!_hasToken) return null;
+    final lookups = _lookups ?? await _fetchLookups();
+    _lookups = lookups;
+    return _resolveBrandName(brandId, lookups);
+  }
+
+  Future<String?> _resolveCategoryName(int categoryId, _LookupMaps lookups) async {
+    final cached = lookups.categoryNames[categoryId];
+    if (cached != null && cached.isNotEmpty) return cached;
+
+    try {
+      final data = await _api.getById(ApiEndpoints.category(categoryId));
+      final name = data['name']?.toString().trim() ?? '';
+      return name.isEmpty ? null : name;
+    } on ApiException {
+      return null;
+    }
+  }
+
+  Future<String?> _resolveBrandName(int brandId, _LookupMaps lookups) async {
+    final cached = lookups.brandNames[brandId];
+    if (cached != null && cached.isNotEmpty) return cached;
+
+    try {
+      final data = await _api.getById(ApiEndpoints.brand(brandId));
+      final name = data['name']?.toString().trim() ?? '';
+      return name.isEmpty ? null : name;
+    } on ApiException {
+      return null;
+    }
   }
 
   void _cacheSectionPageIfNeeded(

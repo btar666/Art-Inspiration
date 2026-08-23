@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// أبعاد معرض صور صفحة تفاصيل المنتج
 abstract final class ProductDetailsGalleryMetrics {
-  static double mainImageHeight() => 276.28.h;
   static double mainImageRadius() => 16.r;
   static double thumbnailHeight() => 63.1.h;
   static double thumbnailWidth() => 63.1.w;
@@ -18,14 +17,17 @@ abstract final class ProductDetailsGalleryMetrics {
         ),
       ];
 
-  /// المسافة بين الصور المصغّرة لملء ارتفاع الصورة الرئيسية بالكامل
-  static double thumbnailGapForCount(int count) {
-    if (count <= 1) return 0;
-    final mainH = mainImageHeight();
-    final thumbH = thumbnailHeight();
-    return (mainH - count * thumbH) / (count - 1);
+  /// ضلع الصورة الرئيسية المربعة داخل عرض المعرض
+  static double mainImageSide(double galleryWidth, {required bool hasThumbs}) {
+    if (!hasThumbs) return galleryWidth;
+    return galleryWidth - columnGap() - thumbnailWidth();
   }
 
-  /// فجوة العرض الافتراضية (4 صور مرئية)
-  static double thumbnailGap() => thumbnailGapForCount(4);
+  /// المسافة بين الصور المصغّرة لملء ارتفاع الصورة الرئيسية بالكامل
+  static double thumbnailGapForCount(int count, double mainSide) {
+    if (count <= 1) return 0;
+    final thumbH = thumbnailHeight();
+    final gap = (mainSide - count * thumbH) / (count - 1);
+    return gap < 0 ? 0.0 : gap;
+  }
 }

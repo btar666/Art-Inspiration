@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/network/connectivity_error_handler.dart';
 import '../../../../shared/widgets/page_back_header.dart';
 import '../../../app_api/presentation/providers/app_api_providers.dart';
 
@@ -40,11 +41,10 @@ class AboutUsPage extends ConsumerWidget {
               child: infoAsync.when(
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
-                error: (_, __) => Center(
-                  child: TextButton(
-                    onPressed: () => ref.invalidate(appInfoProvider),
-                    child: const Text('إعادة المحاولة'),
-                  ),
+                error: (error, _) => ConnectivityErrorGate(
+                  error: error,
+                  onRetry: () async => ref.invalidate(appInfoProvider),
+                  child: const Center(child: CircularProgressIndicator()),
                 ),
                 data: (info) => _AboutBody(
                   aboutText: () {

@@ -7,8 +7,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/network/connectivity_error_handler.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
+import '../../../../shared/widgets/skeleton/order_card_skeleton.dart';
 import '../../data/models/order_model.dart';
 import '../../data/models/orders_list_state.dart';
 import '../providers/orders_provider.dart';
@@ -108,11 +110,15 @@ class _OrdersPageState extends ConsumerState<OrdersPage>
         const [],
         isLoading: true,
       ),
-      error: (_, __) => _buildScaffold(
-        context,
-        bottomInset,
-        const [],
-        errorMessage: 'تعذر جلب الفواتير',
+      error: (error, _) => ConnectivityErrorGate(
+        error: error,
+        onRetry: () async => ref.invalidate(ordersListProvider),
+        child: _buildScaffold(
+          context,
+          bottomInset,
+          const [],
+          isLoading: true,
+        ),
       ),
       data: (listState) {
         return _buildScaffold(
@@ -130,7 +136,6 @@ class _OrdersPageState extends ConsumerState<OrdersPage>
     double bottomInset,
     List<OrderModel> orders, {
     bool isLoading = false,
-    String? errorMessage,
     OrdersListState? listState,
   }) {
     final hasMore = listState?.hasMore ?? false;
@@ -157,27 +162,15 @@ class _OrdersPageState extends ConsumerState<OrdersPage>
               child: AppRefreshIndicator(
                 onRefresh: _onRefresh,
                 child: isLoading
-                    ? ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: [
-                          SizedBox(height: 160.h),
-                          const Center(child: CircularProgressIndicator()),
-                        ],
+                    ? OrdersListSkeleton(
+                        padding: EdgeInsets.fromLTRB(
+                          20.w,
+                          0,
+                          20.w,
+                          100.h + bottomInset,
+                        ),
                       )
-                    : errorMessage != null
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: [
-                              SizedBox(height: 160.h),
-                              Center(
-                                child: Text(
-                                  errorMessage,
-                                  style: TextStyle(fontSize: 16.sp),
-                                ),
-                              ),
-                            ],
-                          )
-                        : orders.isEmpty
+                    : orders.isEmpty
                             ? ListView(
                                 physics: const AlwaysScrollableScrollPhysics(),
                                 children: [

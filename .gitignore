@@ -46,4 +46,5 @@ app.*.map.json
 
 # Release secrets (keystore passwords in android/key.properties)
 dart_defines.json
+lib/core/network/api_secrets.dart
 android/upload-keystore.jks

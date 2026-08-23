@@ -70,11 +70,10 @@ class _CarouselCard extends StatelessWidget {
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 6.w),
         decoration: BoxDecoration(
-          color: item.accentColor,
           borderRadius: BorderRadius.circular(24.r),
           boxShadow: [
             BoxShadow(
-              color: item.accentColor.withValues(alpha: 0.4),
+              color: Colors.black.withValues(alpha: 0.12),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -88,24 +87,33 @@ class _CarouselCard extends StatelessWidget {
                 height: height,
                 fit: BoxFit.cover,
                 alignment: Alignment.center,
+                gaplessPlayback: true,
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                  if (wasSynchronouslyLoaded || frame != null) return child;
+                  return SizedBox(width: width, height: height);
+                },
               )
-            : Stack(
+            : Container(
+                color: item.accentColor,
                 alignment: Alignment.center,
-                children: [
-                  Container(
-                    width: 120.w,
-                    height: 120.w,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.3),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 120.w,
+                      height: 120.w,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
                     ),
-                  ),
-                  Icon(
-                    item.icon,
-                    size: 64.sp,
-                    color: AppColors.primary.withValues(alpha: 0.6),
-                  ),
-                ],
+                    Icon(
+                      item.icon,
+                      size: 64.sp,
+                      color: AppColors.primary.withValues(alpha: 0.6),
+                    ),
+                  ],
+                ),
               ),
       ),
     )

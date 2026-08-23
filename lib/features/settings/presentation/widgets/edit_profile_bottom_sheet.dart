@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../../core/network/connectivity_error_handler.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_button.dart';
@@ -99,6 +100,17 @@ class _EditProfileBottomSheetState
     }
 
     final error = ref.read(authNotifierProvider).errorMessage;
+    if (ConnectivityErrorHandler.shouldShowMessage(error)) {
+      if (!context.mounted) return;
+      await ConnectivityErrorHandler.promptRetry(
+        context: context,
+        ref: ref,
+        onRetry: _save,
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(error ?? 'تعذر حفظ التعديلات')),
     );

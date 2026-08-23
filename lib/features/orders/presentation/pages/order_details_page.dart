@@ -12,6 +12,8 @@ import '../../../cart/presentation/cart_actions.dart';
 import '../../data/models/order_model.dart';
 import '../providers/orders_provider.dart';
 import '../widgets/order_details_action_bar.dart';
+import '../../../../core/network/connectivity_error_handler.dart';
+import '../../../../shared/widgets/skeleton/order_details_skeleton.dart';
 
 /// مقاييس صفحة تفاصيل الطلب — نفس آلية صفحة تفاصيل المنتج
 abstract final class OrderDetailsPageMetrics {
@@ -43,18 +45,17 @@ class OrderDetailsPage extends ConsumerWidget {
     final erpAsync = ref.watch(erpOrderDetailProvider(orderId));
 
     return erpAsync.when(
-      loading: () => const Scaffold(
-        backgroundColor: OrderDetailsPageMetrics.pageBackground,
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (_, __) {
+      loading: () => const OrderDetailsSkeleton(),
+      error: (error, _) {
         final localOrder =
             ref.read(localOrdersNotifierProvider.notifier).orderById(orderId);
         if (localOrder != null) {
           return _OrderDetailsView(order: localOrder);
         }
-        return const _OrderDetailsMissing(
-          message: 'تعذر جلب تفاصيل الطلب',
+        return ConnectivityErrorGate(
+          error: error,
+          onRetry: () async => ref.invalidate(erpOrderDetailProvider(orderId)),
+          child: const OrderDetailsSkeleton(),
         );
       },
       data: (OrderDetailModel? order) {

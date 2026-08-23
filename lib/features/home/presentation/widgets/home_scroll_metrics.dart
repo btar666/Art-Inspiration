@@ -1,18 +1,29 @@
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// أبعاد ثابتة لحساب سلوك إخفاء الشعار وشريط البحث عند التمرير
+/// أبعاد ثابتة لحساب سلوك إخفاء الهيدر وشريط البحث عند التمرير
 abstract final class HomeScrollMetrics {
-  static double logoBarHeight() => 8.h + 44.h + 8.h;
+  static double searchBarHeight() => 42.h;
 
-  static double searchBlockHeight() => 50.h + 14.h;
+  /// صف الهيدر: بحث + إشعارات تحت شريط الحالة
+  static double headerRowHeight() => 8.h + searchBarHeight() + 10.h;
+
+  /// الجزء المرئي من السلايدر تحت شريط البحث داخل الهيرو
+  static double sliderVisualHeight() => 175.h;
+
+  /// ارتفاع جسم الهيرو (مساحة الهيدر الثابت + صورة السلايدر)
+  static double heroBodyHeight() =>
+      headerRowHeight() + sliderVisualHeight();
+
+  /// الارتفاع الكلي للهيرو من أعلى الشاشة
+  static double heroHeight(double topInset) =>
+      topInset + heroBodyHeight();
 
   static double categoriesBlockHeight() => 20.h + 12.h + 22.h + 38.h;
 
-  static double bannerBlockHeight() => 24.h + 150.h + 10.h;
-
-  /// عند هذا الإزاحة يبدأ الشعار بالاختفاء (وصول قسم المنتجات)
+  /// عند هذا الإزاحة يبدأ الهيدر بالاختفاء (وصول قسم المنتجات)
+  /// الهيدر ثابت فلا يُحسب ارتفاعه — فقط السلايدر الظاهر + الأقسام
   static double logoHideStartOffset() =>
-      searchBlockHeight() + categoriesBlockHeight() + bannerBlockHeight();
+      sliderVisualHeight() + categoriesBlockHeight();
 
   static double logoHideAnimationRange() => 48.h;
 }

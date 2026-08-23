@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/page_back_header.dart';
 import '../../../../shared/widgets/product_details_widget.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../cart/presentation/cart_actions.dart';
 import '../../../home/presentation/widgets/home_product_card.dart';
 import '../../../home/presentation/widgets/home_product_card_metrics.dart';
@@ -22,8 +23,10 @@ class FavoritesPage extends ConsumerWidget {
     final favorites = ref.watch(favoritesNotifierProvider);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    Future<void> onRefresh() =>
-        ref.read(favoritesNotifierProvider.notifier).reload();
+    Future<void> onRefresh() async {
+      await ref.read(authNotifierProvider.notifier).syncPricePolicyFromErp();
+      await ref.read(favoritesNotifierProvider.notifier).reload();
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,

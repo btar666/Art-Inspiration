@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/add_to_cart_snackbar.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../checkout/data/checkout_provider.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/cart_checkout_footer.dart';
@@ -65,7 +67,10 @@ class CartPage extends ConsumerWidget {
     final subtotal = ref.watch(cartSubtotalProvider);
     final cart = ref.read(cartNotifierProvider.notifier);
 
-    Future<void> onRefresh() => cart.reload();
+    Future<void> onRefresh() async {
+      await ref.read(authNotifierProvider.notifier).syncPricePolicyFromErp();
+      await cart.reload();
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -135,8 +140,16 @@ class CartPage extends ConsumerWidget {
                                   ref,
                                   index,
                                 ),
-                                onIncrement: () =>
-                                    cart.incrementQuantity(index),
+                                onIncrement: () {
+                                  final max =
+                                      item.product.maxOrderQuantity;
+                                  if (max != null &&
+                                      item.quantity >= max) {
+                                    showStockLimitSnackBar(context, max);
+                                    return;
+                                  }
+                                  cart.incrementQuantity(index);
+                                },
                                 onDecrement: () =>
                                     cart.decrementQuantity(index),
                               ),

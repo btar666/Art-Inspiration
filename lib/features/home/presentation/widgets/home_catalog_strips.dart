@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/skeleton/skeleton_image_placeholder.dart';
 import '../../../explore/data/models/explore_models.dart';
 import '../../../explore/presentation/providers/explore_tab_provider.dart';
 import '../../data/models/catalog_snapshot.dart';
@@ -238,8 +239,10 @@ class _CategoryVisual extends StatelessWidget {
         imageUrl: url,
         fit: BoxFit.contain,
         fadeInDuration: const Duration(milliseconds: 120),
-        placeholder: (_, __) => const Center(
-          child: CircularProgressIndicator(strokeWidth: 2),
+        placeholder: (_, __) => SkeletonImagePlaceholder(
+          borderRadius: BorderRadius.circular(
+            HomeCatalogStripsMetrics.categoryRadius(),
+          ),
         ),
         errorWidget: (_, __, ___) => _LetterMark(label: label),
       );
@@ -287,8 +290,10 @@ class _BrandItem extends StatelessWidget {
                 height: double.infinity,
                 fit: BoxFit.cover,
                 fadeInDuration: const Duration(milliseconds: 120),
-                placeholder: (_, __) => const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                placeholder: (_, __) => SkeletonImagePlaceholder(
+                  borderRadius: BorderRadius.circular(
+                    HomeCatalogStripsMetrics.brandRadius(),
+                  ),
                 ),
                 errorWidget: (_, __, ___) => _BrandName(label: label),
               )

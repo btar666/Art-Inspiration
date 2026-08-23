@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/network/connectivity_error_handler.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/whatsapp_link.dart';
 import '../../../../shared/widgets/app_button.dart';
@@ -63,6 +66,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   void _applyLoginApiError(String error) {
+    if (ConnectivityErrorHandler.shouldShowMessage(error) &&
+        !_isCredentialLoginError(error)) {
+      unawaited(
+        ConnectivityErrorHandler.promptRetry(
+          context: context,
+          ref: ref,
+          onRetry: _onLogin,
+        ),
+      );
+      return;
+    }
+
     final isCredentialError = _isCredentialLoginError(error);
     setState(() {
       _clearErrors();
@@ -111,6 +126,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     if (success) {
       context.go(AppRoutes.home);
+      return;
+    }
+
+    final error = ref.read(authNotifierProvider).errorMessage;
+    if (error != null) {
+      _applyLoginApiError(error);
     }
   }
 
@@ -151,8 +172,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     ref.listen(authNotifierProvider, (previous, next) {
       if (previous?.isLoading == true &&
           !next.isLoading &&
-          next.errorMessage != null &&
-          !next.isLoggedIn) {
+          next.errorMessage != null) {
         _applyLoginApiError(next.errorMessage!);
       }
     });

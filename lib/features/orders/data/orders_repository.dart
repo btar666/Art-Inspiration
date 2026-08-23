@@ -4,6 +4,7 @@ import '../../../core/network/aman_rest_api.dart';
 import '../../../core/network/api_config.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/api_exception.dart';
+import '../../../core/network/models/erp_price_policy.dart';
 import '../../auth/data/auth_storage.dart';
 import '../../checkout/data/checkout_provider.dart';
 import 'create_invoice_api.dart';
@@ -23,10 +24,7 @@ final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
     api: api,
     createInvoiceApi: ref.watch(createInvoiceApiProvider),
     authStorage: authStorage,
-    partyResolver: ErpPartyResolver(
-      api: api,
-      authStorage: authStorage,
-    ),
+    partyResolver: ref.watch(erpPartyResolverProvider),
     imageCache: ref.watch(orderImageCacheStorageProvider),
   );
 });
@@ -480,9 +478,13 @@ class OrdersRepository {
           : _authStorage.user?.name,
     );
 
+    final pricePolicy =
+        _authStorage.user?.pricePolicy ?? ErpPricePolicy.retail;
+
     final body = ErpInvoiceRequestBuilder.build(
       draft: draft,
       partyId: partyId,
+      pricePolicy: pricePolicy,
     );
     final created = await _createInvoiceApi.create(body);
     final addressLabel = draft.deliveryAddressLabel;

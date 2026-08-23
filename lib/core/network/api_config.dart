@@ -1,3 +1,5 @@
+import 'api_secrets.dart';
+
 /// إعدادات الاتصال بـ أمان ERP API
 ///
 /// الدليل: https://aman-erp.com/app/api-docs
@@ -7,8 +9,12 @@ abstract final class ApiConfig {
   static const erpWebLoginUrl = 'https://aman-erp.com/app/login';
   static const apiDocsUrl = 'https://aman-erp.com/app/api-docs';
 
-  /// يُمرَّر عند البناء: --dart-define-from-file=dart_defines.json
-  static const apiToken = String.fromEnvironment('AMAN_API_TOKEN');
+  /// الأولوية: --dart-define=AMAN_API_TOKEN ثم api_secrets.dart (من dart_defines.json)
+  static String get apiToken {
+    const fromBuild = String.fromEnvironment('AMAN_API_TOKEN');
+    if (fromBuild.isNotEmpty) return fromBuild;
+    return ApiSecrets.amanApiToken;
+  }
 
   static const connectTimeout = Duration(seconds: 30);
   static const receiveTimeout = Duration(seconds: 30);

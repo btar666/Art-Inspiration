@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/connectivity_service.dart';
 import '../../data/auth_api_service.dart';
 import '../../data/auth_storage.dart';
 import '../../../notifications/data/notifications_storage.dart';
 import '../../../home/data/products_repository.dart';
+import '../../../cart/presentation/providers/cart_provider.dart';
+import '../../../orders/data/erp_party_resolver.dart';
 import '../../data/models/auth_models.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -116,6 +119,7 @@ class AuthNotifier extends Notifier<AuthState> {
               .onUserSessionStarted(userKey),
         );
       }
+      Future.microtask(syncPricePolicyFromErp);
     }
     return AuthState(
       isLoggedIn: storage.isLoggedIn,
@@ -124,6 +128,40 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   AuthRepository get _repo => ref.read(authRepositoryProvider);
+
+  Future<AuthUser?> _enrichUserFromErp(AuthUser? user) async {
+    if (user == null) return null;
+    try {
+      final policy = await ref.read(erpPartyResolverProvider).fetchPricePolicy(
+            phone: user.phone,
+            name: user.name,
+          );
+      return user.copyWith(pricePolicy: policy);
+    } catch (_) {
+      return user;
+    }
+  }
+
+  /// مزامنة `price_policy` من أمان ERP — تسجيل الدخول، بدء التطبيق، pull-to-refresh
+  Future<void> syncPricePolicyFromErp() async {
+    final current = state.user ?? ref.read(authStorageProvider).user;
+    if (current == null || !state.isLoggedIn) return;
+
+    try {
+      final policy = await ref.read(erpPartyResolverProvider).fetchPricePolicy(
+            phone: current.phone,
+            name: current.name,
+          );
+      if (policy == current.pricePolicy) return;
+
+      final updated = current.copyWith(pricePolicy: policy);
+      await ref.read(authStorageProvider).saveUser(updated);
+      ref.read(cartNotifierProvider.notifier).repriceForPolicy(policy);
+      if (state.isLoggedIn) {
+        state = state.copyWith(user: updated);
+      }
+    } catch (_) {}
+  }
 
   Future<bool> login({
     required String identifier,
@@ -135,8 +173,13 @@ class AuthNotifier extends Notifier<AuthState> {
         identifier: identifier,
         password: password,
       );
-      final user = session.user ?? _repo.currentUser;
+      var user = session.user ?? _repo.currentUser;
+      user = await _enrichUserFromErp(user);
       if (user != null) {
+        await ref.read(authStorageProvider).saveUser(user);
+        ref
+            .read(cartNotifierProvider.notifier)
+            .repriceForPolicy(user.pricePolicy);
         final userKey = user.notificationUserKey;
         if (userKey.isNotEmpty) {
           await ref
@@ -155,7 +198,7 @@ class AuthNotifier extends Notifier<AuthState> {
     } catch (_) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'تعذر الاتصال بالخادم',
+        errorMessage: ConnectivityService.connectionMessage,
       );
       return false;
     }
@@ -185,7 +228,7 @@ class AuthNotifier extends Notifier<AuthState> {
     } catch (_) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'تعذر الاتصال بالخادم',
+        errorMessage: ConnectivityService.connectionMessage,
       );
       return false;
     }
@@ -206,13 +249,16 @@ class AuthNotifier extends Notifier<AuthState> {
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final user = await ref.read(authApiServiceProvider).updateProfile(
-            name: name,
-            phone: phone,
-            password: password,
-            city: city,
-            cosmeticName: cosmeticName,
-          );
+      final user = await _enrichUserFromErp(
+        await ref.read(authApiServiceProvider).updateProfile(
+              name: name,
+              phone: phone,
+              password: password,
+              city: city,
+              cosmeticName: cosmeticName,
+            ),
+      );
+      if (user == null) return false;
       await ref.read(authStorageProvider).saveUser(user);
       state = AuthState(isLoggedIn: true, user: user);
       return true;
@@ -222,7 +268,7 @@ class AuthNotifier extends Notifier<AuthState> {
     } catch (_) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'تعذر حفظ التعديلات',
+        errorMessage: ConnectivityService.connectionMessage,
       );
       return false;
     }
@@ -230,7 +276,8 @@ class AuthNotifier extends Notifier<AuthState> {
 
   Future<bool> refreshProfile() async {
     try {
-      final user = await ref.read(authApiServiceProvider).fetchProfile();
+      var user = await ref.read(authApiServiceProvider).fetchProfile();
+      user = await _enrichUserFromErp(user) ?? user;
       await ref.read(authStorageProvider).saveUser(user);
       state = AuthState(isLoggedIn: true, user: user);
       return true;
@@ -253,7 +300,7 @@ class AuthNotifier extends Notifier<AuthState> {
     } catch (_) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'تعذر حذف الحساب',
+        errorMessage: ConnectivityService.connectionMessage,
       );
       return false;
     }

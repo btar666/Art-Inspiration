@@ -1,14 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/pinned_blur_gradient_background.dart';
 import 'home_scroll_metrics.dart';
 import 'home_top_section.dart';
 
-/// شريط الشعار + خلفية blur للهيدر — يختفي عند الوصول لقسم المنتجات
-class HomeLogoHeaderOverlay extends StatelessWidget {
-  const HomeLogoHeaderOverlay({
+/// هيدر البحث الثابت فوق السلايدر — يختفي عند الوصول لقسم المنتجات
+class HomeHeaderOverlay extends StatelessWidget {
+  const HomeHeaderOverlay({
     super.key,
     required this.scrollOffsetListenable,
     this.onNotificationTap,
@@ -17,17 +19,13 @@ class HomeLogoHeaderOverlay extends StatelessWidget {
   final ValueListenable<double> scrollOffsetListenable;
   final VoidCallback? onNotificationTap;
 
-  double _headerBlurHeight(double topInset) =>
-      topInset +
-      HomeScrollMetrics.logoBarHeight() +
-      HomeScrollMetrics.searchBlockHeight();
-
   @override
   Widget build(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;
     final hideStart = HomeScrollMetrics.logoHideStartOffset();
     final hideRange = HomeScrollMetrics.logoHideAnimationRange();
-    final headerBlurHeight = _headerBlurHeight(topInset);
+    final headerHeight =
+        topInset + HomeScrollMetrics.headerRowHeight() + 36.h;
 
     return ValueListenableBuilder<double>(
       valueListenable: scrollOffsetListenable,
@@ -42,7 +40,7 @@ class HomeLogoHeaderOverlay extends StatelessWidget {
           top: 0,
           left: 0,
           right: 0,
-          height: headerBlurHeight,
+          height: headerHeight,
           child: Opacity(
             opacity: opacity,
             child: Transform.translate(
@@ -54,7 +52,7 @@ class HomeLogoHeaderOverlay extends StatelessWidget {
                     const Positioned.fill(
                       child: IgnorePointer(
                         child: PinnedBlurGradientBackground(
-                          fadeStops: PinnedBlurHeaderStyle.exploreFadeStops,
+                          fadeStops: PinnedBlurHeaderStyle.homeFadeStops,
                           strongBlurSigma:
                               PinnedBlurHeaderStyle.exploreStrongBlurSigma,
                           mediumBlurSigma:
@@ -67,20 +65,16 @@ class HomeLogoHeaderOverlay extends StatelessWidget {
                       ),
                     ),
                     Positioned(
-                      top: 0,
+                      top: topInset,
                       left: 0,
                       right: 0,
-                      height: topInset + HomeScrollMetrics.logoBarHeight(),
                       child: IgnorePointer(
                         ignoring: opacity < 0.1,
-                        child: Padding(
-                          padding: EdgeInsets.only(top: topInset),
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(0, 8.h, 0, 8.h),
-                            child: HomeLogoHeader(
-                              onNotificationTap: onNotificationTap,
-                            ),
-                          ),
+                        child: HomeSearchBar(
+                          onSearchTap: () => context.go(AppRoutes.search),
+                          onScannerTap: () =>
+                              context.push(AppRoutes.barcodeScanner),
+                          onNotificationTap: onNotificationTap,
                         ),
                       ),
                     ),

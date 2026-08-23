@@ -1,26 +1,123 @@
+/// نوع وسائط السلايدر
+enum SliderMediaType {
+  image,
+  video,
+}
+
+/// هدف الربط عند الضغط على السلايدر
+enum SliderLinkType {
+  none,
+  product,
+  category,
+  brand,
+}
+
 /// عنصر سلايدر من الباكند
 class SliderItemModel {
   const SliderItemModel({
     required this.id,
     required this.title,
-    required this.imageUrl,
+    required this.mediaUrl,
+    required this.mediaType,
+    required this.linkType,
+    this.linkId,
+    this.linkName,
   });
 
   final String id;
   final String title;
-  final String imageUrl;
+  final String mediaUrl;
+  final SliderMediaType mediaType;
+  final SliderLinkType linkType;
+  final int? linkId;
+  final String? linkName;
+
+  bool get isVideo => mediaType == SliderMediaType.video;
+
+  bool get hasLink {
+    if (linkType == SliderLinkType.none) return false;
+    if (linkType == SliderLinkType.product) {
+      return linkId != null;
+    }
+    final name = linkName?.trim() ?? '';
+    return name.isNotEmpty || linkId != null;
+  }
 
   factory SliderItemModel.fromJson(Map<String, dynamic> json) {
-    final rawUrl = (json['url'] ?? json['image'] ?? '').toString().trim();
-    var imageUrl = rawUrl;
-    if (imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
-      imageUrl = 'https://art-inspiration.com/storage/$imageUrl';
-    }
+    final mediaType = _parseMediaType(json);
+    final rawUrl = _firstNonEmpty([
+      if (mediaType == SliderMediaType.video) json['video'],
+      json['url'],
+      json['image'],
+      json['video'],
+    ]);
 
     return SliderItemModel(
       id: (json['id'] ?? '').toString(),
       title: (json['title'] ?? '').toString(),
-      imageUrl: imageUrl,
+      mediaUrl: _normalizeMediaUrl(rawUrl),
+      mediaType: mediaType,
+      linkType: _parseLinkType(json['erp_type']),
+      linkId: _parseLinkId(json['erp_id']),
+      linkName: _firstNonEmpty([json['erp_name']]),
     );
+  }
+
+  static SliderMediaType _parseMediaType(Map<String, dynamic> json) {
+    final type = json['type'];
+    if (type == 2 || type == '2') return SliderMediaType.video;
+
+    final videoField = (json['video'] ?? '').toString().trim();
+    if (videoField.isNotEmpty) return SliderMediaType.video;
+
+    final url = _firstNonEmpty([json['url'], json['image']]);
+    if (_isVideoUrl(url)) return SliderMediaType.video;
+
+    return SliderMediaType.image;
+  }
+
+  static SliderLinkType _parseLinkType(dynamic value) {
+    final raw = value?.toString().trim().toLowerCase() ?? '';
+    return switch (raw) {
+      'product' => SliderLinkType.product,
+      'category' => SliderLinkType.category,
+      'brand' => SliderLinkType.brand,
+      _ => SliderLinkType.none,
+    };
+  }
+
+  static int? _parseLinkId(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    final text = value.toString().trim();
+    if (text.isEmpty || text == '0' || text == 'null') return null;
+    return int.tryParse(text);
+  }
+
+  static String _firstNonEmpty(List<dynamic> values) {
+    for (final value in values) {
+      final text = value?.toString().trim() ?? '';
+      if (text.isNotEmpty && text != 'null') return text;
+    }
+    return '';
+  }
+
+  static String _normalizeMediaUrl(String rawUrl) {
+    var url = rawUrl.trim();
+    if (url.isEmpty) return url;
+    if (!url.startsWith('http')) {
+      url = 'https://art-inspiration.com/storage/$url';
+    }
+    return url;
+  }
+
+  static bool _isVideoUrl(String url) {
+    final lower = url.toLowerCase();
+    return lower.endsWith('.mp4') ||
+        lower.endsWith('.mov') ||
+        lower.endsWith('.webm') ||
+        lower.endsWith('.m3u8') ||
+        lower.contains('/video/');
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,7 +7,7 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../widgets/home_compact_header_overlay.dart';
 import '../widgets/home_content.dart';
-import '../widgets/home_logo_header_overlay.dart';
+import '../widgets/home_header_overlay.dart';
 import '../widgets/home_scroll_metrics.dart';
 
 /// الصفحة الرئيسية
@@ -20,7 +21,7 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   final _scrollController = ScrollController();
   final _scrollOffset = ValueNotifier<double>(0);
-  bool _logoFullyHidden = false;
+  bool _headerFullyHidden = false;
 
   @override
   void initState() {
@@ -35,16 +36,16 @@ class _HomePageState extends ConsumerState<HomePage> {
     final hideEnd = HomeScrollMetrics.logoHideStartOffset() +
         HomeScrollMetrics.logoHideAnimationRange();
 
-    // بعد اختفاء الشعار بالكامل لا نحدّث الـ overlay أثناء السكرول السريع
+    // بعد اختفاء الهيدر بالكامل لا نحدّث الـ overlay أثناء السكرول السريع
     if (offset >= hideEnd) {
-      if (!_logoFullyHidden) {
-        _logoFullyHidden = true;
+      if (!_headerFullyHidden) {
+        _headerFullyHidden = true;
         _scrollOffset.value = hideEnd;
       }
       return;
     }
 
-    _logoFullyHidden = false;
+    _headerFullyHidden = false;
     _scrollOffset.value = offset;
   }
 
@@ -57,22 +58,32 @@ class _HomePageState extends ConsumerState<HomePage> {
     super.dispose();
   }
 
+  void _openNotifications() => context.push(AppRoutes.notifications);
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          HomeContent(scrollController: _scrollController),
-          HomeLogoHeaderOverlay(
-            scrollOffsetListenable: _scrollOffset,
-            onNotificationTap: () => context.push(AppRoutes.notifications),
-          ),
-          HomeCompactHeaderOverlay(
-            scrollOffsetListenable: _scrollOffset,
-            onNotificationTap: () => context.push(AppRoutes.notifications),
-          ),
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        extendBodyBehindAppBar: true,
+        body: Stack(
+          children: [
+            HomeContent(scrollController: _scrollController),
+            HomeHeaderOverlay(
+              scrollOffsetListenable: _scrollOffset,
+              onNotificationTap: _openNotifications,
+            ),
+            HomeCompactHeaderOverlay(
+              scrollOffsetListenable: _scrollOffset,
+              onNotificationTap: _openNotifications,
+            ),
+          ],
+        ),
       ),
     );
   }

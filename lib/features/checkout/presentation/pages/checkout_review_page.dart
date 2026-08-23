@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/connectivity_error_handler.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -53,13 +54,23 @@ class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
       context.go(AppRoutes.checkoutSuccessPath(order.id));
     } on ApiException catch (error) {
       if (!mounted) return;
+      if (ConnectivityErrorHandler.shouldShow(error)) {
+        await ConnectivityErrorHandler.promptRetry(
+          context: context,
+          ref: ref,
+          onRetry: _confirmOrder,
+        );
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error.message)),
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر تأكيد الطلب — حاول مجدداً')),
+      await ConnectivityErrorHandler.promptRetry(
+        context: context,
+        ref: ref,
+        onRetry: _confirmOrder,
       );
     } finally {
       if (mounted) setState(() => _submitting = false);

@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/network/connectivity_error_handler.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_dropdown_field.dart';
@@ -77,6 +80,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   void _applyRegisterApiError(String error) {
+    if (ConnectivityErrorHandler.shouldShowMessage(error)) {
+      unawaited(
+        ConnectivityErrorHandler.promptRetry(
+          context: context,
+          ref: ref,
+          onRetry: _onSubmit,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _clearErrors();
       _phoneError = error;

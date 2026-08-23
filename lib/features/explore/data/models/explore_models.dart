@@ -17,11 +17,16 @@ class ExploreBrandModel {
     required this.id,
     required this.name,
     this.logoAsset,
+    this.imageUrl,
   });
 
   final String id;
   final String name;
   final String? logoAsset;
+  final String? imageUrl;
+
+  bool get hasNetworkImage =>
+      imageUrl != null && imageUrl!.trim().isNotEmpty;
 }
 
 /// نموذج قسم الاكسبلور

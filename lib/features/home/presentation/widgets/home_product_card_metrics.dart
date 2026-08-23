@@ -19,17 +19,29 @@ abstract final class HomeProductCardMetrics {
 
   static double nameToCategoryGap() => 4.h;
 
-  static double categoryToDescriptionGap() => 8.h;
+  static double categoryToDescriptionGap() => 3.h;
 
   static double descriptionToPriceGap() => 12.h;
 
-  static double aspectRatio() => 169.12 / 277.56;
+  static double aspectRatio() {
+    // الصورة مربّعة داخل الـ padding؛ نزيد ارتفاع الكارت بنفس الزيادة
+    const designWidth = 169.12;
+    const oldDesignHeight = 277.56;
+    const oldImageHeight = 127.0;
+    const imageHorizontalPad = 10.0;
+    final squareImageHeight = designWidth - imageHorizontalPad;
+    final newDesignHeight =
+        oldDesignHeight - oldImageHeight + squareImageHeight;
+    return designWidth / newDesignHeight;
+  }
 
   static const Color shadowColor = Color(0xFF659AB9);
 
   static double shadowBlur() => 3.98.r;
 
-  static double imageHeight() => 127.w;
+  /// ارتفاع صورة المنتج — مربّع بعرض المساحة داخل الـ padding
+  static double imageHeight() =>
+      width() - imagePadding().left - imagePadding().right;
 
   static EdgeInsets imagePadding() =>
       EdgeInsets.only(top: 5.w, left: 5.w, right: 5.w);
@@ -37,6 +49,8 @@ abstract final class HomeProductCardMetrics {
   static double priceBarHeight() => 33.h;
 
   static double priceBarRadius() => 10.r;
+
+  static double priceBarLeftRadius() => 16.r;
 
   static double cartButtonSize() => priceBarHeight();
 

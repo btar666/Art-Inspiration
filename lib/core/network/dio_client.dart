@@ -77,6 +77,11 @@ ApiException mapDioError(DioException error) {
     return ApiException.network();
   }
 
+  final statusCode = response?.statusCode;
+  if (statusCode != null && statusCode >= 500) {
+    return ApiException.server(statusCode: statusCode);
+  }
+
   final message = ApiResponseParser.messageFrom(
     data,
     fallback: error.message ?? 'فشل الاتصال بالخادم',

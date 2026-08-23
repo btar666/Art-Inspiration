@@ -10,7 +10,10 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../../shared/widgets/product_details_widget.dart';
+import '../../../../shared/widgets/skeleton/product_grid_skeleton.dart';
+import '../../../../shared/widgets/skeleton/skeleton_shimmer.dart';
 import '../../../cart/presentation/cart_actions.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../home/data/models/product_model.dart';
 import '../../../home/data/models/product_page_result.dart';
 import '../../../home/data/products_repository.dart';
@@ -257,6 +260,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   Future<void> _refreshResults() async {
     if (!_canSearch) return;
 
+    await ref.read(authNotifierProvider.notifier).syncPricePolicyFromErp();
+
     try {
       final result = await _fetchPage(1);
 
@@ -422,7 +427,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   Widget _buildIdle(double bottomInset) {
     return AppRefreshScrollView(
       onRefresh: () async {
-        await ref.read(catalogProvider.notifier).refresh();
+        await Future.wait([
+          ref.read(authNotifierProvider.notifier).syncPricePolicyFromErp(),
+          ref.read(catalogProvider.notifier).refresh(),
+        ]);
         await _loadSuggestions();
       },
       controller: _scrollController,
@@ -464,8 +472,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           ),
         ),
         if (_loadingSuggestions && _suggestedProducts.isEmpty)
-          const SliverFillRemaining(
-            child: Center(child: CircularProgressIndicator()),
+          ProductGridSkeletonSliver(
+            bottomSpacing: 100.h + bottomInset,
           )
         else if (_suggestedProducts.isEmpty)
           SliverFillRemaining(
@@ -522,9 +530,25 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       return AppRefreshScrollView(
         onRefresh: _refreshResults,
         controller: _scrollController,
-        slivers: const [
-          SliverFillRemaining(
-            child: Center(child: CircularProgressIndicator()),
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                20.w,
+                _filter.hasActiveFilters ? 4.h : 20.h,
+                20.w,
+                12.h,
+              ),
+              child: SkeletonShimmer(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: SkeletonLine(width: 100.w, height: 18.h),
+                ),
+              ),
+            ),
+          ),
+          ProductGridSkeletonSliver(
+            bottomSpacing: 100.h + bottomInset,
           ),
         ],
       );

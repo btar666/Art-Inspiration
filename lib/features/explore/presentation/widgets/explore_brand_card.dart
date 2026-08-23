@@ -1,10 +1,12 @@
 import 'dart:math' as math;
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/skeleton/skeleton_image_placeholder.dart';
 import '../../data/models/explore_models.dart';
 import 'explore_brand_card_metrics.dart';
 
@@ -59,16 +61,30 @@ class _BrandLogoContainer extends StatelessWidget {
       ),
       padding: ExploreBrandCardMetrics.logoPadding(),
       alignment: Alignment.center,
-      child: brand.logoAsset != null
-          ? Image.asset(
-              brand.logoAsset!,
+      child: brand.hasNetworkImage
+          ? CachedNetworkImage(
+              imageUrl: brand.imageUrl!,
               fit: BoxFit.contain,
+              fadeInDuration: const Duration(milliseconds: 120),
+              placeholder: (_, __) => const SkeletonImagePlaceholder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+              errorWidget: (_, __, ___) => Icon(
+                Icons.broken_image_outlined,
+                size: 32.sp,
+                color: AppColors.primary.withValues(alpha: 0.35),
+              ),
             )
-          : Icon(
-              Icons.image_outlined,
-              size: 32.sp,
-              color: AppColors.primary.withValues(alpha: 0.3),
-            ),
+          : brand.logoAsset != null
+              ? Image.asset(
+                  brand.logoAsset!,
+                  fit: BoxFit.contain,
+                )
+              : Icon(
+                  Icons.image_outlined,
+                  size: 32.sp,
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                ),
     );
   }
 }

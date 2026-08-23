@@ -7,13 +7,16 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/network/connectivity_service.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/storage/onboarding_storage.dart';
+import '../../../../shared/widgets/connectivity_error_dialog.dart';
 import '../../../../shared/widgets/app_animated_logo.dart';
 import '../../../../shared/widgets/decorative_background.dart';
 import '../../../../shared/widgets/decorative_dot_grid.dart';
 import '../../../../shared/widgets/sparkle_icon.dart';
 import '../../../auth/data/auth_storage.dart';
+import '../../../onboarding/data/onboarding_content.dart';
 import '../widgets/app_logo.dart';
 
 /// شاشة السبلاش مع أنيميشن احترافي
@@ -26,11 +29,29 @@ class SplashPage extends ConsumerStatefulWidget {
 
 class _SplashPageState extends ConsumerState<SplashPage> {
   final _rotationComplete = Completer<void>();
+  var _onboardingImagesPrecached = false;
+  var _isCheckingConnectivity = false;
 
   @override
   void initState() {
     super.initState();
     _navigateAfterRotation();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_onboardingImagesPrecached) return;
+    _onboardingImagesPrecached = true;
+    _precacheOnboardingImages();
+  }
+
+  Future<void> _precacheOnboardingImages() async {
+    for (final item in OnboardingContent.items) {
+      final asset = item.imageAsset;
+      if (asset == null) continue;
+      await precacheImage(AssetImage(asset), context);
+    }
   }
 
   void _onRotationComplete() {
@@ -48,7 +69,36 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     await Future<void>.delayed(AppConstants.splashPostRotationDelay);
     if (!mounted) return;
 
-    context.go(_resolveStartRoute());
+    final route = _resolveStartRoute();
+    if (route == AppRoutes.home) {
+      await _navigateToHomeWhenOnline();
+      return;
+    }
+
+    context.go(route);
+  }
+
+  Future<void> _navigateToHomeWhenOnline() async {
+    if (_isCheckingConnectivity) return;
+    _isCheckingConnectivity = true;
+
+    try {
+      final canProceed = await ensureAppConnectivity(
+        ref,
+        () async {
+          if (!mounted) return false;
+          return ConnectivityErrorDialog.show(
+            context,
+            barrierDismissible: false,
+          );
+        },
+      );
+
+      if (!mounted || !canProceed) return;
+      context.go(AppRoutes.home);
+    } finally {
+      _isCheckingConnectivity = false;
+    }
   }
 
   /// أول فتح → Onboarding | بعده → الرئيسية أو تسجيل الدخول

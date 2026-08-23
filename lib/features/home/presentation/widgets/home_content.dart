@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../../core/router/app_router.dart';
+import '../../../../core/network/connectivity_error_handler.dart';
+import '../../../../core/network/connectivity_service.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
+import '../../../../shared/widgets/connectivity_error_dialog.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../../shared/widgets/product_details_widget.dart';
+import '../../../../shared/widgets/skeleton/home_page_skeleton.dart';
+import '../../../../shared/widgets/skeleton/product_grid_skeleton.dart';
 import '../../../app_api/presentation/providers/app_api_providers.dart';
 import '../../data/models/catalog_snapshot.dart';
 import '../../../cart/presentation/cart_actions.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../providers/home_featured_sections_provider.dart';
 import '../providers/products_provider.dart';
 import 'home_catalog_strips.dart';
+import 'home_featured_product_strips.dart';
 import 'home_product_card.dart';
 import 'home_product_card_metrics.dart';
 import 'home_promo_banner.dart';
 import 'home_scroll_metrics.dart';
-import 'home_top_section.dart';
 
 /// محتوى الصفحة الرئيسية القابل للتمرير
 class HomeContent extends ConsumerStatefulWidget {
@@ -52,35 +57,54 @@ class _HomeContentState extends ConsumerState<HomeContent> {
     ref.read(catalogProvider.notifier).loadMore();
   }
 
+  Future<bool> _ensureConnectivityForAction() async {
+    if (await ref.read(connectivityServiceProvider).isAppReachable()) {
+      return true;
+    }
+    if (!mounted) return false;
+
+    return ensureAppConnectivity(
+      ref,
+      () => ConnectivityErrorDialog.show(
+        context,
+        barrierDismissible: false,
+      ),
+    );
+  }
+
   Future<void> _onRefresh() async {
+    if (!await _ensureConnectivityForAction()) return;
+
     // العودة للأعلى حتى يظهر التحديث بعد تحميل صفحات كثيرة
     if (widget.scrollController.hasClients) {
       widget.scrollController.jumpTo(0);
     }
 
     ref.invalidate(sliderProvider);
-    await ref.read(catalogProvider.notifier).refresh();
+    ref.invalidate(homeFeaturedSectionsProvider);
+    await Future.wait([
+      ref.read(authNotifierProvider.notifier).syncPricePolicyFromErp(),
+      ref.read(catalogProvider.notifier).refresh(),
+    ]);
   }
 
-  void _openSearchPage() => context.go(AppRoutes.search);
-
-  void _openScannerFromHome() => context.push(AppRoutes.barcodeScanner);
+  Widget _buildHeroSection({required double topInset}) {
+    return SizedBox(
+      height: HomeScrollMetrics.heroHeight(topInset),
+      width: double.infinity,
+      child: const HomePromoBanner(),
+    );
+  }
 
   List<Widget> _catalogSlivers({
-    required double logoSpacerHeight,
+    required double topInset,
     required CatalogSnapshot catalog,
     required BuildContext context,
   }) {
     final products = catalog.products;
     return [
             SliverToBoxAdapter(
-              child: SizedBox(height: logoSpacerHeight),
-            ),
-            SliverToBoxAdapter(
-              child:               HomeSearchBar(
-                onSearchTap: _openSearchPage,
-                onScannerTap: _openScannerFromHome,
-              ),
+              child: _buildHeroSection(topInset: topInset),
             ),
             SliverToBoxAdapter(
               child: Column(
@@ -91,8 +115,8 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                       padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 0),
                       child: _CatalogWarningBanner(message: catalog.warningMessage!),
                     ),
-                  const HomePromoBanner(),
                   HomeCatalogStrips(catalog: catalog),
+                  const HomeFeaturedProductStrips(),
                   Padding(
                     padding: EdgeInsets.fromLTRB(20.w, 6.h, 20.w, 12.h),
                     child: Row(
@@ -110,8 +134,9 @@ class _HomeContentState extends ConsumerState<HomeContent> {
               ),
             ),
             if (catalog.isLoadingMore && products.isEmpty)
-              const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
+              ProductGridSkeletonSliver(
+                bottomSpacing:
+                    120.h + MediaQuery.paddingOf(context).bottom,
               )
             else if (products.isEmpty)
               SliverFillRemaining(
@@ -171,7 +196,6 @@ class _HomeContentState extends ConsumerState<HomeContent> {
   @override
   Widget build(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;
-    final logoSpacerHeight = topInset + HomeScrollMetrics.logoBarHeight();
     final catalogAsync = ref.watch(catalogProvider);
 
     return catalogAsync.when(
@@ -179,30 +203,35 @@ class _HomeContentState extends ConsumerState<HomeContent> {
         onRefresh: _onRefresh,
         controller: widget.scrollController,
         slivers: [
-          SliverToBoxAdapter(child: SizedBox(height: logoSpacerHeight)),
-          const SliverFillRemaining(
-            child: Center(child: CircularProgressIndicator()),
-          ),
-        ],
-      ),
-      error: (error, _) => AppRefreshScrollView(
-        onRefresh: _onRefresh,
-        controller: widget.scrollController,
-        slivers: [
-          SliverToBoxAdapter(child: SizedBox(height: logoSpacerHeight)),
-          SliverFillRemaining(
-            child: _CatalogError(
-              message: error.toString(),
-              onRetry: _onRefresh,
+          SliverToBoxAdapter(
+            child: HomePageSkeleton(
+              topInset: topInset,
+              bottomInset: MediaQuery.paddingOf(context).bottom,
             ),
           ),
         ],
+      ),
+      error: (error, _) => ConnectivityErrorGate(
+        error: error,
+        onRetry: () async => ref.invalidate(catalogProvider),
+        child: AppRefreshScrollView(
+          onRefresh: _onRefresh,
+          controller: widget.scrollController,
+          slivers: [
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: HomeScrollMetrics.heroHeight(topInset),
+              ),
+            ),
+            const SliverFillRemaining(child: SizedBox.shrink()),
+          ],
+        ),
       ),
       data: (catalog) => AppRefreshScrollView(
         onRefresh: _onRefresh,
         controller: widget.scrollController,
         slivers: _catalogSlivers(
-          logoSpacerHeight: logoSpacerHeight,
+          topInset: topInset,
           catalog: catalog,
           context: context,
         ),
@@ -230,33 +259,6 @@ class _CatalogWarningBanner extends StatelessWidget {
         message,
         style: AppTextStyles.settingsMenuItem(color: Colors.orange.shade900),
         textAlign: TextAlign.right,
-      ),
-    );
-  }
-}
-
-class _CatalogError extends StatelessWidget {
-  const _CatalogError({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(24.w),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(message, textAlign: TextAlign.center),
-            SizedBox(height: 16.h),
-            FilledButton(
-              onPressed: onRetry,
-              child: const Text('إعادة المحاولة'),
-            ),
-          ],
-        ),
       ),
     );
   }

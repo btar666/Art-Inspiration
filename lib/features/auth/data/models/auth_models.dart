@@ -1,3 +1,5 @@
+import '../../../../core/network/models/erp_price_policy.dart';
+
 /// توكنات المصادقة
 class AuthTokens {
   const AuthTokens({
@@ -35,6 +37,7 @@ class AuthUser {
     this.cosmeticName,
     this.erpId,
     this.uuid,
+    this.pricePolicy = ErpPricePolicy.retail,
   });
 
   final String id;
@@ -45,6 +48,8 @@ class AuthUser {
   final String? cosmeticName;
   final String? erpId;
   final String? uuid;
+  /// سياسة التسعير من أمان ERP — مفرق / نصف جملة / جملة
+  final ErpPricePolicy pricePolicy;
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     final firstName = json['firstName']?.toString().trim() ?? '';
@@ -63,6 +68,10 @@ class AuthUser {
       cosmeticName: json['cosmetic_name']?.toString(),
       erpId: json['id_erp']?.toString(),
       uuid: json['uuid']?.toString(),
+      pricePolicy: ErpPricePolicy.fromJson(
+            json['price_policy'] ?? json['pricePolicy'],
+          ) ??
+          ErpPricePolicy.retail,
     );
   }
 
@@ -75,6 +84,7 @@ class AuthUser {
         'cosmetic_name': cosmeticName,
         'id_erp': erpId,
         'uuid': uuid,
+        'price_policy': pricePolicy.erpValue,
       };
 
   /// مفتاح ثابت لتخزين إشعارات المستخدم بين الجلسات
@@ -103,6 +113,7 @@ class AuthUser {
     String? cosmeticName,
     String? erpId,
     String? uuid,
+    ErpPricePolicy? pricePolicy,
   }) {
     return AuthUser(
       id: id ?? this.id,
@@ -113,6 +124,7 @@ class AuthUser {
       cosmeticName: cosmeticName ?? this.cosmeticName,
       erpId: erpId ?? this.erpId,
       uuid: uuid ?? this.uuid,
+      pricePolicy: pricePolicy ?? this.pricePolicy,
     );
   }
 }

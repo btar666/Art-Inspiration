@@ -1,8 +1,18 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/network/aman_rest_api.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/api_exception.dart';
+import '../../../core/network/models/erp_price_policy.dart';
 import '../../auth/data/auth_storage.dart';
 import '../../auth/data/models/auth_models.dart';
+
+final erpPartyResolverProvider = Provider<ErpPartyResolver>((ref) {
+  return ErpPartyResolver(
+    api: ref.watch(amanRestApiProvider),
+    authStorage: ref.watch(authStorageProvider),
+  );
+});
 
 /// ربط زبون التطبيق بعميل أمان ERP (`party_id`)
 class ErpPartyResolver {
@@ -14,6 +24,21 @@ class ErpPartyResolver {
 
   final AmanRestApi _api;
   final AuthStorage _authStorage;
+
+  /// جلب `price_policy` من سجل العميل في أمان ERP
+  Future<ErpPricePolicy> fetchPricePolicy({
+    String? phone,
+    String? name,
+    bool createIfMissing = true,
+  }) async {
+    final partyId = await resolve(
+      phone: phone,
+      name: name,
+      createIfMissing: createIfMissing,
+    );
+    final customer = await _api.getById(ApiEndpoints.customer(partyId));
+    return ErpPricePolicy.fromErp(customer['price_policy']?.toString());
+  }
 
   /// يعيد `party_id` من `id_erp` أو بالبحث/الإنشاء عبر الهاتف في أمان ERP
   Future<int> resolve({

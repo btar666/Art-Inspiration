@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_notification_icon_button.dart';
+import '../../../../shared/widgets/search_hint_typewriter.dart';
 import '../../../../shared/widgets/unified_search_bar.dart';
+import '../providers/home_slider_index_provider.dart';
+import 'home_scroll_metrics.dart';
 
 /// الجزء العلوي: شعار وسط + إشعارات يسار + شريط بحث موحّد
 class HomeTopSection extends StatelessWidget {
@@ -30,6 +35,7 @@ class HomeTopSection extends StatelessWidget {
           HomeSearchBar(
             onScannerTap: onScannerTap,
             onSearchTap: onSearchTap,
+            onNotificationTap: onNotificationTap,
           ),
         ],
       ),
@@ -39,9 +45,14 @@ class HomeTopSection extends StatelessWidget {
 
 /// صف الشعار والإشعارات
 class HomeLogoHeader extends StatelessWidget {
-  const HomeLogoHeader({super.key, this.onNotificationTap});
+  const HomeLogoHeader({
+    super.key,
+    this.onNotificationTap,
+    this.onHeroBackground = true,
+  });
 
   final VoidCallback? onNotificationTap;
+  final bool onHeroBackground;
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +62,7 @@ class HomeLogoHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(width: 28.sp),
-          Expanded(child: _CenterLogo()),
+          Expanded(child: _CenterLogo(onHeroBackground: onHeroBackground)),
           AppNotificationIconButton(onTap: onNotificationTap),
         ],
       ),
@@ -59,43 +70,88 @@ class HomeLogoHeader extends StatelessWidget {
   }
 }
 
-/// شريط البحث الموحّد
-class HomeSearchBar extends StatelessWidget {
+/// شريط البحث الموحّد للهيرو — أصغر حجماً مع زر إشعارات
+class HomeSearchBar extends ConsumerWidget {
   const HomeSearchBar({
     super.key,
     this.onScannerTap,
     this.onSearchTap,
+    this.onNotificationTap,
   });
 
   final VoidCallback? onScannerTap;
   final VoidCallback? onSearchTap;
+  final VoidCallback? onNotificationTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hintTerm = ref.watch(homeSearchHintTermProvider);
+    final hintCycle = ref.watch(homeSearchHintCycleProvider);
+    final hintStyle = AppTextStyles.authField().copyWith(fontSize: 16.sp);
+
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
-      child: UnifiedSearchBar(
-        hintText: 'أبحث عن منتج أو متجر محدد ..',
-        onScannerTap: onScannerTap,
-        onSearchTap: onSearchTap,
+      padding: EdgeInsets.fromLTRB(28.w, 8.h, 20.w, 10.h),
+      child: Row(
+        children: [
+          Expanded(
+            child: UnifiedSearchBar(
+              hintChild: SearchHintTypewriter(
+                key: ValueKey('search-hint-$hintCycle'),
+                term: hintTerm,
+                style: hintStyle,
+              ),
+              onScannerTap: onScannerTap,
+              onSearchTap: onSearchTap,
+              height: HomeScrollMetrics.searchBarHeight() - 1.h,
+              dense: true,
+              showBorder: false,
+              searchIconAsset: AppAssets.searchIcon,
+              fontSize: 16.sp,
+              textOffsetY: -3.h,
+            ),
+          ),
+          if (onNotificationTap != null) ...[
+            SizedBox(width: 8.w),
+            AppNotificationIconButton(
+              onTap: onNotificationTap,
+              size: 32.w,
+            ),
+          ],
+        ],
       ),
     );
   }
 }
 
 class _CenterLogo extends StatelessWidget {
+  const _CenterLogo({this.onHeroBackground = true});
+
+  final bool onHeroBackground;
+
   @override
   Widget build(BuildContext context) {
+    final color = onHeroBackground ? Colors.white : null;
+    final shadows = onHeroBackground
+        ? const [
+            Shadow(blurRadius: 10, color: Colors.black54),
+            Shadow(blurRadius: 2, color: Colors.black38),
+          ]
+        : null;
+
     return Column(
       children: [
         Text(
           AppConstants.appName,
-          style: AppTextStyles.homeLogoTitle(),
+          style: AppTextStyles.homeLogoTitle(color: color).copyWith(
+            shadows: shadows,
+          ),
           textAlign: TextAlign.center,
         ),
         Text(
           AppConstants.appTagline,
-          style: AppTextStyles.homeLogoSubtitle(),
+          style: AppTextStyles.homeLogoSubtitle(color: color).copyWith(
+            shadows: shadows,
+          ),
           textAlign: TextAlign.center,
         ),
       ],

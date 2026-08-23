@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/network/models/erp_price_policy.dart';
 import '../../../home/data/models/product_model.dart';
 import '../../data/cart_storage.dart';
 import '../../data/models/cart_item_model.dart';
@@ -14,18 +15,30 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
   Future<void> _persist() =>
       ref.read(cartStorageProvider).saveItems(state);
 
+  int quantityOf(String productId) {
+    for (final item in state) {
+      if (item.product.id == productId) return item.quantity;
+    }
+    return 0;
+  }
+
   void addProduct(ProductModel product, {int quantity = 1}) {
     if (quantity < 1) return;
 
     final items = [...state];
     final index = items.indexWhere((item) => item.product.id == product.id);
+    final current = index >= 0 ? items[index].quantity : 0;
+    var next = current + quantity;
+    final max = product.maxOrderQuantity;
+    if (max != null && next > max) {
+      next = max;
+    }
+    if (next < 1 || next == current) return;
 
     if (index >= 0) {
-      items[index] = items[index].copyWith(
-        quantity: items[index].quantity + quantity,
-      );
+      items[index] = items[index].copyWith(quantity: next);
     } else {
-      items.add(CartItemModel(product: product, quantity: quantity));
+      items.add(CartItemModel(product: product, quantity: next));
     }
 
     state = items;
@@ -44,12 +57,16 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
     ref.read(cartStorageProvider).clear();
   }
 
-  void incrementQuantity(int index) {
-    if (index < 0 || index >= state.length) return;
+  bool incrementQuantity(int index) {
+    if (index < 0 || index >= state.length) return false;
+    final item = state[index];
+    final max = item.product.maxOrderQuantity;
+    if (max != null && item.quantity >= max) return false;
     final items = [...state];
-    items[index] = items[index].copyWith(quantity: items[index].quantity + 1);
+    items[index] = items[index].copyWith(quantity: item.quantity + 1);
     state = items;
     _persist();
+    return true;
   }
 
   void decrementQuantity(int index) {
@@ -66,6 +83,21 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
 
   Future<void> reload() async {
     state = ref.read(cartStorageProvider).loadItems();
+  }
+
+  /// تحديث أسعار السلة عند تغيّر سياسة التسعير من أمان ERP
+  void repriceForPolicy(ErpPricePolicy policy) {
+    if (state.isEmpty) return;
+
+    final items = state
+        .map(
+          (item) => item.copyWith(
+            product: item.product.withPriceFor(policy),
+          ),
+        )
+        .toList();
+    state = items;
+    _persist();
   }
 }
 

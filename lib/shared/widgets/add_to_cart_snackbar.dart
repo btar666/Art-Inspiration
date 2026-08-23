@@ -24,6 +24,14 @@ void showOutOfStockSnackBar(BuildContext context) {
   );
 }
 
+/// عرض تحذير عند تجاوز الكمية المتوفرة
+void showStockLimitSnackBar(BuildContext context, int availableQuantity) {
+  _showGlassSnackBar(
+    context,
+    StockLimitSnackBarContent(availableQuantity: availableQuantity),
+  );
+}
+
 /// عرض رسالة إضافة منتج للسلة بتصميم عائم
 void showAddToCartSnackBar(BuildContext context) {
   _showGlassSnackBar(
@@ -132,6 +140,51 @@ class _GlassSnackHostState extends State<_GlassSnackHost>
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// محتوى سناك بار تجاوز الكمية المتوفرة
+class StockLimitSnackBarContent extends StatelessWidget {
+  const StockLimitSnackBarContent({
+    super.key,
+    required this.availableQuantity,
+  });
+
+  final int availableQuantity;
+
+  @override
+  Widget build(BuildContext context) {
+    return _GlassSnackBarShell(
+      accent: AppColors.homeDiscount,
+      fill: [
+        Colors.white.withValues(alpha: 0.42),
+        const Color(0xFFFFE0E4).withValues(alpha: 0.48),
+        AppColors.homeDiscount.withValues(alpha: 0.16),
+      ],
+      child: Row(
+        textDirection: TextDirection.rtl,
+        children: [
+          _GlassSnackBadge(
+            background: AppColors.orderStatusCancelledBg.withValues(alpha: 0.72),
+            iconColor: AppColors.homeDiscount,
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Text(
+              'الكمية الموجودة حاليا فقط $availableQuantity',
+              style: AppTextStyles.authField(
+                color: AppColors.textPrimary,
+              ).copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 13.sp,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }

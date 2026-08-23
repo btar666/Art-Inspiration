@@ -4,10 +4,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/network/connectivity_error_handler.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
 import '../../../../shared/widgets/pagination_footer.dart';
 import '../../../../shared/widgets/product_details_widget.dart';
+import '../../../../shared/widgets/skeleton/product_grid_skeleton.dart';
 import '../../../cart/presentation/cart_actions.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../home/presentation/providers/products_provider.dart';
 import '../../../home/presentation/widgets/home_product_card.dart';
 import '../../../home/presentation/widgets/home_product_card_metrics.dart';
@@ -51,7 +54,10 @@ class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
   }
 
   Future<void> _onRefresh() async {
-    await ref.read(sectionProductsProvider(widget.sectionId).notifier).refresh();
+    await Future.wait([
+      ref.read(authNotifierProvider.notifier).syncPricePolicyFromErp(),
+      ref.read(sectionProductsProvider(widget.sectionId).notifier).refresh(),
+    ]);
   }
 
   ExploreSectionModel _resolveSection() {
@@ -145,20 +151,24 @@ class _ExploreSectionPageState extends ConsumerState<ExploreSectionPage> {
                 loading: () => AppRefreshScrollView(
                   onRefresh: _onRefresh,
                   controller: _scrollController,
-                  slivers: const [
-                    SliverFillRemaining(
-                      child: Center(child: CircularProgressIndicator()),
+                  slivers: [
+                    ProductGridSkeletonSliver(
+                      bottomSpacing: 24.h + bottomInset,
                     ),
                   ],
                 ),
-                error: (error, _) => AppRefreshScrollView(
-                  onRefresh: _onRefresh,
-                  controller: _scrollController,
-                  slivers: [
-                    SliverFillRemaining(
-                      child: Center(child: Text(error.toString())),
-                    ),
-                  ],
+                error: (error, _) => ConnectivityErrorGate(
+                  error: error,
+                  onRetry: _onRefresh,
+                  child: AppRefreshScrollView(
+                    onRefresh: _onRefresh,
+                    controller: _scrollController,
+                    slivers: [
+                      ProductGridSkeletonSliver(
+                        bottomSpacing: 24.h + bottomInset,
+                      ),
+                    ],
+                  ),
                 ),
                 data: (state) => AppRefreshScrollView(
                   onRefresh: _onRefresh,

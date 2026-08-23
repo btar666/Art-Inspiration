@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/unified_search_bar.dart';
@@ -45,7 +46,7 @@ class SearchInputBar extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: Row(
             children: [
-              SearchBarcodeButton(onTap: onScannerTap),
+              SearchBarcodeButton(onTap: onScannerTap, width: 44.w),
               Expanded(
                 child: Directionality(
                   textDirection: TextDirection.rtl,
@@ -59,14 +60,20 @@ class SearchInputBar extends StatelessWidget {
                           textAlign: TextAlign.right,
                           style: AppTextStyles.authField(
                             color: AppColors.textPrimary,
-                          ),
+                          ).copyWith(fontSize: 16.5.sp),
                           decoration: InputDecoration(
-                            hintText: 'أبحث عن منتج أو متجر محدد ..',
-                            hintStyle: AppTextStyles.authField(),
+                            hintText: 'ابحث عن منتج محدد ... ',
+                            hintStyle: AppTextStyles.authField().copyWith(
+                              fontSize: 16.5.sp,
+                            ),
                             border: InputBorder.none,
                             isDense: true,
-                            contentPadding:
-                                EdgeInsets.symmetric(vertical: 14.h),
+                            contentPadding: EdgeInsets.fromLTRB(
+                              8.w,
+                              14.h,
+                              4.w,
+                              14.h,
+                            ),
                           ),
                           onChanged: onChanged,
                           onSubmitted: onSubmitted,
@@ -100,11 +107,12 @@ class SearchInputBar extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: EdgeInsets.only(right: 16.w),
-                child: Icon(
-                  Icons.search,
-                  color: AppColors.textPrimary,
-                  size: 24.sp,
+                padding: EdgeInsets.only(left: 10.w, right: 16.w),
+                child: Image.asset(
+                  AppAssets.searchIcon,
+                  width: 24.sp,
+                  height: 24.sp,
+                  fit: BoxFit.contain,
                 ),
               ),
             ],
