@@ -9,6 +9,7 @@ import '../../../core/network/app_api_endpoints.dart';
 import '../../../core/network/dio_client.dart';
 import '../../auth/data/models/auth_models.dart';
 import '../models/app_info_model.dart';
+import '../models/return_policy_item.dart';
 import '../models/slider_item_model.dart';
 
 final appApiServiceProvider = Provider<AppApiService>((ref) {
@@ -227,6 +228,27 @@ class AppApiService {
       return first.toString();
     }
     return '';
+  }
+
+  /// سياسة الاستبدال والاسترجاع / الضمان — من api/return_policy
+  Future<List<ReturnPolicyItem>> fetchReturnPolicies() async {
+    final response = await safeRequest(
+      () => _dio.get<Map<String, dynamic>>(
+        AppApiEndpoints.returnPolicy,
+        queryParameters: {'lang': AppApiConfig.lang},
+      ),
+    );
+    final root = ApiResponseParser.asMap(response.data);
+    final data = root['data'];
+    if (data is! List) return const [];
+
+    return data
+        .whereType<Map>()
+        .map(
+          (item) => ReturnPolicyItem.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .where((item) => item.hasContent)
+        .toList();
   }
 
   Future<void> deleteAccount() async {

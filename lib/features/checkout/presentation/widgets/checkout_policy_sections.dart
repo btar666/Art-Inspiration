@@ -8,23 +8,20 @@ import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/whatsapp_link.dart';
+import '../../../app_api/models/return_policy_item.dart';
 import '../../../app_api/presentation/providers/app_api_providers.dart';
 import '../../../orders/presentation/pages/order_details_page.dart';
 
-/// سياسة الاسترجاع وضمان المنتجات — فوق زر تأكيد الطلب
+/// سياسة الاسترجاع وضمان المنتجات — من api/return_policy مع احتياطي محلي
 class CheckoutPolicySections extends ConsumerStatefulWidget {
   const CheckoutPolicySections({
     super.key,
-    required this.returnAccepted,
-    required this.guaranteeAccepted,
-    required this.onReturnAcceptedChanged,
-    required this.onGuaranteeAcceptedChanged,
+    required this.acceptedFlags,
+    required this.onAcceptedChanged,
   });
 
-  final bool returnAccepted;
-  final bool guaranteeAccepted;
-  final ValueChanged<bool> onReturnAcceptedChanged;
-  final ValueChanged<bool> onGuaranteeAcceptedChanged;
+  final List<bool> acceptedFlags;
+  final void Function(int index, bool value) onAcceptedChanged;
 
   @override
   ConsumerState<CheckoutPolicySections> createState() =>
@@ -32,14 +29,16 @@ class CheckoutPolicySections extends ConsumerStatefulWidget {
 }
 
 class CheckoutPolicySectionsState extends ConsumerState<CheckoutPolicySections> {
-  bool _returnExpanded = false;
-  bool _guaranteeExpanded = false;
+  final Set<int> _expandedIndexes = {};
 
   /// يفتح الكروت غير الموافَق عليها لقراءة المحتوى
   void openPendingPolicies() {
     setState(() {
-      if (!widget.returnAccepted) _returnExpanded = true;
-      if (!widget.guaranteeAccepted) _guaranteeExpanded = true;
+      for (var i = 0; i < widget.acceptedFlags.length; i++) {
+        if (!widget.acceptedFlags[i]) {
+          _expandedIndexes.add(i);
+        }
+      }
     });
   }
 
@@ -75,34 +74,114 @@ class CheckoutPolicySectionsState extends ConsumerState<CheckoutPolicySections> 
     );
   }
 
+  List<_PolicySectionData> _resolveSections(List<ReturnPolicyItem>? apiItems) {
+    if (apiItems != null && apiItems.isNotEmpty) {
+      return [
+        for (final item in apiItems)
+          _PolicySectionData(
+            title: item.title.isEmpty
+                ? 'سياسة الاستبدال والاسترجاع'
+                : item.title,
+            acceptLabel: 'أقر بأنني قرأت «${item.title.isEmpty ? 'السياسة' : item.title}» وأوافق عليها',
+            body: _ApiPolicyBody(details: item.details),
+            showGuaranteeBadge: _looksLikeGuarantee(item.title),
+          ),
+      ];
+    }
+
+    return [
+      _PolicySectionData(
+        title: 'سياسة الاستبدال والاسترجاع',
+        acceptLabel: 'أقر بأنني قرأت سياسة الاستبدال والاسترجاع وأوافق عليها',
+        body: _ReturnPolicyBody(onWhatsAppTap: _openWhatsApp),
+      ),
+      const _PolicySectionData(
+        title: 'ضمان المنتجات',
+        acceptLabel: 'أقر بأنني قرأت ضمان المنتجات وأوافق عليه',
+        body: _GuaranteePolicyBody(),
+        showGuaranteeBadge: true,
+      ),
+    ];
+  }
+
+  bool _looksLikeGuarantee(String title) {
+    final t = title.trim();
+    return t.contains('ضمان') || t.toLowerCase().contains('guarantee');
+  }
+
   @override
   Widget build(BuildContext context) {
+    final policiesAsync = ref.watch(returnPoliciesProvider);
+
+    return policiesAsync.when(
+      loading: () => Padding(
+        padding: EdgeInsets.symmetric(vertical: 12.h),
+        child: const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      ),
+      error: (_, __) => _buildSections(_resolveSections(null)),
+      data: (items) => _buildSections(_resolveSections(items)),
+    );
+  }
+
+  Widget _buildSections(List<_PolicySectionData> sections) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _PolicyTile(
-          title: 'سياسة الاستبدال والاسترجاع',
-          expanded: _returnExpanded,
-          accepted: widget.returnAccepted,
-          onAcceptedChanged: widget.onReturnAcceptedChanged,
-          acceptLabel:
-              'أقر بأنني قرأت سياسة الاستبدال والاسترجاع وأوافق عليها',
-          onTap: () => setState(() => _returnExpanded = !_returnExpanded),
-          child: _ReturnPolicyBody(onWhatsAppTap: _openWhatsApp),
-        ),
-        SizedBox(height: 10.h),
-        _PolicyTile(
-          title: 'ضمان المنتجات',
-          expanded: _guaranteeExpanded,
-          accepted: widget.guaranteeAccepted,
-          onAcceptedChanged: widget.onGuaranteeAcceptedChanged,
-          acceptLabel: 'أقر بأنني قرأت ضمان المنتجات وأوافق عليه',
-          onTap: () => setState(() => _guaranteeExpanded = !_guaranteeExpanded),
-          child: const _GuaranteePolicyBody(),
-        ),
+        for (var i = 0; i < sections.length; i++) ...[
+          if (i > 0) SizedBox(height: 10.h),
+          _PolicyTile(
+            title: sections[i].title,
+            expanded: _expandedIndexes.contains(i),
+            accepted: i < widget.acceptedFlags.length
+                ? widget.acceptedFlags[i]
+                : false,
+            onAcceptedChanged: (value) => widget.onAcceptedChanged(i, value),
+            acceptLabel: sections[i].acceptLabel,
+            onTap: () => setState(() {
+              if (_expandedIndexes.contains(i)) {
+                _expandedIndexes.remove(i);
+              } else {
+                _expandedIndexes.add(i);
+              }
+            }),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (sections[i].showGuaranteeBadge) ...[
+                  Center(
+                    child: Image.asset(
+                      AppAssets.productGuaranteeBadge,
+                      width: 88.w,
+                      height: 88.w,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                ],
+                sections[i].body,
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
+}
+
+class _PolicySectionData {
+  const _PolicySectionData({
+    required this.title,
+    required this.acceptLabel,
+    required this.body,
+    this.showGuaranteeBadge = false,
+  });
+
+  final String title;
+  final String acceptLabel;
+  final Widget body;
+  final bool showGuaranteeBadge;
 }
 
 class _PolicyTile extends StatelessWidget {
@@ -287,6 +366,26 @@ class _PolicyAcceptCheckbox extends StatelessWidget {
   }
 }
 
+class _ApiPolicyBody extends StatelessWidget {
+  const _ApiPolicyBody({required this.details});
+
+  final String details;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = details.trim().isEmpty ? 'لا يوجد محتوى حالياً' : details;
+    return Text(
+      text,
+      style: AppTextStyles.ordersDetailLabel().copyWith(
+        fontSize: 12.5.sp,
+        height: 1.65,
+        color: const Color(0xFF3D3E46).withValues(alpha: 0.85),
+      ),
+      textAlign: TextAlign.right,
+    );
+  }
+}
+
 class _ReturnPolicyBody extends StatelessWidget {
   const _ReturnPolicyBody({required this.onWhatsAppTap});
 
@@ -363,27 +462,16 @@ class _GuaranteePolicyBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Image.asset(
-          AppAssets.productGuaranteeBadge,
-          width: 88.w,
-          height: 88.w,
-          fit: BoxFit.contain,
-        ),
-        SizedBox(height: 12.h),
-        Text(
-          'جميع المنتجات أصلية ومن مصادر موثوقة وشركة إلهام الفن تتحمل كامل المسؤولية '
-          'في حال تبين وجود خلل في أي منتج من قبل فريق الدعم ويتم معالجة الخلل مباشرة '
-          'وتعويض الزبون بمنتج أصلي وإرجاع كامل المبلغ المدفوع.',
-          style: AppTextStyles.ordersDetailLabel().copyWith(
-            fontSize: 12.5.sp,
-            height: 1.65,
-            color: const Color(0xFF3D3E46).withValues(alpha: 0.85),
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+    return Text(
+      'جميع المنتجات أصلية ومن مصادر موثوقة وشركة إلهام الفن تتحمل كامل المسؤولية '
+      'في حال تبين وجود خلل في أي منتج من قبل فريق الدعم ويتم معالجة الخلل مباشرة '
+      'وتعويض الزبون بمنتج أصلي وإرجاع كامل المبلغ المدفوع.',
+      style: AppTextStyles.ordersDetailLabel().copyWith(
+        fontSize: 12.5.sp,
+        height: 1.65,
+        color: const Color(0xFF3D3E46).withValues(alpha: 0.85),
+      ),
+      textAlign: TextAlign.center,
     );
   }
 }

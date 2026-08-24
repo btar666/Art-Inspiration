@@ -10,5 +10,6 @@ abstract final class AppApiEndpoints {
   static const notifications = 'api/notifications';
   static const info = 'api/info';
   static const privacyPolicy = 'api/privacy_policy';
+  static const returnPolicy = 'api/return_policy';
   static const deleteAccount = 'api/delete_account';
 }

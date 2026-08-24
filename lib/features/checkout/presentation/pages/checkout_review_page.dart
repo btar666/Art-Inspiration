@@ -20,6 +20,7 @@ import '../../../orders/presentation/providers/orders_provider.dart';
 import '../../../cart/presentation/widgets/cart_checkout_footer.dart';
 import '../../../cart/presentation/widgets/cart_page_metrics.dart';
 import '../../../orders/presentation/pages/order_details_page.dart';
+import '../../../app_api/presentation/providers/app_api_providers.dart';
 import '../../data/checkout_provider.dart';
 import '../../data/local_orders_storage.dart';
 import '../widgets/checkout_review_overlay_metrics.dart';
@@ -35,12 +36,25 @@ class CheckoutReviewPage extends ConsumerStatefulWidget {
 
 class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
   bool _submitting = false;
-  bool _returnPolicyAccepted = false;
-  bool _guaranteePolicyAccepted = false;
+  List<bool> _policyAccepted = const [false, false];
   final _policySectionsKey = GlobalKey<CheckoutPolicySectionsState>();
 
   bool get _policiesAccepted =>
-      _returnPolicyAccepted && _guaranteePolicyAccepted;
+      _policyAccepted.isNotEmpty && _policyAccepted.every((v) => v);
+
+  void _syncPolicyAcceptedLength(int count) {
+    if (count < 1) count = 2;
+    if (_policyAccepted.length == count) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _policyAccepted = List<bool>.generate(
+          count,
+          (i) => i < _policyAccepted.length ? _policyAccepted[i] : false,
+        );
+      });
+    });
+  }
 
   void _onConfirmTap() {
     if (_submitting) return;
@@ -258,15 +272,30 @@ class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
                         ],
                       ),
                       SizedBox(height: 20.h),
-                      CheckoutPolicySections(
-                        key: _policySectionsKey,
-                        returnAccepted: _returnPolicyAccepted,
-                        guaranteeAccepted: _guaranteePolicyAccepted,
-                        onReturnAcceptedChanged: (value) {
-                          setState(() => _returnPolicyAccepted = value);
-                        },
-                        onGuaranteeAcceptedChanged: (value) {
-                          setState(() => _guaranteePolicyAccepted = value);
+                      Builder(
+                        builder: (context) {
+                          final policiesAsync =
+                              ref.watch(returnPoliciesProvider);
+                          final count = policiesAsync.maybeWhen(
+                            data: (items) =>
+                                items.isEmpty ? 2 : items.length,
+                            orElse: () => 2,
+                          );
+                          _syncPolicyAcceptedLength(count);
+                          return CheckoutPolicySections(
+                            key: _policySectionsKey,
+                            acceptedFlags: _policyAccepted,
+                            onAcceptedChanged: (index, value) {
+                              setState(() {
+                                if (index < 0 ||
+                                    index >= _policyAccepted.length) {
+                                  return;
+                                }
+                                _policyAccepted = [..._policyAccepted]
+                                  ..[index] = value;
+                              });
+                            },
+                          );
                         },
                       ),
                     ],

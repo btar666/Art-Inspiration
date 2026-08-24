@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/app_api_service.dart';
 import '../../models/app_info_model.dart';
+import '../../models/return_policy_item.dart';
 import '../../models/slider_item_model.dart';
 
 /// سلايدر الرئيسية
@@ -17,4 +18,10 @@ final appInfoProvider = FutureProvider<AppInfoModel>((ref) async {
 /// سياسة الخصوصية
 final privacyPolicyProvider = FutureProvider<String>((ref) async {
   return ref.watch(appApiServiceProvider).fetchPrivacyPolicy();
+});
+
+/// سياسات الاستبدال والاسترجاع والضمان — من api/return_policy
+final returnPoliciesProvider =
+    FutureProvider<List<ReturnPolicyItem>>((ref) async {
+  return ref.watch(appApiServiceProvider).fetchReturnPolicies();
 });
