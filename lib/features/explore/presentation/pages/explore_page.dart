@@ -26,7 +26,6 @@ class ExplorePage extends ConsumerStatefulWidget {
 
 class _ExplorePageState extends ConsumerState<ExplorePage> {
   final _scrollController = ScrollController();
-  double _scrollOffset = 0;
 
   @override
   void initState() {
@@ -43,12 +42,6 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
   }
 
   void _onScroll() {
-    final offset = _scrollController.offset;
-    if ((offset - _scrollOffset).abs() < 0.5) {
-      _maybeLoadMore();
-      return;
-    }
-    setState(() => _scrollOffset = offset);
     _maybeLoadMore();
   }
 
@@ -112,7 +105,7 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
             ],
           ),
           ExploreHeaderOverlay(
-            scrollOffset: _scrollOffset,
+            scrollController: _scrollController,
             selectedTab: selectedTab,
             onTabSelected: _onTabSelected,
             onNotificationTap: () => context.push(AppRoutes.notifications),

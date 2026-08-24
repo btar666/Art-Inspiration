@@ -90,6 +90,8 @@ GoRouter createAppRouter() {
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
           child: const SplashPage(),
+          transitionDuration: AppPageTransition.duration,
+          reverseTransitionDuration: AppPageTransition.reverseDuration,
           transitionsBuilder: _fadeTransition,
         ),
       ),
@@ -123,6 +125,8 @@ GoRouter createAppRouter() {
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
           child: const RequestSuccessPage(),
+          transitionDuration: AppPageTransition.duration,
+          reverseTransitionDuration: AppPageTransition.reverseDuration,
           transitionsBuilder: _fadeTransition,
         ),
       ),
@@ -311,6 +315,8 @@ GoRouter createAppRouter() {
             pageBuilder: (context, state) => CustomTransitionPage(
               key: state.pageKey,
               child: const HomePage(),
+              transitionDuration: AppPageTransition.duration,
+              reverseTransitionDuration: AppPageTransition.reverseDuration,
               transitionsBuilder: _fadeTransition,
             ),
           ),
@@ -320,6 +326,8 @@ GoRouter createAppRouter() {
             pageBuilder: (context, state) => CustomTransitionPage(
               key: state.pageKey,
               child: const SearchPage(),
+              transitionDuration: AppPageTransition.duration,
+              reverseTransitionDuration: AppPageTransition.reverseDuration,
               transitionsBuilder: _fadeTransition,
             ),
           ),
@@ -329,6 +337,8 @@ GoRouter createAppRouter() {
             pageBuilder: (context, state) => CustomTransitionPage(
               key: state.pageKey,
               child: const ExplorePage(),
+              transitionDuration: AppPageTransition.duration,
+              reverseTransitionDuration: AppPageTransition.reverseDuration,
               transitionsBuilder: _fadeTransition,
             ),
           ),
@@ -338,6 +348,8 @@ GoRouter createAppRouter() {
             pageBuilder: (context, state) => CustomTransitionPage(
               key: state.pageKey,
               child: const OrdersPage(),
+              transitionDuration: AppPageTransition.duration,
+              reverseTransitionDuration: AppPageTransition.reverseDuration,
               transitionsBuilder: _fadeTransition,
             ),
           ),
@@ -347,6 +359,8 @@ GoRouter createAppRouter() {
             pageBuilder: (context, state) => CustomTransitionPage(
               key: state.pageKey,
               child: const SettingsPage(),
+              transitionDuration: AppPageTransition.duration,
+              reverseTransitionDuration: AppPageTransition.reverseDuration,
               transitionsBuilder: _fadeTransition,
             ),
           ),

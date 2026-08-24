@@ -24,6 +24,9 @@ class SectionFilterChips extends StatelessWidget {
       child: ListView.separated(
         padding: EdgeInsets.symmetric(horizontal: 20.w),
         scrollDirection: Axis.horizontal,
+        cacheExtent: 80,
+        addAutomaticKeepAlives: false,
+        addRepaintBoundaries: true,
         itemCount: filters.length,
         separatorBuilder: (_, __) => SizedBox(width: 10.w),
         itemBuilder: (context, index) {

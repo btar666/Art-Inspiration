@@ -6,6 +6,8 @@ import '../../core/theme/app_colors.dart';
 import 'glass_shimmer_sweep.dart';
 
 /// زر المفضلة الزجاجي — ضبابي مع لمعة متحركة
+///
+/// [lightweight] للقوائم/الشبكات: بدون BackdropFilter أو shimmer (أداء السكرول).
 class GlassFavoriteButton extends StatelessWidget {
   const GlassFavoriteButton({
     super.key,
@@ -16,6 +18,7 @@ class GlassFavoriteButton extends StatelessWidget {
     required this.iconSize,
     required this.borderRadius,
     this.iconColor,
+    this.lightweight = false,
   });
 
   final bool isFavorite;
@@ -25,73 +28,116 @@ class GlassFavoriteButton extends StatelessWidget {
   final double iconSize;
   final double borderRadius;
   final Color? iconColor;
+  final bool lightweight;
 
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(borderRadius);
     final heartColor = iconColor ?? AppColors.homeHeart;
-    final tint = isFavorite
-        ? const Color(0xFFFF6B8A)
-        : AppColors.primary;
+    final tint = isFavorite ? const Color(0xFFFF6B8A) : AppColors.primary;
 
     return GestureDetector(
       onTap: onTap,
+      child: lightweight
+          ? _buildLightweight(
+              radius: radius,
+              heartColor: heartColor,
+              tint: tint,
+            )
+          : _buildGlass(
+              radius: radius,
+              heartColor: heartColor,
+              tint: tint,
+            ),
+    );
+  }
+
+  Widget _buildLightweight({
+    required BorderRadius radius,
+    required Color heartColor,
+    required Color tint,
+  }) {
+    return SizedBox(
+      width: width,
+      height: height,
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: radius,
-          boxShadow: [
-            BoxShadow(
-              color: tint.withValues(alpha: isFavorite ? 0.28 : 0.16),
-              blurRadius: 12,
-              offset: const Offset(0, 3),
-            ),
-          ],
+          color: isFavorite
+              ? const Color(0xFFFFE0E8).withValues(alpha: 0.92)
+              : Colors.white.withValues(alpha: 0.88),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.85),
+            width: 1,
+          ),
         ),
-        child: ClipRRect(
-          borderRadius: radius,
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-            child: SizedBox(
-              width: width,
-              height: height,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: radius,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    width: 1.1,
-                  ),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isFavorite
-                        ? [
-                            Colors.white.withValues(alpha: 0.45),
-                            const Color(0xFFFFE0E8).withValues(alpha: 0.5),
-                            const Color(0xFFFF6B8A).withValues(alpha: 0.22),
-                          ]
-                        : [
-                            Colors.white.withValues(alpha: 0.42),
-                            AppColors.primaryLight.withValues(alpha: 0.32),
-                            AppColors.primary.withValues(alpha: 0.12),
-                          ],
-                  ),
+        child: Icon(
+          isFavorite ? Icons.favorite : Icons.favorite_border,
+          color: isFavorite ? const Color(0xFFE85D6A) : heartColor,
+          size: iconSize,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlass({
+    required BorderRadius radius,
+    required Color heartColor,
+    required Color tint,
+  }) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        boxShadow: [
+          BoxShadow(
+            color: tint.withValues(alpha: isFavorite ? 0.28 : 0.16),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+          child: SizedBox(
+            width: width,
+            height: height,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: radius,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  width: 1.1,
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    const Positioned.fill(
-                      child: GlassShimmerSweep(highlightAlpha: 0.38),
-                    ),
-                    Icon(
-                      isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: isFavorite
-                          ? const Color(0xFFE85D6A)
-                          : heartColor,
-                      size: iconSize,
-                    ),
-                  ],
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isFavorite
+                      ? [
+                          Colors.white.withValues(alpha: 0.45),
+                          const Color(0xFFFFE0E8).withValues(alpha: 0.5),
+                          const Color(0xFFFF6B8A).withValues(alpha: 0.22),
+                        ]
+                      : [
+                          Colors.white.withValues(alpha: 0.42),
+                          AppColors.primaryLight.withValues(alpha: 0.32),
+                          AppColors.primary.withValues(alpha: 0.12),
+                        ],
                 ),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  const Positioned.fill(
+                    child: GlassShimmerSweep(highlightAlpha: 0.38),
+                  ),
+                  Icon(
+                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: isFavorite ? const Color(0xFFE85D6A) : heartColor,
+                    size: iconSize,
+                  ),
+                ],
               ),
             ),
           ),

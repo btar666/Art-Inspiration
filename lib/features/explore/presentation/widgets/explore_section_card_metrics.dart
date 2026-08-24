@@ -14,9 +14,9 @@ abstract final class ExploreSectionCardMetrics {
 
   static List<BoxShadow> cardShadow() => [
         BoxShadow(
-          color: const Color(0xFF659AB9).withValues(alpha: 0.38),
-          blurRadius: 3.75.r,
-          offset: Offset(0, -1.h),
+          color: const Color(0xFF659AB9).withValues(alpha: 0.16),
+          blurRadius: 3.r,
+          offset: Offset(0, 1.h),
         ),
       ];
 }

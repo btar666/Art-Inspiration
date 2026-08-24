@@ -38,19 +38,74 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshCheckoutSession());
+    // قراءة فقط — بدون تعديل providers أثناء البناء
+    _seedControllersFromLocalData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncDraftThenRefreshProfile();
+    });
   }
 
-  Future<void> _refreshCheckoutSession() async {
-    await ref.read(authNotifierProvider.notifier).refreshProfile();
-    ref.read(checkoutDraftProvider.notifier).syncFromProfileAndAddress();
+  /// يملأ الحقول فوراً من المسودة / الجلسة المحلية دون تعديل أي provider
+  void _seedControllersFromLocalData() {
+    final draft = ref.read(checkoutDraftProvider);
+    if (draft != null &&
+        (draft.customerName.isNotEmpty || draft.phone.isNotEmpty)) {
+      _nameController.text = draft.customerName;
+      _phoneController.text = draft.phone;
+      _secondPhoneController.text = draft.secondPhone;
+      return;
+    }
 
+    final user = ref.read(authNotifierProvider).user;
+    final saved = ref.read(checkoutCustomerStorageProvider).load();
+    final userName = user?.name.trim() ?? '';
+    final userPhone = (user?.phone ?? '').trim();
+
+    _nameController.text = userName.isNotEmpty ? userName : saved.name;
+    _phoneController.text = userPhone.isNotEmpty ? userPhone : saved.phone;
+    _secondPhoneController.text =
+        draft?.secondPhone.isNotEmpty == true
+            ? draft!.secondPhone
+            : saved.secondPhone;
+  }
+
+  Future<void> _syncDraftThenRefreshProfile() async {
+    ref.read(checkoutDraftProvider.notifier).syncFromProfileAndAddress();
+    _writeDraftToControllers();
+    if (mounted) setState(() {});
+    await _refreshProfileInBackground();
+  }
+
+  void _writeDraftToControllers() {
     final draft = ref.read(checkoutDraftProvider);
     if (draft == null) return;
-
     _nameController.text = draft.customerName;
     _phoneController.text = draft.phone;
     _secondPhoneController.text = draft.secondPhone;
+  }
+
+  Future<void> _refreshProfileInBackground() async {
+    final nameBefore = _nameController.text;
+    final phoneBefore = _phoneController.text;
+    final secondBefore = _secondPhoneController.text;
+
+    await ref.read(authNotifierProvider.notifier).refreshProfile();
+    if (!mounted) return;
+
+    ref.read(checkoutDraftProvider.notifier).syncFromProfileAndAddress();
+    final draft = ref.read(checkoutDraftProvider);
+    if (draft == null) return;
+
+    // لا نكتب فوق ما عدّله المستخدم أثناء التحديث
+    if (_nameController.text == nameBefore) {
+      _nameController.text = draft.customerName;
+    }
+    if (_phoneController.text == phoneBefore) {
+      _phoneController.text = draft.phone;
+    }
+    if (_secondPhoneController.text == secondBefore) {
+      _secondPhoneController.text = draft.secondPhone;
+    }
 
     if (mounted) setState(() {});
   }

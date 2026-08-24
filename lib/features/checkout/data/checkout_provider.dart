@@ -110,9 +110,12 @@ class CheckoutNotifier extends Notifier<CheckoutDraft?> {
     final isDelivery =
         state!.deliveryMethod == CheckoutDeliveryMethod.delivery;
 
+    final userName = user?.name.trim() ?? '';
+    final userPhone = (user?.phone ?? '').trim();
+
     state = state!.copyWith(
-      customerName: user?.name.trim() ?? '',
-      phone: (user?.phone ?? '').trim(),
+      customerName: userName.isNotEmpty ? userName : saved.name,
+      phone: userPhone.isNotEmpty ? userPhone : saved.phone,
       secondPhone: saved.secondPhone,
       selectedAddress: isDelivery ? currentAddress : null,
       clearAddress: isDelivery && currentAddress == null,

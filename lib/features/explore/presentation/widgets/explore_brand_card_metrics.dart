@@ -37,16 +37,16 @@ abstract final class ExploreBrandCardMetrics {
 
   static List<BoxShadow> logoCardShadow() => [
         BoxShadow(
-          color: const Color(0xFF659AB9).withValues(alpha: 0.38),
-          blurRadius: 3.75.r,
-          offset: Offset(0, -1.h),
+          color: const Color(0xFF659AB9).withValues(alpha: 0.16),
+          blurRadius: 3.r,
+          offset: Offset(0, 1.h),
         ),
       ];
 
   static List<BoxShadow> labelCardShadow() => [
         BoxShadow(
-          color: const Color(0xFF659AB9).withValues(alpha: 0.38),
-          blurRadius: 6.r,
+          color: const Color(0xFF659AB9).withValues(alpha: 0.14),
+          blurRadius: 3.r,
           offset: Offset(0, 1.h),
         ),
       ];

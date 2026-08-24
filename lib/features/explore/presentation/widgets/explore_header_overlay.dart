@@ -8,9 +8,42 @@ import 'explore_scroll_metrics.dart';
 import 'explore_tabs_section.dart';
 
 /// هيدر الاكسبلور — عنوان + تبويبات يختفيان معاً عند التمرير
+///
+/// يستمع لـ [scrollController] داخلياً حتى لا يُعاد بناء شبكة المنتجات مع السكرول.
 class ExploreHeaderOverlay extends StatelessWidget {
   const ExploreHeaderOverlay({
     super.key,
+    required this.scrollController,
+    required this.selectedTab,
+    required this.onTabSelected,
+    this.onNotificationTap,
+  });
+
+  final ScrollController scrollController;
+  final ExploreTab selectedTab;
+  final ValueChanged<ExploreTab> onTabSelected;
+  final VoidCallback? onNotificationTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: scrollController,
+      builder: (context, _) {
+        final scrollOffset =
+            scrollController.hasClients ? scrollController.offset : 0.0;
+        return _HeaderBody(
+          scrollOffset: scrollOffset,
+          selectedTab: selectedTab,
+          onTabSelected: onTabSelected,
+          onNotificationTap: onNotificationTap,
+        );
+      },
+    );
+  }
+}
+
+class _HeaderBody extends StatelessWidget {
+  const _HeaderBody({
     required this.scrollOffset,
     required this.selectedTab,
     required this.onTabSelected,

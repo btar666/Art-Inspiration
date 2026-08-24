@@ -40,74 +40,72 @@ class _HomeProductCardState extends ConsumerState<HomeProductCard> {
     final priceLabel =
         product.formattedPriceFor(ref.watch(userPricePolicyProvider));
 
-    return RepaintBoundary(
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: SizedBox(
-          width: HomeProductCardMetrics.width(),
-          height: HomeProductCardMetrics.height(),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius:
-                  BorderRadius.circular(HomeProductCardMetrics.radius()),
-              boxShadow: [
-                BoxShadow(
-                  color: HomeProductCardMetrics.shadowColor
-                      .withValues(alpha: 0.22),
-                  blurRadius: HomeProductCardMetrics.shadowBlur(),
-                  offset: Offset.zero,
-                  spreadRadius: 0,
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius:
-                  BorderRadius.circular(HomeProductCardMetrics.radius()),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: HomeProductCardMetrics.imagePadding(),
-                    child: _HomeProductImageSection(
-                      product: product,
-                      isFavorite: isFavorite,
-                      onFavoriteTap: () =>
-                          toggleProductFavorite(ref, product),
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: HomeProductCardMetrics.padding().left,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          SizedBox(
-                            height: HomeProductCardMetrics.imageToNameGap(),
-                          ),
-                          Expanded(
-                            child: _HomeProductInfoSection(product: product),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: HomeProductCardMetrics.descriptionToPriceGap(),
-                  ),
-                  Padding(
-                    padding: HomeProductCardMetrics.priceBarMargin(),
-                    child: _HomeProductPriceBar(
-                      price: priceLabel,
-                      isOutOfStock: !product.isInStock,
-                      onAddToCart: widget.onAddToCart,
-                    ),
-                  ),
-                  SizedBox(height: HomeProductCardMetrics.padding().bottom),
-                ],
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: SizedBox(
+        width: HomeProductCardMetrics.width(),
+        height: HomeProductCardMetrics.height(),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius:
+                BorderRadius.circular(HomeProductCardMetrics.radius()),
+            boxShadow: [
+              BoxShadow(
+                color: HomeProductCardMetrics.shadowColor
+                    .withValues(alpha: 0.14),
+                blurRadius: HomeProductCardMetrics.shadowBlur(),
+                offset: Offset(0, 1.h),
+                spreadRadius: 0,
               ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius:
+                BorderRadius.circular(HomeProductCardMetrics.radius()),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: HomeProductCardMetrics.imagePadding(),
+                  child: _HomeProductImageSection(
+                    product: product,
+                    isFavorite: isFavorite,
+                    onFavoriteTap: () =>
+                        toggleProductFavorite(ref, product),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: HomeProductCardMetrics.padding().left,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(
+                          height: HomeProductCardMetrics.imageToNameGap(),
+                        ),
+                        Expanded(
+                          child: _HomeProductInfoSection(product: product),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: HomeProductCardMetrics.descriptionToPriceGap(),
+                ),
+                Padding(
+                  padding: HomeProductCardMetrics.priceBarMargin(),
+                  child: _HomeProductPriceBar(
+                    price: priceLabel,
+                    isOutOfStock: !product.isInStock,
+                    onAddToCart: widget.onAddToCart,
+                  ),
+                ),
+                SizedBox(height: HomeProductCardMetrics.padding().bottom),
+              ],
             ),
           ),
         ),
@@ -147,6 +145,7 @@ class _HomeProductImageSection extends StatelessWidget {
             child: GlassFavoriteButton(
               isFavorite: isFavorite,
               onTap: onFavoriteTap,
+              lightweight: true,
               width: HomeProductCardMetrics.favoriteWidth(),
               height: HomeProductCardMetrics.favoriteHeight(),
               iconSize: HomeProductCardMetrics.favoriteIconSize(),

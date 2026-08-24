@@ -62,19 +62,33 @@ class _BrandLogoContainer extends StatelessWidget {
       padding: ExploreBrandCardMetrics.logoPadding(),
       alignment: Alignment.center,
       child: brand.hasNetworkImage
-          ? CachedNetworkImage(
-              imageUrl: brand.imageUrl!,
-              fit: BoxFit.contain,
-              fadeInDuration: Duration.zero,
-              placeholder: (_, __) => const SkeletonImagePlaceholder(
-                borderRadius: BorderRadius.all(Radius.circular(8)),
-                animated: false,
-              ),
-              errorWidget: (_, __, ___) => Icon(
-                Icons.broken_image_outlined,
-                size: 32.sp,
-                color: AppColors.primary.withValues(alpha: 0.35),
-              ),
+          ? Builder(
+              builder: (context) {
+                final dpr = MediaQuery.devicePixelRatioOf(context);
+                final cacheW =
+                    (ExploreBrandCardMetrics.cardWidth() * dpr).round().clamp(1, 512);
+                final cacheH =
+                    (ExploreBrandCardMetrics.logoContainerHeight() * dpr)
+                        .round()
+                        .clamp(1, 512);
+                return CachedNetworkImage(
+                  imageUrl: brand.imageUrl!,
+                  fit: BoxFit.contain,
+                  memCacheWidth: cacheW,
+                  memCacheHeight: cacheH,
+                  fadeInDuration: Duration.zero,
+                  fadeOutDuration: Duration.zero,
+                  placeholder: (_, __) => const SkeletonImagePlaceholder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                    animated: false,
+                  ),
+                  errorWidget: (_, __, ___) => Icon(
+                    Icons.broken_image_outlined,
+                    size: 32.sp,
+                    color: AppColors.primary.withValues(alpha: 0.35),
+                  ),
+                );
+              },
             )
           : brand.logoAsset != null
               ? Image.asset(

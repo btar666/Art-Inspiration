@@ -6,12 +6,15 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/widgets/page_back_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../checkout/data/local_orders_storage.dart';
 import '../../../cart/presentation/cart_actions.dart';
+import '../../../cart/presentation/widgets/cart_checkout_footer.dart';
+import '../../../cart/presentation/widgets/cart_page_metrics.dart';
+import '../../../checkout/data/local_orders_storage.dart';
+import '../../../checkout/presentation/widgets/checkout_review_overlay_metrics.dart';
 import '../../data/models/order_model.dart';
 import '../providers/orders_provider.dart';
-import '../widgets/order_details_action_bar.dart';
 import '../../../../core/network/connectivity_error_handler.dart';
 import '../../../../shared/widgets/skeleton/order_details_skeleton.dart';
 
@@ -90,16 +93,13 @@ class _OrderDetailsMissing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: OrderDetailsPageMetrics.pageBackground,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: IconButton(
-                onPressed: () => context.pop(),
-                icon: const Icon(Icons.arrow_forward_ios_rounded),
-              ),
+            PageBackHeader(
+              title: 'تفاصيل الطلب',
+              onBack: () => context.pop(),
             ),
             Expanded(
               child: Center(
@@ -131,40 +131,29 @@ class _OrderDetailsView extends ConsumerWidget {
         ? order.altPhone!.trim()
         : 'لا يوجد';
 
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final footerHeight =
-        screenHeight * OrderDetailsPageMetrics.footerHeightFraction;
-    final bottomRadius = OrderDetailsPageMetrics.whiteContainerBottomRadius();
+    final footerPadding = CartPageMetrics.footerPadding();
 
     return Scaffold(
-      backgroundColor: OrderDetailsPageMetrics.pageBackground,
-      body: Column(
+      backgroundColor: AppColors.background,
+      body: Stack(
         children: [
-          Expanded(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(bottomRadius),
-                  bottomRight: Radius.circular(bottomRadius),
+          SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                PageBackHeader(
+                  title: 'تفاصيل الطلب',
+                  onBack: () => context.pop(),
                 ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(bottomRadius),
-                  bottomRight: Radius.circular(bottomRadius),
-                ),
-                child: SafeArea(
-                  bottom: false,
+                Expanded(
                   child: ListView(
-                    padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 16.h),
+                    padding: EdgeInsets.fromLTRB(
+                      16.w,
+                      0,
+                      16.w,
+                      CheckoutReviewOverlayMetrics.scrollBottomInset(context),
+                    ),
                     children: [
-                      Text(
-                        'تفاصيل الطلب',
-                        style: AppTextStyles.ordersPageTitle(),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 12.h),
                       _InfoCard(
                         children: [
                           _InlineInfoRow(
@@ -242,29 +231,17 @@ class _OrderDetailsView extends ConsumerWidget {
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
           ),
-          SizedBox(
-            height: footerHeight,
-            child: ColoredBox(
-              color: OrderDetailsPageMetrics.pageBackground,
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: OrderDetailsPageMetrics.footerPadding(),
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: Transform.translate(
-                      offset: Offset(0, 5.h),
-                      child: OrderDetailsActionBar(
-                        onPrimary: () => reorderToCart(context, ref, order),
-                        onSecondary: () => context.pop(),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+          Positioned(
+            left: footerPadding.left,
+            right: footerPadding.right,
+            bottom: CheckoutReviewOverlayMetrics.overlayBottomOffset(context),
+            child: CartCheckoutFooter(
+              label: 'إعادة الطلب',
+              onTap: () => reorderToCart(context, ref, order),
+              glassy: true,
             ),
           ),
         ],

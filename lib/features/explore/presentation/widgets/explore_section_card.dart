@@ -38,20 +38,30 @@ class ExploreSectionCard extends StatelessWidget {
               child: Padding(
                 padding: ExploreSectionCardMetrics.imagePadding(),
                 child: section.hasNetworkImage
-                    ? CachedNetworkImage(
-                        imageUrl: section.imageUrl!,
-                        width: double.infinity,
-                        fit: BoxFit.contain,
-                        fadeInDuration: Duration.zero,
-                        placeholder: (_, __) => SkeletonImagePlaceholder(
-                          borderRadius: BorderRadius.circular(12.r),
-                          animated: false,
-                        ),
-                        errorWidget: (_, __, ___) => Icon(
-                          Icons.broken_image_outlined,
-                          size: 32.sp,
-                          color: AppColors.primary.withValues(alpha: 0.35),
-                        ),
+                    ? Builder(
+                        builder: (context) {
+                          final dpr = MediaQuery.devicePixelRatioOf(context);
+                          final cacheW = (120.w * dpr).round().clamp(1, 512);
+                          final cacheH = (120.w * dpr).round().clamp(1, 512);
+                          return CachedNetworkImage(
+                            imageUrl: section.imageUrl!,
+                            width: double.infinity,
+                            fit: BoxFit.contain,
+                            memCacheWidth: cacheW,
+                            memCacheHeight: cacheH,
+                            fadeInDuration: Duration.zero,
+                            fadeOutDuration: Duration.zero,
+                            placeholder: (_, __) => SkeletonImagePlaceholder(
+                              borderRadius: BorderRadius.circular(12.r),
+                              animated: false,
+                            ),
+                            errorWidget: (_, __, ___) => Icon(
+                              Icons.broken_image_outlined,
+                              size: 32.sp,
+                              color: AppColors.primary.withValues(alpha: 0.35),
+                            ),
+                          );
+                        },
                       )
                     : Icon(
                         Icons.image_outlined,

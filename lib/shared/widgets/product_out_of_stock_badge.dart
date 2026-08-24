@@ -8,6 +8,8 @@ import '../../core/theme/app_text_styles.dart';
 import 'glass_shimmer_sweep.dart';
 
 /// تاك «نافذ» زجاجي على كارت/صورة المنتج
+///
+/// [compact] للقوائم: بدون blur/shimmer لتفادي تعليق السكرول.
 class ProductOutOfStockBadge extends StatelessWidget {
   const ProductOutOfStockBadge({super.key, this.compact = false});
 
@@ -17,6 +19,30 @@ class ProductOutOfStockBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(compact ? 8.r : 10.r);
     final borderWidth = compact ? 1.0 : 1.2;
+    final label = Text(
+      'نافذ',
+      style: AppTextStyles.homeProductCardOutOfStock(
+        fontSize: compact ? 10.sp : 11.94.sp,
+      ),
+      textAlign: TextAlign.center,
+    );
+
+    if (compact) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          color: AppColors.orderStatusCancelledBg.withValues(alpha: 0.92),
+          border: Border.all(
+            color: AppColors.homeDiscount.withValues(alpha: 0.4),
+            width: borderWidth,
+          ),
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+          child: label,
+        ),
+      );
+    }
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -34,10 +60,7 @@ class ProductOutOfStockBadge extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
           child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: compact ? 7.w : 10.w,
-              vertical: compact ? 3.h : 5.h,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
             decoration: BoxDecoration(
               borderRadius: radius,
               border: Border.all(
@@ -62,13 +85,7 @@ class ProductOutOfStockBadge extends StatelessWidget {
                 ),
                 Transform.translate(
                   offset: Offset(0, -2.h),
-                  child: Text(
-                    'نافذ',
-                    style: AppTextStyles.homeProductCardOutOfStock(
-                      fontSize: compact ? 10.sp : 11.94.sp,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+                  child: label,
                 ),
               ],
             ),

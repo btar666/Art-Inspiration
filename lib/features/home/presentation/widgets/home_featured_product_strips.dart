@@ -113,6 +113,9 @@ class _FeaturedSectionStrip extends ConsumerWidget {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.symmetric(horizontal: 20.w),
+            cacheExtent: 120,
+            addAutomaticKeepAlives: false,
+            addRepaintBoundaries: true,
             itemCount: section.products.length,
             separatorBuilder: (_, __) => SizedBox(width: itemGap),
             itemBuilder: (context, index) {

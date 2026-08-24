@@ -83,6 +83,8 @@ abstract final class ExploreTabSlivers {
                 );
               },
               childCount: items.length,
+              addAutomaticKeepAlives: false,
+              addRepaintBoundaries: true,
             ),
           ),
         ),
@@ -147,6 +149,8 @@ abstract final class ExploreTabSlivers {
             );
           },
           childCount: brands.length,
+          addAutomaticKeepAlives: false,
+          addRepaintBoundaries: true,
         ),
       ),
     );
@@ -200,6 +204,8 @@ abstract final class ExploreTabSlivers {
             );
           },
           childCount: sections.length,
+          addAutomaticKeepAlives: false,
+          addRepaintBoundaries: true,
         ),
       ),
     );

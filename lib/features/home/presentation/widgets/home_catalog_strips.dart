@@ -151,6 +151,9 @@ class _CatalogStrip extends StatelessWidget {
             clipBehavior: Clip.none,
             padding: HomeCatalogStripsMetrics.listPadding(),
             scrollDirection: Axis.horizontal,
+            cacheExtent: 120,
+            addAutomaticKeepAlives: false,
+            addRepaintBoundaries: true,
             itemCount: itemCount,
             separatorBuilder: (_, __) =>
                 SizedBox(width: itemGap),
