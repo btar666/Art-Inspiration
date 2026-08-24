@@ -17,6 +17,7 @@ import '../../../settings/presentation/providers/saved_addresses_provider.dart';
 import '../../../settings/presentation/widgets/address_form_bottom_sheet.dart';
 import '../../data/checkout_provider.dart';
 import '../widgets/checkout_field_metrics.dart';
+import '../widgets/checkout_review_overlay_metrics.dart';
 
 /// الخطوة 1 — معلومات الزبون والعنوان
 class CheckoutPage extends ConsumerStatefulWidget {
@@ -200,42 +201,33 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
     final addressLabel = address?.fullAddress ?? 'أختر العنوان';
     final isDelivery =
         draft.deliveryMethod == CheckoutDeliveryMethod.delivery;
-    final bottomRadius = CartPageMetrics.whiteContainerBottomRadius();
+    final footerPadding = CartPageMetrics.footerPadding();
 
     return Scaffold(
-      backgroundColor: CartPageMetrics.pageBackground,
-      body: Column(
+      backgroundColor: AppColors.background,
+      body: Stack(
         children: [
-          Expanded(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(bottomRadius),
-                  bottomRight: Radius.circular(bottomRadius),
+          SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                PageBackHeader(
+                  title: 'طلب منتج',
+                  onBack: () => context.pop(),
                 ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(bottomRadius),
-                  bottomRight: Radius.circular(bottomRadius),
-                ),
-                child: SafeArea(
-                  bottom: false,
-                  child: Column(
-                    children: [
-                      PageBackHeader(
-                        title: 'طلب منتج',
-                        onBack: () => context.pop(),
-                      ),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 16.h),
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      20.w,
+                      0,
+                      20.w,
+                      CheckoutReviewOverlayMetrics.scrollBottomInset(context),
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
                       Align(
                         alignment: Alignment.centerRight,
                         child: Text(
@@ -421,29 +413,22 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                         selected: true,
                         onTap: () {},
                       ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
-          ColoredBox(
-            color: CartPageMetrics.pageBackground,
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: CartPageMetrics.footerPadding(),
-                child: CartCheckoutFooter(
-                  label: 'التالي',
-                  onTap: _onNext,
-                  height: CartPageMetrics.footerHeight(),
-                ),
-              ),
+          Positioned(
+            left: footerPadding.left,
+            right: footerPadding.right,
+            bottom: CheckoutReviewOverlayMetrics.overlayBottomOffset(context),
+            child: CartCheckoutFooter(
+              label: 'التالي',
+              onTap: _onNext,
+              glassy: true,
             ),
           ),
         ],
