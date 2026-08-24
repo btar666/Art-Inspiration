@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/constants/app_assets.dart';
 
-/// نصوص الشعار تحت اللوغو (السبلاش فقط)
+/// نصوص الشعار تحت اللوغو (السبلاش فقط) — صورة بدل النص
 class AppLogoText extends StatelessWidget {
   const AppLogoText({super.key, this.animate = false});
 
@@ -13,26 +12,17 @@ class AppLogoText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final column = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          AppConstants.appName,
-          style: AppTextStyles.splashTitle(),
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: 6.h),
-        Text(
-          AppConstants.appTagline,
-          style: AppTextStyles.splashTagline(),
-          textAlign: TextAlign.center,
-        ),
-      ],
+    final brand = Image.asset(
+      AppAssets.splashBrandText,
+      width: 240.w,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+      alignment: Alignment.topCenter,
     );
 
-    if (!animate) return column;
+    if (!animate) return brand;
 
-    return column
+    return brand
         .animate()
         .fadeIn(duration: 600.ms, delay: 350.ms)
         .scale(

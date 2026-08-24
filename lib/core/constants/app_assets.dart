@@ -21,6 +21,7 @@ abstract final class AppAssets {
 
   static const String frameIllustration = 'assets/images/Frame.png';
   static const String splashReference = 'assets/images/splash_reference.png';
+  static const String splashBrandText = 'assets/images/splash_brand_text.png';
   static const String onboarding1 =
       'assets/images/false-eyelashes-concept-different-makeup-accessories.jpg';
   static const String onboarding2 =

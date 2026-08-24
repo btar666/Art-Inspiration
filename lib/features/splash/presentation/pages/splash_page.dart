@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/network/connectivity_service.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../core/router/floating_cart_suppression.dart';
 import '../../../../core/storage/onboarding_storage.dart';
 import '../../../../shared/widgets/connectivity_error_dialog.dart';
 import '../../../../shared/widgets/app_animated_logo.dart';
@@ -75,7 +76,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
       return;
     }
 
-    context.go(route);
+    _goAfterSplash(route);
   }
 
   Future<void> _navigateToHomeWhenOnline() async {
@@ -95,7 +96,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
       );
 
       if (!mounted || !canProceed) return;
-      context.go(AppRoutes.home);
+      _goAfterSplash(AppRoutes.home);
     } finally {
       _isCheckingConnectivity = false;
     }
@@ -113,6 +114,16 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     }
 
     return AppRoutes.login;
+  }
+
+  /// يمنع ظهور زر السلة فوق السبلاش أثناء الانتقال
+  void _goAfterSplash(String route) {
+    final suppressed = ref.read(floatingCartSuppressedProvider.notifier);
+    suppressed.state = true;
+    context.go(route);
+    Future<void>.delayed(const Duration(milliseconds: 450), () {
+      suppressed.state = false;
+    });
   }
 
   @override
@@ -158,7 +169,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                     rotationDuration: AppConstants.splashLogoRotationDuration,
                     onRotationComplete: _onRotationComplete,
                   ),
-                  SizedBox(height: 20.h),
+                  SizedBox(height: 12.h),
                   const AppLogoText(animate: true),
                 ],
               ),
