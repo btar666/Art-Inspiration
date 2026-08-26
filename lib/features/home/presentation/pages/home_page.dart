@@ -9,6 +9,7 @@ import '../widgets/home_compact_header_overlay.dart';
 import '../widgets/home_content.dart';
 import '../widgets/home_header_overlay.dart';
 import '../widgets/home_scroll_metrics.dart';
+import '../../../../shared/widgets/scroll_to_top_button.dart';
 
 /// الصفحة الرئيسية
 class HomePage extends ConsumerStatefulWidget {
@@ -22,6 +23,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   final _scrollController = ScrollController();
   final _scrollOffset = ValueNotifier<double>(0);
   bool _headerFullyHidden = false;
+  bool _showScrollToTop = false;
 
   @override
   void initState() {
@@ -31,6 +33,12 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _onScroll() {
     final offset = _scrollController.offset;
+    final shouldShow =
+        offset > HomeScrollMetrics.logoHideStartOffset() + 80;
+    if (shouldShow != _showScrollToTop) {
+      setState(() => _showScrollToTop = shouldShow);
+    }
+
     if ((offset - _scrollOffset.value).abs() < 3) return;
 
     final hideEnd = HomeScrollMetrics.logoHideStartOffset() +
@@ -47,6 +55,15 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     _headerFullyHidden = false;
     _scrollOffset.value = offset;
+  }
+
+  void _scrollToTop() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 480),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
@@ -81,6 +98,10 @@ class _HomePageState extends ConsumerState<HomePage> {
             HomeCompactHeaderOverlay(
               scrollOffsetListenable: _scrollOffset,
               onNotificationTap: _openNotifications,
+            ),
+            ScrollToTopButton(
+              visible: _showScrollToTop,
+              onTap: _scrollToTop,
             ),
           ],
         ),

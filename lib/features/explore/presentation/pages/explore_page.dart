@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
+import '../../../../shared/widgets/scroll_to_top_button.dart';
 import '../../../cart/presentation/cart_actions.dart';
 import '../../../home/data/erp_catalog_metadata.dart';
 import '../../../home/data/home_mock_data.dart';
@@ -26,6 +27,7 @@ class ExplorePage extends ConsumerStatefulWidget {
 
 class _ExplorePageState extends ConsumerState<ExplorePage> {
   final _scrollController = ScrollController();
+  bool _showScrollToTop = false;
 
   @override
   void initState() {
@@ -42,6 +44,13 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
   }
 
   void _onScroll() {
+    final offset =
+        _scrollController.hasClients ? _scrollController.offset : 0.0;
+    final shouldShow =
+        offset > ExploreScrollMetrics.headerHideStartOffset() + 80;
+    if (shouldShow != _showScrollToTop) {
+      setState(() => _showScrollToTop = shouldShow);
+    }
     _maybeLoadMore();
   }
 
@@ -53,11 +62,23 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
     ref.read(catalogProvider.notifier).loadMore();
   }
 
+  void _scrollToTop() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 480),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   void _onTabSelected(ExploreTab tab) {
     if (tab == ref.read(exploreTabProvider)) return;
     ref.read(exploreTabProvider.notifier).state = tab;
     if (_scrollController.hasClients) {
       _scrollController.jumpTo(0);
+    }
+    if (_showScrollToTop) {
+      setState(() => _showScrollToTop = false);
     }
   }
 
@@ -109,6 +130,10 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
             selectedTab: selectedTab,
             onTabSelected: _onTabSelected,
             onNotificationTap: () => context.push(AppRoutes.notifications),
+          ),
+          ScrollToTopButton(
+            visible: _showScrollToTop,
+            onTap: _scrollToTop,
           ),
         ],
       ),
