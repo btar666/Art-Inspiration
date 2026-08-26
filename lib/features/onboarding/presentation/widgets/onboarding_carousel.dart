@@ -2,6 +2,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../data/onboarding_content.dart';
@@ -17,7 +18,7 @@ class OnboardingCarousel extends StatelessWidget {
   final CarouselSliderController carouselController;
   final ValueChanged<int> onPageChanged;
 
-  static double get _cardWidth => 240.w;
+  static double get _cardWidth => 280.w;
   static double get _cardHeight => _cardWidth * (4 / 3);
 
   @override
@@ -29,9 +30,9 @@ class OnboardingCarousel extends StatelessWidget {
         itemCount: OnboardingContent.items.length,
         options: CarouselOptions(
           height: _cardHeight + 24.h,
-          viewportFraction: 0.62,
+          viewportFraction: 0.72,
           enlargeCenterPage: true,
-          enlargeFactor: 0.22,
+          enlargeFactor: 0.18,
           enableInfiniteScroll: false,
           padEnds: true,
           clipBehavior: Clip.none,
@@ -81,17 +82,14 @@ class _CarouselCard extends StatelessWidget {
         ),
         clipBehavior: Clip.antiAlias,
         child: item.imageAsset != null
-            ? Image.asset(
+            ? SvgPicture.asset(
                 item.imageAsset!,
                 width: width,
                 height: height,
                 fit: BoxFit.cover,
                 alignment: Alignment.center,
-                gaplessPlayback: true,
-                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                  if (wasSynchronouslyLoaded || frame != null) return child;
-                  return SizedBox(width: width, height: height);
-                },
+                placeholderBuilder: (_) =>
+                    SizedBox(width: width, height: height),
               )
             : Container(
                 color: item.accentColor,

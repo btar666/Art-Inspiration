@@ -51,12 +51,14 @@ class CartItemCard extends StatelessWidget {
     required this.onRemove,
     required this.onIncrement,
     required this.onDecrement,
+    this.onTap,
   });
 
   final CartItemModel item;
   final VoidCallback onRemove;
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -70,133 +72,142 @@ class CartItemCard extends StatelessWidget {
 
     return Opacity(
       opacity: isOutOfStock ? 0.72 : 1,
-      child: Container(
-        height: cardHeight,
-        decoration: BoxDecoration(
-          color: AppColors.background,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius:
               BorderRadius.circular(CartItemCardMetrics.borderRadius()),
-          boxShadow: CartItemCardMetrics.cardShadow(),
-        ),
-        child: ClipRRect(
-          borderRadius:
-              BorderRadius.circular(CartItemCardMetrics.borderRadius()),
-          child: Row(
-            textDirection: TextDirection.ltr,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        CartItemCardMetrics.contentPadding(),
-                        12.h,
-                        8.w,
-                        0,
-                      ),
-                      child: Row(
-                        textDirection: TextDirection.ltr,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          GestureDetector(
-                            onTap: onRemove,
-                            behavior: HitTestBehavior.opaque,
-                            child: Icon(
-                              Icons.close_rounded,
-                              size: 20.sp,
-                              color: AppColors.textPrimary,
-                            ),
+          child: Container(
+            height: cardHeight,
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius:
+                  BorderRadius.circular(CartItemCardMetrics.borderRadius()),
+              boxShadow: CartItemCardMetrics.cardShadow(),
+            ),
+            child: ClipRRect(
+              borderRadius:
+                  BorderRadius.circular(CartItemCardMetrics.borderRadius()),
+              child: Row(
+                textDirection: TextDirection.ltr,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            CartItemCardMetrics.contentPadding(),
+                            12.h,
+                            8.w,
+                            0,
                           ),
-                          SizedBox(width: 6.w),
-                          Expanded(
+                          child: Row(
+                            textDirection: TextDirection.ltr,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              GestureDetector(
+                                onTap: onRemove,
+                                behavior: HitTestBehavior.opaque,
+                                child: Icon(
+                                  Icons.close_rounded,
+                                  size: 20.sp,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              SizedBox(width: 6.w),
+                              Expanded(
+                                child: Text(
+                                  product.name,
+                                  style: AppTextStyles.cartItemName(),
+                                  textAlign: TextAlign.right,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (isOutOfStock)
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              CartItemCardMetrics.contentPadding(),
+                              4.h,
+                              8.w,
+                              0,
+                            ),
                             child: Text(
-                              product.name,
-                              style: AppTextStyles.cartItemName(),
+                              'ملاحظة: المنتج نافذ حالياً',
+                              style: AppTextStyles.cartItemPrice().copyWith(
+                                fontSize: 10.5.sp,
+                                height: 1.2,
+                                color: AppColors.homeDiscount,
+                                fontWeight: FontWeight.w600,
+                              ),
                               textAlign: TextAlign.right,
-                              maxLines: 2,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    if (isOutOfStock)
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          CartItemCardMetrics.contentPadding(),
-                          4.h,
-                          8.w,
-                          0,
+                        const Spacer(),
+                        Padding(
+                          padding: EdgeInsets.only(
+                            left: CartItemCardMetrics.contentPadding(),
+                            right: 8.w,
+                          ),
+                          child: Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: AppColors.dotGrid.withValues(alpha: 0.45),
+                          ),
                         ),
-                        child: Text(
-                          'ملاحظة: المنتج نافذ حالياً',
-                          style: AppTextStyles.cartItemPrice().copyWith(
-                            fontSize: 10.5.sp,
-                            height: 1.2,
-                            color: AppColors.homeDiscount,
-                            fontWeight: FontWeight.w600,
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            CartItemCardMetrics.contentPadding(),
+                            6.h,
+                            8.w,
+                            8.h,
                           ),
-                          textAlign: TextAlign.right,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          child: Row(
+                            textDirection: TextDirection.ltr,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              _QuantitySelector(
+                                quantity: item.quantity,
+                                onIncrement:
+                                    canIncrement ? onIncrement : () {},
+                                onDecrement: onDecrement,
+                                incrementEnabled: canIncrement,
+                              ),
+                              const Spacer(),
+                              Text(
+                                'السعر : ${product.formattedPrice}',
+                                style: AppTextStyles.cartItemPrice(),
+                                textAlign: TextAlign.right,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    const Spacer(),
-                    Padding(
-                      padding: EdgeInsets.only(
-                        left: CartItemCardMetrics.contentPadding(),
-                        right: 8.w,
-                      ),
-                      child: Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: AppColors.dotGrid.withValues(alpha: 0.45),
-                      ),
+                      ],
                     ),
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        CartItemCardMetrics.contentPadding(),
-                        6.h,
-                        8.w,
-                        8.h,
-                      ),
-                      child: Row(
-                        textDirection: TextDirection.ltr,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          _QuantitySelector(
-                            quantity: item.quantity,
-                            onIncrement: canIncrement ? onIncrement : () {},
-                            onDecrement: onDecrement,
-                            incrementEnabled: canIncrement,
-                          ),
-                          const Spacer(),
-                          Text(
-                            'السعر : ${product.formattedPrice}',
-                            style: AppTextStyles.cartItemPrice(),
-                            textAlign: TextAlign.right,
-                          ),
-                        ],
-                      ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: CartItemCardMetrics.imageInsetVertical(),
+                      right: CartItemCardMetrics.imageInsetEnd(),
+                      bottom: CartItemCardMetrics.imageInsetVertical(),
                     ),
-                  ],
-                ),
+                    child: _ProductThumb(
+                      product: product,
+                      size: thumbSize,
+                      isOutOfStock: isOutOfStock,
+                    ),
+                  ),
+                ],
               ),
-              Padding(
-                padding: EdgeInsets.only(
-                  top: CartItemCardMetrics.imageInsetVertical(),
-                  right: CartItemCardMetrics.imageInsetEnd(),
-                  bottom: CartItemCardMetrics.imageInsetVertical(),
-                ),
-                child: _ProductThumb(
-                  product: product,
-                  size: thumbSize,
-                  isOutOfStock: isOutOfStock,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

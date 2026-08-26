@@ -22,12 +22,9 @@ abstract final class AppAssets {
   static const String frameIllustration = 'assets/images/Frame.png';
   static const String splashReference = 'assets/images/splash_reference.png';
   static const String splashBrandText = 'assets/images/splash_brand_text.png';
-  static const String onboarding1 =
-      'assets/images/false-eyelashes-concept-different-makeup-accessories.jpg';
-  static const String onboarding2 =
-      'assets/images/false-eyelashes-concept-different-makeup-accessories (1).jpg';
-  static const String onboarding3 =
-      'assets/images/ChatGPT Image Aug 9, 2026, 09_17_17 PM.png';
+  static const String onboarding1 = 'assets/images/onboarding_1.svg';
+  static const String onboarding2 = 'assets/images/onboarding_2.svg';
+  static const String onboarding3 = 'assets/images/onboarding_3.svg';
   static const String notificationRed = 'assets/images/notred.png';
   static const String notificationClean = 'assets/images/notclean.png';
   static const String basketLogo = 'assets/images/basket_logo.png';

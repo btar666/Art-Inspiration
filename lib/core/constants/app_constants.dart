@@ -24,9 +24,6 @@ abstract final class AppConstants {
   static const int taxonomyCacheVersion = 2;
   static const int orderImageCacheVersion = 1;
 
-  /// للتجربة فقط: إجبار ظهور الـ Onboarding في كل تشغيل
-  static const bool alwaysShowOnboarding = false;
-
   /// تأخير قصير بعد انتهاء دوران اللوغو قبل الانتقال
   static const Duration splashPostRotationDelay = Duration(milliseconds: 500);
 

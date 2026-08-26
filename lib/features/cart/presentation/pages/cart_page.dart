@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/add_to_cart_snackbar.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
+import '../../../../shared/widgets/product_details_widget.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../checkout/data/checkout_provider.dart';
 import '../cart_actions.dart';
@@ -140,6 +141,10 @@ class CartPage extends ConsumerWidget {
                               padding: EdgeInsets.only(bottom: 12.h),
                               child: CartItemCard(
                                 item: item,
+                                onTap: () => ProductDetailsWidget.open(
+                                  context,
+                                  item.product,
+                                ),
                                 onRemove: () => _confirmRemoveItem(
                                   context,
                                   ref,

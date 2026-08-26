@@ -22,6 +22,35 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
     return 0;
   }
 
+  /// تعيين الكمية المطلقة لمنتج موجود في السلة (أو إضافته إن لم يكن موجوداً)
+  void setProductQuantity(ProductModel product, int quantity) {
+    if (quantity < 1) {
+      final index = state.indexWhere((item) => item.product.id == product.id);
+      if (index >= 0) removeAt(index);
+      return;
+    }
+
+    final max = product.maxOrderQuantity;
+    var next = quantity;
+    if (max != null && next > max) next = max < 1 ? 1 : max;
+
+    final items = [...state];
+    final index = items.indexWhere((item) => item.product.id == product.id);
+    if (index >= 0) {
+      if (items[index].quantity == next) return;
+      items[index] = items[index].copyWith(
+        product: product,
+        quantity: next,
+      );
+    } else {
+      items.add(CartItemModel(product: product, quantity: next));
+      ref.read(cartAnimationTickProvider.notifier).state++;
+    }
+
+    state = items;
+    _persist();
+  }
+
   void addProduct(ProductModel product, {int quantity = 1}) {
     if (quantity < 1) return;
 
@@ -115,6 +144,15 @@ final cartItemCountProvider = Provider<int>((ref) {
   return ref
       .watch(cartNotifierProvider)
       .fold(0, (sum, item) => sum + item.quantity);
+});
+
+/// كمية منتج معيّن في السلة (0 إن لم يكن موجوداً)
+final cartQuantityOfProvider = Provider.family<int, String>((ref, productId) {
+  final items = ref.watch(cartNotifierProvider);
+  for (final item in items) {
+    if (item.product.id == productId) return item.quantity;
+  }
+  return 0;
 });
 
 final cartSubtotalProvider = Provider<int>((ref) {

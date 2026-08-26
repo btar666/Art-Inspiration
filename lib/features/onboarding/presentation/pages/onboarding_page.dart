@@ -30,6 +30,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   Future<void> _completeOnboarding() async {
     await ref.read(onboardingStorageProvider).markCompleted();
+    ref.read(onboardingPageIndexProvider.notifier).state = 0;
     if (!mounted) return;
     final isLoggedIn = ref.read(authStorageProvider).isLoggedIn;
     context.go(isLoggedIn ? AppRoutes.home : AppRoutes.login);

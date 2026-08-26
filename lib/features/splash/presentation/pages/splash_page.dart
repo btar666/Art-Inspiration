@@ -18,6 +18,7 @@ import '../../../../shared/widgets/decorative_dot_grid.dart';
 import '../../../../shared/widgets/sparkle_icon.dart';
 import '../../../auth/data/auth_storage.dart';
 import '../../../onboarding/data/onboarding_content.dart';
+import '../../../onboarding/data/onboarding_images.dart';
 import '../widgets/app_logo.dart';
 
 /// شاشة السبلاش مع أنيميشن احترافي
@@ -48,11 +49,10 @@ class _SplashPageState extends ConsumerState<SplashPage> {
   }
 
   Future<void> _precacheOnboardingImages() async {
-    for (final item in OnboardingContent.items) {
-      final asset = item.imageAsset;
-      if (asset == null) continue;
-      await precacheImage(AssetImage(asset), context);
-    }
+    final assets = OnboardingContent.items
+        .map((item) => item.imageAsset)
+        .whereType<String>();
+    await OnboardingImages.precacheAll(context, assets);
   }
 
   void _onRotationComplete() {
@@ -104,12 +104,20 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
   /// أول فتح → Onboarding | بعده → الرئيسية أو تسجيل الدخول
   String _resolveStartRoute() {
-    if (AppConstants.alwaysShowOnboarding ||
-        !ref.read(onboardingStorageProvider).isCompleted) {
+    final storage = ref.read(onboardingStorageProvider);
+    final isLoggedIn = ref.read(authStorageProvider).isLoggedIn;
+
+    // مستخدم مسجّل مسبقاً = ليس أول تثبيت — لا نعرض الـ Onboarding
+    if (!storage.isCompleted && isLoggedIn) {
+      storage.markCompleted();
+      return AppRoutes.home;
+    }
+
+    if (!storage.isCompleted) {
       return AppRoutes.onboarding;
     }
 
-    if (ref.read(authStorageProvider).isLoggedIn) {
+    if (isLoggedIn) {
       return AppRoutes.home;
     }
 

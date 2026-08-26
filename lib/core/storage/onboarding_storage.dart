@@ -17,8 +17,9 @@ class OnboardingStorage {
   bool get isCompleted =>
       _prefs.getBool(AppConstants.onboardingCompletedKey) ?? false;
 
-  Future<void> markCompleted() =>
-      _prefs.setBool(AppConstants.onboardingCompletedKey, true);
+  Future<void> markCompleted() async {
+    await _prefs.setBool(AppConstants.onboardingCompletedKey, true);
+  }
 
   Future<void> reset() => _prefs.remove(AppConstants.onboardingCompletedKey);
 }

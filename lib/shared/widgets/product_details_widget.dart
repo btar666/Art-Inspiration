@@ -11,6 +11,7 @@ import '../../core/router/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../features/cart/presentation/cart_actions.dart';
+import '../../features/cart/presentation/providers/cart_provider.dart';
 import '../../features/favorites/presentation/favorites_actions.dart';
 import '../../features/favorites/presentation/providers/favorites_provider.dart';
 import '../../features/home/data/models/product_model.dart';
@@ -54,12 +55,20 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
   late int _quantity;
   late int _selectedImageIndex;
   final _quantitySelectorKey = GlobalKey<_QuantitySelectorState>();
+  var _ignoreCartSync = false;
 
   @override
   void initState() {
     super.initState();
     _quantity = _clampedQuantity(widget.initialQuantity);
     _selectedImageIndex = 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final cartQty = ref.read(cartQuantityOfProvider(product.id));
+      if (cartQty > 0 && cartQty != _quantity) {
+        setState(() => _quantity = _clampedQuantity(cartQty));
+      }
+    });
   }
 
   int _clampedQuantity(int value) {
@@ -75,6 +84,12 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
     return true;
   }
 
+  void _applyQuantity(int value) {
+    final next = _clampedQuantity(value);
+    setState(() => _quantity = next);
+    _pushQuantityToCartIfPresent(next);
+  }
+
   void _tryIncrement() {
     if (_blockIfOutOfStock()) return;
     final max = product.maxOrderQuantity;
@@ -82,12 +97,12 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
       showStockLimitSnackBar(context, max);
       return;
     }
-    setState(() => _quantity++);
+    _applyQuantity(_quantity + 1);
   }
 
   void _tryDecrement() {
     if (_blockIfOutOfStock()) return;
-    if (_quantity > 1) setState(() => _quantity--);
+    if (_quantity > 1) _applyQuantity(_quantity - 1);
   }
 
   void _setQuantity(int value) {
@@ -95,16 +110,38 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
     final max = product.maxOrderQuantity;
     if (max != null && value > max) {
       showStockLimitSnackBar(context, max);
-      setState(() => _quantity = max < 1 ? 1 : max);
+      _applyQuantity(max);
       return;
     }
-    setState(() => _quantity = value < 1 ? 1 : value);
+    _applyQuantity(value);
+  }
+
+  /// إذا كان المنتج في السلة، حدّث كميتها فوراً لتبقى متزامنة مع التفاصيل
+  void _pushQuantityToCartIfPresent(int quantity) {
+    final cart = ref.read(cartNotifierProvider.notifier);
+    if (cart.quantityOf(product.id) < 1) return;
+
+    _ignoreCartSync = true;
+    cart.setProductQuantity(
+      product.withPriceFor(ref.read(userPricePolicyProvider)),
+      quantity,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ignoreCartSync = false;
+    });
   }
 
   ProductModel get product => widget.product;
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(cartQuantityOfProvider(product.id), (previous, next) {
+      if (_ignoreCartSync) return;
+      if (next > 0 && next != _quantity) {
+        setState(() => _quantity = _clampedQuantity(next));
+      }
+    });
+
     final isFavorite = ref.watch(isProductFavoriteProvider(product.id));
     final priceLabel =
         product.formattedPriceFor(ref.watch(userPricePolicyProvider));
@@ -207,14 +244,31 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
     final quantity = pending ?? _quantity;
     if (widget.onAddToCart != null) {
       widget.onAddToCart!.call(quantity);
-    } else {
-      addProductToCart(
-        context,
-        ref,
-        product,
-        quantity: quantity,
-      );
+      return;
     }
+
+    final cart = ref.read(cartNotifierProvider.notifier);
+    final alreadyInCart = cart.quantityOf(product.id) > 0;
+    if (alreadyInCart) {
+      _ignoreCartSync = true;
+      cart.setProductQuantity(
+        product.withPriceFor(ref.read(userPricePolicyProvider)),
+        quantity,
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _ignoreCartSync = false;
+      });
+      if (!context.mounted) return;
+      showAddToCartSnackBar(context);
+      return;
+    }
+
+    addProductToCart(
+      context,
+      ref,
+      product,
+      quantity: quantity,
+    );
   }
 }
 
