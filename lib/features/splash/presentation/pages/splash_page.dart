@@ -172,7 +172,8 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                   AppAnimatedLogo(
                     size: 80,
                     enableRotation: true,
-                    enableEntrance: true,
+                    // الشعار مرسوم أصلاً على شاشة الإقلاع الأصلية — أي دخول هنا يعني وميض
+                    enableEntrance: false,
                     shakeOnTap: true,
                     rotationDuration: AppConstants.splashLogoRotationDuration,
                     onRotationComplete: _onRotationComplete,
