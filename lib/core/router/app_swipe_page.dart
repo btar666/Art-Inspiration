@@ -10,7 +10,7 @@ abstract final class AppPageTransition {
   static const Duration reverseDuration = Duration(milliseconds: 160);
 }
 
-/// صفحة بانتقال iOS القياسي مع إمكانية السحب من الحافة للرجوع
+/// صفحة بانتقال iOS القياسي مع إمكانية السحب من الحافتين للرجوع
 class AppSwipePage<T> extends Page<T> {
   const AppSwipePage({
     required this.child,
@@ -23,7 +23,69 @@ class AppSwipePage<T> extends Page<T> {
   Route<T> createRoute(BuildContext context) {
     return _FastCupertinoPageRoute<T>(
       settings: this,
-      builder: (_) => child,
+      builder: (_) => _LeftEdgeBack(child: child),
+    );
+  }
+}
+
+/// رجوع بالسحب من الحافة اليسرى أيضاً
+///
+/// ‏`CupertinoPageRoute` يضع إيماءة الرجوع على حافة البداية، وهي في تطبيق
+/// RTL الحافة **اليمنى**، بعرض 20 نقطة. هذا هو سلوك iOS الصحيح للعربية،
+/// لكن كثيراً من الزبائن يسحبون من اليسار بحكم العادة فلا يحدث شيء.
+///
+/// هذه الطبقة تضيف الحافة اليسرى كذلك. لا تحرّك الصفحة مع الإصبع كإيماءة
+/// النظام — تنفّذ `pop` عند انتهاء السحب — لكنها تفتح المخرج المتوقَّع.
+/// ‏`translucent` تمرّر اللمس إلى ما تحتها، فلا تبتلع أزراراً.
+class _LeftEdgeBack extends StatefulWidget {
+  const _LeftEdgeBack({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_LeftEdgeBack> createState() => _LeftEdgeBackState();
+}
+
+class _LeftEdgeBackState extends State<_LeftEdgeBack> {
+  /// نفس عرض شريط إيماءة النظام
+  static const _edgeWidth = 20.0;
+
+  /// سحبة مقصودة: مسافة كافية أو دفعة سريعة
+  static const _minDistance = 60.0;
+  static const _minVelocity = 300.0;
+
+  var _dragged = 0.0;
+
+  void _pop() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) navigator.pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        widget.child,
+        Positioned(
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: _edgeWidth,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onHorizontalDragStart: (_) => _dragged = 0,
+            onHorizontalDragUpdate: (details) => _dragged += details.delta.dx,
+            onHorizontalDragEnd: (details) {
+              final velocity = details.primaryVelocity ?? 0;
+              if (_dragged >= _minDistance || velocity >= _minVelocity) {
+                _pop();
+              }
+              _dragged = 0;
+            },
+          ),
+        ),
+      ],
     );
   }
 }
