@@ -82,14 +82,6 @@ class _HeaderBody extends StatelessWidget {
                   const Positioned.fill(
                     child: PinnedBlurGradientBackground(
                       fadeStops: PinnedBlurHeaderStyle.exploreFadeStops,
-                      strongBlurSigma:
-                          PinnedBlurHeaderStyle.exploreStrongBlurSigma,
-                      mediumBlurSigma:
-                          PinnedBlurHeaderStyle.exploreMediumBlurSigma,
-                      lightBlurSigma:
-                          PinnedBlurHeaderStyle.exploreLightBlurSigma,
-                      strongBlurMaskEnd:
-                          PinnedBlurHeaderStyle.exploreStrongBlurMaskEnd,
                     ),
                   ),
                   Padding(

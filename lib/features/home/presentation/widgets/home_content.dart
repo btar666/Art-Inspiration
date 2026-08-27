@@ -115,7 +115,7 @@ class _HomeContentState extends ConsumerState<HomeContent> {
                       padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 0),
                       child: _CatalogWarningBanner(message: catalog.warningMessage!),
                     ),
-                  HomeCatalogStrips(catalog: catalog),
+                  const HomeCatalogStrips(),
                   const HomeFeaturedProductStrips(),
                   Padding(
                     padding: EdgeInsets.fromLTRB(20.w, 6.h, 20.w, 12.h),
@@ -199,11 +199,14 @@ class _HomeContentState extends ConsumerState<HomeContent> {
   Widget build(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;
     final catalogAsync = ref.watch(catalogProvider);
+    // الهيدر يطفو فوق هذه القائمة، فمؤشر السحب للتحديث يبدأ تحته لا خلفه
+    final refreshOffset = topInset + HomeScrollMetrics.headerRowHeight();
 
     return catalogAsync.when(
       loading: () => AppRefreshScrollView(
         onRefresh: _onRefresh,
         controller: widget.scrollController,
+        edgeOffset: refreshOffset,
         slivers: [
           SliverToBoxAdapter(
             child: HomePageSkeleton(
@@ -219,6 +222,7 @@ class _HomeContentState extends ConsumerState<HomeContent> {
         child: AppRefreshScrollView(
           onRefresh: _onRefresh,
           controller: widget.scrollController,
+          edgeOffset: refreshOffset,
           slivers: [
             SliverToBoxAdapter(
               child: SizedBox(
@@ -232,6 +236,7 @@ class _HomeContentState extends ConsumerState<HomeContent> {
       data: (catalog) => AppRefreshScrollView(
         onRefresh: _onRefresh,
         controller: widget.scrollController,
+        edgeOffset: refreshOffset,
         slivers: _catalogSlivers(
           topInset: topInset,
           catalog: catalog,

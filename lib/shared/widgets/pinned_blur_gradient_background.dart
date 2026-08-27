@@ -36,16 +36,8 @@ abstract final class PinnedBlurHeaderStyle {
         Color(0x88FFFFFF),
       ];
 
-  /// تغويش أقوى من الأعلى — للاكسبلور فقط
-  static const double exploreStrongBlurSigma = 44;
-  static const double exploreMediumBlurSigma = 24;
-  static const double exploreLightBlurSigma = 8;
-  static const double exploreStrongBlurMaskEnd = 0.48;
-
-  static const double defaultStrongBlurSigma = 30;
-  static const double defaultMediumBlurSigma = 18;
-  static const double defaultLightBlurSigma = 6;
-  static const double defaultStrongBlurMaskEnd = 0.35;
+  /// تغويش الهيدر — قيمة واحدة، انظر التعليق في [PinnedBlurGradientBackground]
+  static const double defaultBlurSigma = 28;
 
   static Shader fadeMaskShader(
     Rect bounds,
@@ -61,31 +53,33 @@ abstract final class PinnedBlurHeaderStyle {
   }
 }
 
-/// خلفية التغويش المتدرج + التدرج اللوني — تُستخدم في الاكسبلور والرئيسية
+/// خلفية التغويش + التدرج اللوني — تُستخدم في الاكسبلور والرئيسية
+///
+/// طبقة تغويش واحدة، لا ثلاث. النسخة الأولى كدّست ثلاثة [BackdropFilter]
+/// (سيغما 44 و24 و8) كل واحد داخل [ShaderMask] خاص به، لتقليد «تغويش متدرج».
+/// هذا يعني ٣ عمليات blur + ٤ طبقات saveLayer لكل هيدر، في كل إطار، والرئيسية
+/// تعرض هيدرين معاً أثناء الانتقال. والطبقة الأقوى كانت مقنّعة عند أعلى الهيدر
+/// — أي تحت التدرج المعتم بنسبة 92%، حيث لا تكاد تُرى.
+///
+/// [BackdropFilter] لا يمكن تخزينه مؤقتاً: يقرأ ما خلفه، والذي يتغيّر مع كل
+/// إطار أثناء السكرول. فالحل الوحيد هو تقليل عددها.
 class PinnedBlurGradientBackground extends StatelessWidget {
   const PinnedBlurGradientBackground({
     super.key,
     required this.fadeStops,
     this.fadeMaskColors,
-    this.strongBlurSigma = PinnedBlurHeaderStyle.defaultStrongBlurSigma,
-    this.mediumBlurSigma = PinnedBlurHeaderStyle.defaultMediumBlurSigma,
-    this.lightBlurSigma = PinnedBlurHeaderStyle.defaultLightBlurSigma,
-    this.strongBlurMaskEnd = PinnedBlurHeaderStyle.defaultStrongBlurMaskEnd,
+    this.blurSigma = PinnedBlurHeaderStyle.defaultBlurSigma,
   });
 
   final List<double> fadeStops;
   final List<Color>? fadeMaskColors;
-  final double strongBlurSigma;
-  final double mediumBlurSigma;
-  final double lightBlurSigma;
-  final double strongBlurMaskEnd;
+  final double blurSigma;
 
   @override
   Widget build(BuildContext context) {
     return ShaderMask(
       blendMode: BlendMode.dstIn,
-      shaderCallback: (bounds) =>
-          PinnedBlurHeaderStyle.fadeMaskShader(
+      shaderCallback: (bounds) => PinnedBlurHeaderStyle.fadeMaskShader(
         bounds,
         fadeStops,
         colors: fadeMaskColors,
@@ -93,32 +87,9 @@ class PinnedBlurGradientBackground extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          _MaskedBlurLayer(
-            sigma: strongBlurSigma,
-            maskStops: [0.0, strongBlurMaskEnd, 1.0],
-            maskColors: const [
-              Colors.white,
-              Colors.white,
-              Colors.transparent,
-            ],
-          ),
-          _MaskedBlurLayer(
-            sigma: mediumBlurSigma,
-            maskStops: const [0.0, 0.5, 1.0],
-            maskColors: const [
-              Colors.transparent,
-              Colors.white,
-              Colors.transparent,
-            ],
-          ),
-          _MaskedBlurLayer(
-            sigma: lightBlurSigma,
-            maskStops: const [0.0, 0.75, 1.0],
-            maskColors: const [
-              Colors.transparent,
-              Colors.white,
-              Colors.white,
-            ],
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+            child: const ColoredBox(color: Color(0x01FFFFFF)),
           ),
           DecoratedBox(
             decoration: BoxDecoration(
@@ -131,35 +102,6 @@ class PinnedBlurGradientBackground extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _MaskedBlurLayer extends StatelessWidget {
-  const _MaskedBlurLayer({
-    required this.sigma,
-    required this.maskStops,
-    required this.maskColors,
-  });
-
-  final double sigma;
-  final List<double> maskStops;
-  final List<Color> maskColors;
-
-  @override
-  Widget build(BuildContext context) {
-    return ShaderMask(
-      blendMode: BlendMode.dstIn,
-      shaderCallback: (bounds) => LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: maskColors,
-        stops: maskStops,
-      ).createShader(bounds),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
-        child: const ColoredBox(color: Color(0x01FFFFFF)),
       ),
     );
   }

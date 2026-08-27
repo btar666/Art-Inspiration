@@ -8,16 +8,22 @@ class AppRefreshIndicator extends StatelessWidget {
     super.key,
     required this.onRefresh,
     required this.child,
+    this.edgeOffset = 0,
   });
 
   final Future<void> Function() onRefresh;
   final Widget child;
+
+  /// كم ينزل المؤشر عن أعلى الشاشة. الصفحات التي ترسم هيدراً عائماً فوق
+  /// قائمتها (الرئيسية) تمرّر ارتفاع الهيدر، وإلا ظهر المؤشر خلف شريط البحث.
+  final double edgeOffset;
 
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: onRefresh,
+      edgeOffset: edgeOffset,
       child: child,
     );
   }
@@ -30,16 +36,21 @@ class AppRefreshScrollView extends StatelessWidget {
     required this.onRefresh,
     required this.slivers,
     this.controller,
+    this.edgeOffset = 0,
   });
 
   final Future<void> Function() onRefresh;
   final List<Widget> slivers;
   final ScrollController? controller;
 
+  /// انظر [AppRefreshIndicator.edgeOffset]
+  final double edgeOffset;
+
   @override
   Widget build(BuildContext context) {
     return AppRefreshIndicator(
       onRefresh: onRefresh,
+      edgeOffset: edgeOffset,
       child: CustomScrollView(
         controller: controller,
         physics: const AlwaysScrollableScrollPhysics(

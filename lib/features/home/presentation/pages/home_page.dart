@@ -23,7 +23,24 @@ class _HomePageState extends ConsumerState<HomePage> {
   final _scrollController = ScrollController();
   final _scrollOffset = ValueNotifier<double>(0);
   bool _headerFullyHidden = false;
-  bool _showScrollToTop = false;
+  // ValueNotifier وليس setState: setState هنا يعيد بناء HomeContent كاملاً —
+  // أي كل شرائح الكتالوج — لمجرد إظهار زر صغير أثناء السكرول.
+  final _showScrollToTop = ValueNotifier<bool>(false);
+
+  // تُبنى مرة واحدة ولا يتغيّر وسيطها أبداً. لماذا حقول وليس داخل build:
+  // أي إعادة بناء لـ HomePage — وقد رُصدت واحدة عند كل جلسة سكرول، من تغيّر
+  // InheritedWidget فوق الصفحة (didChangeDependencies) — كانت تُنشئ HomeContent
+  // جديداً، فيُعاد بناء كل شرائح الكتالوج. قياساً: إطار واحد بطول 130 مللي ثانية.
+  // بتثبيت النسخة يرى فلاتر نفس الودجت فيتخطّى الشجرة كاملة.
+  late final Widget _content = HomeContent(scrollController: _scrollController);
+  late final Widget _header = HomeHeaderOverlay(
+    scrollOffsetListenable: _scrollOffset,
+    onNotificationTap: _openNotifications,
+  );
+  late final Widget _compactHeader = HomeCompactHeaderOverlay(
+    scrollOffsetListenable: _scrollOffset,
+    onNotificationTap: _openNotifications,
+  );
 
   @override
   void initState() {
@@ -33,11 +50,9 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _onScroll() {
     final offset = _scrollController.offset;
-    final shouldShow =
+    // ValueNotifier لا يُبلّغ إلا عند تغيّر القيمة فعلاً
+    _showScrollToTop.value =
         offset > HomeScrollMetrics.logoHideStartOffset() + 80;
-    if (shouldShow != _showScrollToTop) {
-      setState(() => _showScrollToTop = shouldShow);
-    }
 
     if ((offset - _scrollOffset.value).abs() < 3) return;
 
@@ -72,6 +87,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       ..removeListener(_onScroll)
       ..dispose();
     _scrollOffset.dispose();
+    _showScrollToTop.dispose();
     super.dispose();
   }
 
@@ -90,18 +106,15 @@ class _HomePageState extends ConsumerState<HomePage> {
         extendBodyBehindAppBar: true,
         body: Stack(
           children: [
-            HomeContent(scrollController: _scrollController),
-            HomeHeaderOverlay(
-              scrollOffsetListenable: _scrollOffset,
-              onNotificationTap: _openNotifications,
-            ),
-            HomeCompactHeaderOverlay(
-              scrollOffsetListenable: _scrollOffset,
-              onNotificationTap: _openNotifications,
-            ),
-            ScrollToTopButton(
-              visible: _showScrollToTop,
-              onTap: _scrollToTop,
+            _content,
+            _header,
+            _compactHeader,
+            ValueListenableBuilder<bool>(
+              valueListenable: _showScrollToTop,
+              builder: (context, visible, _) => ScrollToTopButton(
+                visible: visible,
+                onTap: _scrollToTop,
+              ),
             ),
           ],
         ),

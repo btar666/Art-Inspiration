@@ -10,14 +10,17 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/skeleton/skeleton_image_placeholder.dart';
 import '../../../explore/data/models/explore_models.dart';
 import '../../../explore/presentation/providers/explore_tab_provider.dart';
-import '../../data/models/catalog_snapshot.dart';
+import '../providers/products_provider.dart';
 import 'home_catalog_strips_metrics.dart';
 
 /// صفوف أفقية للفئات ثم البراندات أسفل السلايدر
+///
+/// يقرأ الكتالوج بنفسه بدل استقباله كوسيط، حتى يمرّره [HomeContent] كـ const.
+/// المُنشئ الثابت يعني أن فلاتر يتخطّى هذه الشجرة كاملةً عند أي إعادة بناء
+/// للصفحة الأم — وهي شجرة غالية: صفّان أفقيان بصور شبكية. قياساً: إعادة بناء
+/// واحدة للصفحة كانت تكلّف إطاراً بطول 128 مللي ثانية.
 class HomeCatalogStrips extends ConsumerWidget {
-  const HomeCatalogStrips({super.key, required this.catalog});
-
-  final CatalogSnapshot catalog;
+  const HomeCatalogStrips({super.key});
 
   void _openExplore(WidgetRef ref, BuildContext context, ExploreTab tab) {
     ref.read(exploreTabProvider.notifier).state = tab;
@@ -26,6 +29,9 @@ class HomeCatalogStrips extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final catalog = ref.watch(catalogProvider).value;
+    if (catalog == null) return const SizedBox.shrink();
+
     final sections = catalog.sectionNames;
     final brands = catalog.brands.where((b) => b.trim().isNotEmpty).toList();
 

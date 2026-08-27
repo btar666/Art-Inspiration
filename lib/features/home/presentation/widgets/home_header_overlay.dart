@@ -29,7 +29,34 @@ class HomeHeaderOverlay extends StatelessWidget {
 
     return ValueListenableBuilder<double>(
       valueListenable: scrollOffsetListenable,
-      builder: (context, scrollOffset, _) {
+      // يُبنى مرة واحدة: التغويش وشريط البحث لا يتغيّران مع السكرول — تتغيّر
+      // شفافيتهما وموضعهما فقط. بدون هذا الـ child كان الهيدر كاملاً يُعاد
+      // بناؤه مع كل إشعار سكرول، بما فيه شريط البحث وأنيميشن التلميح.
+      child: ClipRect(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: PinnedBlurGradientBackground(
+                  fadeStops: PinnedBlurHeaderStyle.homeFadeStops,
+                ),
+              ),
+            ),
+            Positioned(
+              top: topInset,
+              left: 0,
+              right: 0,
+              child: HomeSearchBar(
+                onSearchTap: () => context.go(AppRoutes.search),
+                onScannerTap: () => context.push(AppRoutes.barcodeScanner),
+                onNotificationTap: onNotificationTap,
+              ),
+            ),
+          ],
+        ),
+      ),
+      builder: (context, scrollOffset, child) {
         final hideProgress =
             ((scrollOffset - hideStart) / hideRange).clamp(0.0, 1.0);
         final opacity = 1.0 - hideProgress;
@@ -41,45 +68,13 @@ class HomeHeaderOverlay extends StatelessWidget {
           left: 0,
           right: 0,
           height: headerHeight,
-          child: Opacity(
-            opacity: opacity,
-            child: Transform.translate(
-              offset: Offset(0, -12.h * hideProgress),
-              child: ClipRect(
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    const Positioned.fill(
-                      child: IgnorePointer(
-                        child: PinnedBlurGradientBackground(
-                          fadeStops: PinnedBlurHeaderStyle.homeFadeStops,
-                          strongBlurSigma:
-                              PinnedBlurHeaderStyle.exploreStrongBlurSigma,
-                          mediumBlurSigma:
-                              PinnedBlurHeaderStyle.exploreMediumBlurSigma,
-                          lightBlurSigma:
-                              PinnedBlurHeaderStyle.exploreLightBlurSigma,
-                          strongBlurMaskEnd:
-                              PinnedBlurHeaderStyle.exploreStrongBlurMaskEnd,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: topInset,
-                      left: 0,
-                      right: 0,
-                      child: IgnorePointer(
-                        ignoring: opacity < 0.1,
-                        child: HomeSearchBar(
-                          onSearchTap: () => context.go(AppRoutes.search),
-                          onScannerTap: () =>
-                              context.push(AppRoutes.barcodeScanner),
-                          onNotificationTap: onNotificationTap,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+          child: IgnorePointer(
+            ignoring: opacity < 0.1,
+            child: Opacity(
+              opacity: opacity,
+              child: Transform.translate(
+                offset: Offset(0, -12.h * hideProgress),
+                child: child,
               ),
             ),
           ),

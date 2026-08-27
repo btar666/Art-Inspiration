@@ -124,11 +124,6 @@ class _HomeCompactHeaderOverlayState extends State<HomeCompactHeaderOverlay>
                 child: PinnedBlurGradientBackground(
                   fadeStops: PinnedBlurHeaderStyle.compactFadeStops,
                   fadeMaskColors: PinnedBlurHeaderStyle.compactFadeMaskColors,
-                  strongBlurSigma: PinnedBlurHeaderStyle.exploreStrongBlurSigma,
-                  mediumBlurSigma: PinnedBlurHeaderStyle.exploreMediumBlurSigma,
-                  lightBlurSigma: PinnedBlurHeaderStyle.exploreLightBlurSigma,
-                  strongBlurMaskEnd:
-                      PinnedBlurHeaderStyle.exploreStrongBlurMaskEnd,
                 ),
               ),
             ),

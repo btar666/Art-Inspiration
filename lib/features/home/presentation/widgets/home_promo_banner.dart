@@ -14,6 +14,7 @@ import '../../../app_api/models/slider_item_model.dart';
 import '../../../app_api/presentation/providers/app_api_providers.dart';
 import '../../../app_api/presentation/slider_navigation.dart';
 import '../providers/home_slider_index_provider.dart';
+import 'home_scroll_metrics.dart';
 import '../../../../shared/widgets/skeleton/home_page_skeleton.dart';
 
 /// بانر ترويجي متحرك بعرض الشاشة الكامل — من api/slider
@@ -191,9 +192,7 @@ class _SliderSlide extends StatelessWidget {
                         .clamp(1, 2048),
                 fadeInDuration: Duration.zero,
                 fadeOutDuration: Duration.zero,
-                placeholder: (_, __) => const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+                placeholder: (_, __) => const _SliderLoader(),
                 errorWidget: (_, __, ___) => Icon(
                   Icons.image_outlined,
                   size: 40.sp,
@@ -313,7 +312,7 @@ class _SliderVideoPlayerState extends State<_SliderVideoPlayer> {
 
     final controller = _controller;
     if (controller == null || !controller.value.isInitialized) {
-      return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+      return const _SliderLoader();
     }
 
     return FittedBox(
@@ -324,6 +323,26 @@ class _SliderVideoPlayerState extends State<_SliderVideoPlayer> {
         height: controller.value.size.height,
         child: VideoPlayer(controller),
       ),
+    );
+  }
+}
+
+/// مؤشر تحميل السلايدر
+///
+/// البانر يملأ الهيرو كاملاً، وأعلاه مخفي خلف الهيدر العائم (شريط البحث).
+/// [Center] عادي كان يضع المؤشر خلف شريط البحث تماماً، فنُزيحه ليتوسّط الجزء
+/// الظاهر وحده.
+class _SliderLoader extends StatelessWidget {
+  const _SliderLoader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        top: MediaQuery.paddingOf(context).top +
+            HomeScrollMetrics.headerRowHeight(),
+      ),
+      child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
     );
   }
 }
