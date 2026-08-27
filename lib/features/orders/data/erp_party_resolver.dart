@@ -44,6 +44,7 @@ class ErpPartyResolver {
   Future<int> resolve({
     String? phone,
     String? name,
+    String? address,
     bool createIfMissing = true,
   }) async {
     final user = _authStorage.user;
@@ -76,6 +77,7 @@ class ErpPartyResolver {
           ? name!.trim()
           : (user?.name.trim().isNotEmpty == true ? user!.name : 'عميل'),
       phone: lookupPhone,
+      address: address?.trim() ?? '',
     );
     await _persistErpId(user, createdId);
     return createdId;
@@ -107,6 +109,7 @@ class ErpPartyResolver {
   Future<int> _createCustomer({
     required String name,
     required String phone,
+    String address = '',
   }) async {
     final created = await _api.create(
       path: ApiEndpoints.customers,
@@ -116,6 +119,7 @@ class ErpPartyResolver {
         'type': 'customer',
         'price_policy': 'retail',
         'is_active': true,
+        if (address.isNotEmpty) 'address': address,
       },
     );
 
@@ -124,6 +128,31 @@ class ErpPartyResolver {
       throw const ApiException(message: 'تعذر إنشاء عميل في أمان ERP');
     }
     return id;
+  }
+
+  /// يكتب العنوان في سجل العميل إن كان فارغاً
+  ///
+  /// العميل في أمان يُنشأ عند تسجيل الدخول (`fetchPricePolicy` يستدعي
+  /// `resolve` بـ `createIfMissing: true`)، أي قبل أن يختار الزبون أي عنوان
+  /// توصيل. وبعدها يعود `resolve` مباشرة من `id_erp` المخزّن فلا يمرّ على
+  /// `_createCustomer` أبداً — لذلك كان حقل `address` يبقى `null` للأبد.
+  ///
+  /// لا نكتب فوق عنوان موجود: قد يكون موظف قد صحّحه داخل أمان.
+  Future<void> syncAddress({
+    required int partyId,
+    required String address,
+  }) async {
+    final trimmed = address.trim();
+    if (trimmed.isEmpty) return;
+
+    final customer = await _api.getById(ApiEndpoints.customer(partyId));
+    final current = (customer['address'] ?? '').toString().trim();
+    if (current.isNotEmpty && current.toLowerCase() != 'null') return;
+
+    await _api.update(
+      path: ApiEndpoints.customer(partyId),
+      body: {'address': trimmed},
+    );
   }
 
   Future<void> _persistErpId(AuthUser? user, int partyId) async {

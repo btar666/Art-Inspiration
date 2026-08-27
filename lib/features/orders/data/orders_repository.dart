@@ -471,11 +471,18 @@ class OrdersRepository {
       throw const ApiException(message: 'بيانات الطلب غير مكتملة');
     }
 
+    // عنوان التوصيل هو أقرب عنوان حقيقي نملكه للزبون؛ التسجيل يجمع المحافظة
+    // فقط، فهي البديل عند الاستلام من الشركة
+    final customerAddress = draft.selectedAddress?.fullAddress.trim() ??
+        _authStorage.user?.city?.trim() ??
+        '';
+
     final partyId = await _partyResolver.resolve(
       phone: draft.phone.isNotEmpty ? draft.phone : _authStorage.user?.phone,
       name: draft.customerName.isNotEmpty
           ? draft.customerName
           : _authStorage.user?.name,
+      address: customerAddress,
     );
 
     final pricePolicy =
@@ -487,6 +494,16 @@ class OrdersRepository {
       pricePolicy: pricePolicy,
     );
     final created = await _createInvoiceApi.create(body);
+
+    // بعد نجاح الفاتورة، لا قبلها: مزامنة العنوان راحة إدارية ولا يجوز أن
+    // تُسقط طلباً
+    try {
+      await _partyResolver.syncAddress(
+        partyId: partyId,
+        address: customerAddress,
+      );
+    } catch (_) {}
+
     final addressLabel = draft.deliveryAddressLabel;
     final firstItem = draft.items.first.product;
     final number = created.elementNumber.isNotEmpty

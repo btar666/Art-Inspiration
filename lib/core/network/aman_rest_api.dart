@@ -70,6 +70,20 @@ class AmanRestApi {
     return root;
   }
 
+  /// تعديل جزئي — PATCH لأن PUT في أمان يطلب السجل كاملاً
+  Future<Map<String, dynamic>> update({
+    required String path,
+    required Map<String, dynamic> body,
+  }) async {
+    final response = await safeRequest(
+      () => _dio.patch<Map<String, dynamic>>(path, data: body),
+    );
+    final root = ApiResponseParser.asMap(response.data);
+    final data = root['data'];
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return root;
+  }
+
   Future<Map<String, dynamic>> me() => getById(ApiEndpoints.me);
 
   int _asInt(dynamic value, int fallback) {
