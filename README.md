@@ -18,6 +18,21 @@ flutter run
 dart run tool/sync_api_secrets.dart
 ```
 
+## رفع رقم النسخة
+
+`pubspec.yaml` هو المصدر الوحيد — أندرويد و iOS يقرآن منه، فالرقمان
+لا يفترقان أبداً. رقم البناء يزيد في كل مرة لأن TestFlight يرفض
+رقماً مستعملاً:
+
+```bash
+./bump_version.sh          # 1.0.1+2 → 1.0.1+3
+./bump_version.sh patch    # 1.0.1+2 → 1.0.2+3
+./bump_version.sh minor    # 1.0.1+2 → 1.1.0+3
+./bump_version.sh major    # 1.0.1+2 → 2.0.0+3
+./bump_version.sh 2.5.0    # 1.0.1+2 → 2.5.0+3
+./bump_version.sh --selftest
+```
+
 ## iOS
 
 الحد الأدنى **iOS 15.0**، يفرضه firebase_core. البناء يمر عبر
