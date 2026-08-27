@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -14,6 +15,7 @@ class AppTextField extends StatefulWidget {
     this.icon = Icons.person_outline,
     this.obscureText = false,
     this.keyboardType,
+    this.inputFormatters,
     this.validator,
     this.onChanged,
     this.readOnly = false,
@@ -32,6 +34,7 @@ class AppTextField extends StatefulWidget {
   final IconData icon;
   final bool obscureText;
   final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
   final String? Function(String?)? validator;
   final ValueChanged<String>? onChanged;
   final bool readOnly;
@@ -74,6 +77,7 @@ class _AppTextFieldState extends State<AppTextField> {
       controller: widget.controller,
       obscureText: _obscured,
       keyboardType: widget.keyboardType,
+      inputFormatters: widget.inputFormatters,
       validator: widget.validator,
       onChanged: widget.onChanged,
       readOnly: widget.readOnly,

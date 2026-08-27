@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/utils/arabic_digits.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/form_error_animator.dart';
 import '../../../../shared/widgets/page_back_header.dart';
@@ -257,6 +258,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                           controller: _phoneController,
                           icon: Icons.phone_android_outlined,
                           keyboardType: TextInputType.phone,
+                          inputFormatters: phoneInputFormatters,
                           height: CheckoutFieldMetrics.fieldHeight(),
                           borderRadius: CheckoutFieldMetrics.borderRadius(),
                           validator: (v) =>
@@ -271,6 +273,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                         controller: _secondPhoneController,
                         icon: Icons.phone_android_outlined,
                         keyboardType: TextInputType.phone,
+                        inputFormatters: phoneInputFormatters,
                         height: CheckoutFieldMetrics.fieldHeight(),
                         borderRadius: CheckoutFieldMetrics.borderRadius(),
                       ),

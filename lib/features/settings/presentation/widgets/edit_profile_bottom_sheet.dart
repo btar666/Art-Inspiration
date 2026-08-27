@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/network/connectivity_error_handler.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/utils/arabic_digits.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_dropdown_field.dart';
 import '../../../../shared/widgets/app_text_field.dart';
@@ -177,6 +178,7 @@ class _EditProfileBottomSheetState
                   controller: _phoneController,
                   icon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
+                  inputFormatters: phoneInputFormatters,
                   validator: (v) => (v == null || v.trim().length < 10)
                       ? 'أدخل رقم هاتف صحيح'
                       : null,

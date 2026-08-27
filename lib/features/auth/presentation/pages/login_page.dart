@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/network/connectivity_error_handler.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../core/utils/arabic_digits.dart';
 import '../../../../core/utils/whatsapp_link.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
@@ -202,6 +203,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       controller: _usernameController,
                       icon: Icons.phone_android_outlined,
                       keyboardType: TextInputType.text,
+                      inputFormatters: const [ArabicDigitsInputFormatter()],
                       errorText: _usernameError,
                       showErrorBorder: _usernameErrorBorder,
                       onChanged: (_) {

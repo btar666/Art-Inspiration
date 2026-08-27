@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/network/connectivity_error_handler.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../core/utils/arabic_digits.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_dropdown_field.dart';
 import '../../../../shared/widgets/app_text_field.dart';
@@ -220,6 +221,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         controller: _phoneController,
                         icon: Icons.phone_android_outlined,
                         keyboardType: TextInputType.phone,
+                        inputFormatters: phoneInputFormatters,
                         errorText: _phoneError,
                         onChanged: (_) {
                           if (_phoneError != null) {
