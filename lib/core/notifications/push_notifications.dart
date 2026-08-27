@@ -102,8 +102,14 @@ class PushNotifications {
 
     await _handleLaunchFromLocalNotification();
 
-    final token = await messaging.getToken();
-    debugPrint('FCM token: $token');
+    await _awaitApnsToken(messaging);
+
+    try {
+      final token = await messaging.getToken();
+      debugPrint('FCM token: $token');
+    } catch (error) {
+      debugPrint('FCM getToken failed: $error');
+    }
 
     try {
       await messaging.subscribeToTopic('notification-public');
@@ -112,6 +118,31 @@ class PushNotifications {
     } catch (error) {
       debugPrint('FCM topic subscribe failed: $error');
     }
+  }
+
+  /// ينتظر رمز APNs قبل طلب رمز FCM — على iOS فقط
+  ///
+  /// 🚩 هذا سبب «الإشعارات لا تعمل على الآيفون الحقيقي». على جهاز فعلي يصل
+  /// رمز APNs بعد التسجيل لدى آبل، وهو غير متزامن. `getToken()` قبل وصوله
+  /// يرمي `apns-token-not-set`، وكان الاستدعاء بلا try/catch فيقطع
+  /// `initialize()` عند ذلك السطر — قبل `subscribeToTopic`. والتطبيق لا
+  /// يرسل رمز الجهاز إلى أي باكند، فكل الإشعارات تصل عبر الموضوع
+  /// `notification-public` وحده. لا اشتراك = لا إشعارات، للأبد، لأن
+  /// `_initialized` صار true.
+  ///
+  /// المحاكي يعطي الرمز فوراً، ولهذا كانت الإشعارات تبدو سليمة عليه.
+  static Future<void> _awaitApnsToken(FirebaseMessaging messaging) async {
+    if (defaultTargetPlatform != TargetPlatform.iOS) return;
+
+    for (var attempt = 0; attempt < 10; attempt++) {
+      try {
+        if (await messaging.getAPNSToken() != null) return;
+      } catch (error) {
+        debugPrint('APNs token attempt $attempt failed: $error');
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
+    debugPrint('APNs token still missing after 5s — continuing anyway');
   }
 
   static Future<void> _ensureLocalReady() async {
