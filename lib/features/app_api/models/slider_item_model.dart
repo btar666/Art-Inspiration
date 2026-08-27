@@ -54,7 +54,7 @@ class SliderItemModel {
 
     return SliderItemModel(
       id: (json['id'] ?? '').toString(),
-      title: (json['title'] ?? '').toString(),
+      title: _firstNonEmpty([json['title']]),
       mediaUrl: _normalizeMediaUrl(rawUrl),
       mediaType: mediaType,
       linkType: _parseLinkType(json['erp_type']),
@@ -95,10 +95,19 @@ class SliderItemModel {
     return int.tryParse(text);
   }
 
+  /// نصوص نائبة يرسلها الباكند كنص حرفي، لا كـ JSON null
+  ///
+  /// ‏api/slider يعيد فعلاً `"title":"null"` — أربعة أحرف، لا قيمة فارغة —
+  /// على شريحتين من أربع. `(json['title'] ?? '').toString()` لا يمسك هذا،
+  /// فظهرت كلمة null بالأبيض فوق صورة البانر في الرئيسية.
+  static const _placeholderTexts = {'null', 'undefined'};
+
   static String _firstNonEmpty(List<dynamic> values) {
     for (final value in values) {
       final text = value?.toString().trim() ?? '';
-      if (text.isNotEmpty && text != 'null') return text;
+      if (text.isEmpty) continue;
+      if (_placeholderTexts.contains(text.toLowerCase())) continue;
+      return text;
     }
     return '';
   }
