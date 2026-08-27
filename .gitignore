@@ -44,7 +44,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Release secrets (keystore passwords in android/key.properties)
-dart_defines.json
-lib/core/network/api_secrets.dart
+# مفتاح أمان ERP مرفوع مع المشروع عمداً حتى يعمل التطبيق بعد clone مباشرة.
+# مفتاح التوقيع يبقى خارج المستودع.
 android/upload-keystore.jks
