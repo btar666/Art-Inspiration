@@ -15,8 +15,9 @@ final appInfoProvider = FutureProvider<AppInfoModel>((ref) async {
   return ref.watch(appApiServiceProvider).fetchInfo();
 });
 
-/// سياسة الخصوصية
-final privacyPolicyProvider = FutureProvider<String>((ref) async {
+/// سياسة الخصوصية — من api/privacy_policy
+final privacyPolicyProvider =
+    FutureProvider<List<ReturnPolicyItem>>((ref) async {
   return ref.watch(appApiServiceProvider).fetchPrivacyPolicy();
 });
 

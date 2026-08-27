@@ -209,32 +209,24 @@ class AppApiService {
     return AppInfoModel.fromJson(ApiResponseParser.asMap(response.data));
   }
 
-  Future<String> fetchPrivacyPolicy() async {
-    final response = await safeRequest(
-      () => _dio.get<Map<String, dynamic>>(
-        AppApiEndpoints.privacyPolicy,
-        queryParameters: {'lang': AppApiConfig.lang},
-      ),
-    );
-    final root = ApiResponseParser.asMap(response.data);
-    final data = root['data'];
-    if (data is String) return data;
-    if (data is List && data.isNotEmpty) {
-      final first = data.first;
-      if (first is Map) {
-        return (first['content'] ?? first['text'] ?? first['body'] ?? '')
-            .toString();
-      }
-      return first.toString();
-    }
-    return '';
-  }
+  /// سياسة الخصوصية — من api/privacy_policy
+  Future<List<ReturnPolicyItem>> fetchPrivacyPolicy() =>
+      _fetchPolicies(AppApiEndpoints.privacyPolicy);
 
   /// سياسة الاستبدال والاسترجاع / الضمان — من api/return_policy
-  Future<List<ReturnPolicyItem>> fetchReturnPolicies() async {
+  Future<List<ReturnPolicyItem>> fetchReturnPolicies() =>
+      _fetchPolicies(AppApiEndpoints.returnPolicy);
+
+  /// النقطتان تعيدان نفس الشكل: `data: [{id, title, details}]`.
+  ///
+  /// كانت لسياسة الخصوصية دالة قراءة خاصة بها تبحث عن
+  /// `content` / `text` / `body` — والسيرفر يرسل `details`، فكانت الصفحة
+  /// تظهر فارغة مهما كتب الموظف. `ReturnPolicyItem` يقرأ المفتاح الصحيح
+  /// وينزع وسوم HTML ويرفض النص النائب، فالنقطتان تمرّان من هنا الآن.
+  Future<List<ReturnPolicyItem>> _fetchPolicies(String endpoint) async {
     final response = await safeRequest(
       () => _dio.get<Map<String, dynamic>>(
-        AppApiEndpoints.returnPolicy,
+        endpoint,
         queryParameters: {'lang': AppApiConfig.lang},
       ),
     );

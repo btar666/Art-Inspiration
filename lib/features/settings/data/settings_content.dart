@@ -75,6 +75,11 @@ abstract final class SettingsContent {
           title: 'تواصل معنا',
           iconAsset: AppAssets.settingsContact,
         ),
+        SettingsMenuItem(
+          id: 'privacy',
+          title: 'سياسة الخصوصية',
+          iconAsset: AppAssets.settingsPrivacy,
+        ),
       ],
     ),
   ];

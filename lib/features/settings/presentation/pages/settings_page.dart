@@ -117,6 +117,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         context.push(AppRoutes.settingsAbout);
       case 'contact':
         context.push(AppRoutes.settingsContact);
+      case 'privacy':
+        context.push(AppRoutes.settingsPrivacy);
       default:
         break;
     }

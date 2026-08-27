@@ -56,6 +56,7 @@ abstract final class AppAssets {
   static const String settingsAbout = 'assets/images/who.png';
   static const String settingsContact = 'assets/images/cont.png';
   static const String settingsHelp = 'assets/images/help.png';
+  static const String settingsPrivacy = 'assets/images/privacy.png';
   static const String settingsLogout = 'assets/images/out.png';
   static const String settingsDeleteAccount = 'assets/images/delt.png';
 }

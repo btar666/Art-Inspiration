@@ -24,6 +24,7 @@ import '../../features/favorites/presentation/pages/favorites_page.dart';
 import '../../features/settings/presentation/pages/about_us_page.dart';
 import '../../features/settings/presentation/pages/contact_us_page.dart';
 import '../../features/settings/presentation/pages/help_page.dart';
+import '../../features/settings/presentation/pages/privacy_policy_page.dart';
 import '../../features/settings/presentation/pages/saved_addresses_page.dart';
 import '../../features/settings/presentation/pages/select_address_for_order_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
@@ -49,6 +50,7 @@ abstract final class AppRoutes {
   static const settingsAbout = '/settings/about';
   static const settingsContact = '/settings/contact';
   static const settingsHelp = '/settings/help';
+  static const settingsPrivacy = '/settings/privacy';
   static const settingsAddresses = '/settings/addresses';
   static const favorites = '/favorites';
   static const orderDetails = '/orders/:id';
@@ -285,6 +287,15 @@ GoRouter createAppRouter() {
         pageBuilder: (context, state) => AppSwipePage(
           key: state.pageKey,
           child: const ContactUsPage(),
+        ),
+      ),
+      GoRoute(
+        parentNavigatorKey: rootNavigatorKey,
+        path: AppRoutes.settingsPrivacy,
+        name: 'settings-privacy',
+        pageBuilder: (context, state) => AppSwipePage(
+          key: state.pageKey,
+          child: const PrivacyPolicyPage(),
         ),
       ),
       GoRoute(
