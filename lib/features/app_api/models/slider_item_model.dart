@@ -16,7 +16,6 @@ enum SliderLinkType {
 class SliderItemModel {
   const SliderItemModel({
     required this.id,
-    required this.title,
     required this.mediaUrl,
     required this.mediaType,
     required this.linkType,
@@ -25,7 +24,6 @@ class SliderItemModel {
   });
 
   final String id;
-  final String title;
   final String mediaUrl;
   final SliderMediaType mediaType;
   final SliderLinkType linkType;
@@ -54,7 +52,6 @@ class SliderItemModel {
 
     return SliderItemModel(
       id: (json['id'] ?? '').toString(),
-      title: _firstNonEmpty([json['title']]),
       mediaUrl: _normalizeMediaUrl(rawUrl),
       mediaType: mediaType,
       linkType: _parseLinkType(json['erp_type']),
@@ -97,9 +94,8 @@ class SliderItemModel {
 
   /// نصوص نائبة يرسلها الباكند كنص حرفي، لا كـ JSON null
   ///
-  /// ‏api/slider يعيد فعلاً `"title":"null"` — أربعة أحرف، لا قيمة فارغة —
-  /// على شريحتين من أربع. `(json['title'] ?? '').toString()` لا يمسك هذا،
-  /// فظهرت كلمة null بالأبيض فوق صورة البانر في الرئيسية.
+  /// ‏api/slider يعيد فعلاً `"url":"null"` — أربعة أحرف، لا قيمة فارغة.
+  /// تحرس هذه القائمة الآن الروابط و `erp_name`؛ العنوان لم يعد يُرسم.
   static const _placeholderTexts = {'null', 'undefined'};
 
   static String _firstNonEmpty(List<dynamic> values) {

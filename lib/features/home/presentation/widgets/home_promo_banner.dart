@@ -233,27 +233,6 @@ class _SliderSlide extends StatelessWidget {
                 ),
               ),
             ],
-            if (item.title.trim().isNotEmpty)
-              Positioned(
-                left: 20.w,
-                right: 20.w,
-                bottom: 36.h,
-                child: Text(
-                  item.title,
-                  style: AppTextStyles.homeLogoTitle().copyWith(
-                    fontSize: 13.sp,
-                    color: Colors.white,
-                    shadows: const [
-                      Shadow(
-                        blurRadius: 8,
-                        color: Colors.black54,
-                      ),
-                    ],
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
           ],
         ),
       ),
