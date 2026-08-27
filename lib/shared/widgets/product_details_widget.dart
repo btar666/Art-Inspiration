@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/arabic_digits.dart';
 import '../../features/cart/presentation/cart_actions.dart';
 import '../../features/cart/presentation/providers/cart_provider.dart';
 import '../../features/favorites/presentation/favorites_actions.dart';
@@ -207,11 +208,15 @@ class _ProductDetailsWidgetState extends ConsumerState<ProductDetailsWidget> {
               ),
             ],
           ),
-          Positioned(
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
             left: 0,
             right: 0,
-            bottom: ProductDetailsBottomBarMetrics.bottomMargin() +
-                bottomInset,
+            bottom: ProductDetailsBottomBarMetrics.addToCartBottom(
+              safeBottom: bottomInset,
+              keyboardInset: MediaQuery.viewInsetsOf(context).bottom,
+            ),
             child: _AddToCartBar(onAddToCart: _handleAddToCart),
           ),
           AnimatedPositioned(
@@ -890,6 +895,7 @@ class _QuantitySelectorState extends State<_QuantitySelector>
                         cursorColor: AppColors.primary,
                         style: AppTextStyles.productDetailsQuantity(),
                         inputFormatters: [
+                          const ArabicDigitsInputFormatter(),
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(6),
                         ],
@@ -900,6 +906,10 @@ class _QuantitySelectorState extends State<_QuantitySelector>
                           counterText: '',
                         ),
                         onSubmitted: (_) => commitIfEditing(),
+                        // لوحة الأرقام على iOS بلا زر «تم»، فاللمس خارج
+                        // الحقل هو الطريقة الوحيدة لإغلاقها. إزالة التركيز
+                        // تستدعي commitIfEditing عبر _onFocusChange.
+                        onTapOutside: (_) => _focusNode.unfocus(),
                       )
                     : FittedBox(
                         fit: BoxFit.scaleDown,

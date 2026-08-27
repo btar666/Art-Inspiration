@@ -111,16 +111,22 @@ abstract final class ProductDetailsBottomBarMetrics {
   static double occupiedHeight() =>
       priceRowHeight() + gapBetweenRows() + addToCartHeight() + bottomMargin();
 
-  /// موضع شريط السعر فوق زر السلة، أو فوق الكيبورد عند ظهوره
+  /// موضع زر السلة: فوق الحافة الآمنة، أو فوق الكيبورد عند ظهوره
+  ///
+  /// كان الزر ثابتاً فوق الحافة وحدها، فكان الكيبورد يغطّيه بينما يرتفع شريط
+  /// السعر فوقه — يكتب الزبون الكمية ثم لا يجد زر الإضافة.
+  static double addToCartBottom({
+    required double safeBottom,
+    required double keyboardInset,
+  }) =>
+      bottomMargin() + (keyboardInset > 0 ? keyboardInset : safeBottom);
+
+  /// شريط السعر يبقى فوق زر السلة دائماً
   static double priceRowBottom({
     required double safeBottom,
     required double keyboardInset,
-  }) {
-    final rest = bottomMargin() +
-        safeBottom +
-        addToCartHeight() +
-        gapBetweenRows();
-    if (keyboardInset <= 0) return rest;
-    return keyboardInset + bottomMargin();
-  }
+  }) =>
+      addToCartBottom(safeBottom: safeBottom, keyboardInset: keyboardInset) +
+      addToCartHeight() +
+      gapBetweenRows();
 }
