@@ -164,6 +164,43 @@ class _SliderSlide extends StatelessWidget {
   final bool isActive;
   final VoidCallback? onTap;
 
+  /// صور البانر عريضة (‏1.67:1) والهيرو أقرب إلى المربّع، فـ `cover` كان
+  /// يقصّ جانبيه. الفارق بين الأجهزة هو `topInset` وحده: قصّة الآيفون ‏21%‏
+  /// من العرض مقابل ‏9%‏ على أندرويد، فضاعت كلمات من نص البانر على الآيفون.
+  ///
+  /// لذلك تُرسم الصورة مرّتين:
+  /// - `cover` في الخلف لتملأ الهيرو حتى أعلى الشاشة. بدونها يبقى شريط
+  ///   `homeBannerBg` الفاتح خلف شريط الحالة، وساعة النظام بيضاء فتختفي.
+  /// - `fitWidth` بمحاذاة سفلية في الأمام، وهي النسخة التي يراها الزبون:
+  ///   عرض البانر كاملاً بلا قص على أي جهاز.
+  ///
+  /// النسختان تقرآن نفس رابط الصورة، فالتحميل والفك مرّة واحدة من الكاش.
+  ///
+  /// 🚩 لا تُعِد `memCacheHeight`. تمريره مع `memCacheWidth` معاً يفكّ الصورة
+  /// بالمقاسين حرفياً بلا حفاظ على النسبة — أي `BoxFit.fill`. صور اليوم أصغر
+  /// من الهدف فتُقصّ القيمتان إلى المقاس الأصلي ويختفي الأثر، لكن بانر أكبر
+  /// من الشاشة كان سيُسطَّح. العرض وحده يحفظ النسبة دائماً.
+  Widget _bannerImage({
+    required int cacheWidth,
+    required BoxFit fit,
+    Alignment alignment = Alignment.center,
+    PlaceholderWidgetBuilder? placeholder,
+    LoadingErrorWidgetBuilder? errorWidget,
+  }) {
+    return CachedNetworkImage(
+      imageUrl: item.mediaUrl,
+      fit: fit,
+      alignment: alignment,
+      width: double.infinity,
+      height: double.infinity,
+      memCacheWidth: cacheWidth,
+      fadeInDuration: Duration.zero,
+      fadeOutDuration: Duration.zero,
+      placeholder: placeholder,
+      errorWidget: errorWidget,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
@@ -179,19 +216,15 @@ class _SliderSlide extends StatelessWidget {
           children: [
             if (item.isVideo)
               _SliderVideoPlayer(url: item.mediaUrl, isActive: isActive)
-            else
-              CachedNetworkImage(
-                imageUrl: item.mediaUrl,
+            else ...[
+              _bannerImage(
+                cacheWidth: (screenWidth * dpr).round().clamp(1, 2048),
                 fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                memCacheWidth: (screenWidth * dpr).round().clamp(1, 2048),
-                memCacheHeight:
-                    (MediaQuery.sizeOf(context).height * 0.5 * dpr)
-                        .round()
-                        .clamp(1, 2048),
-                fadeInDuration: Duration.zero,
-                fadeOutDuration: Duration.zero,
+              ),
+              _bannerImage(
+                cacheWidth: (screenWidth * dpr).round().clamp(1, 2048),
+                fit: BoxFit.fitWidth,
+                alignment: Alignment.bottomCenter,
                 placeholder: (_, __) => const _SliderLoader(),
                 errorWidget: (_, __, ___) => Icon(
                   Icons.image_outlined,
@@ -199,6 +232,7 @@ class _SliderSlide extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.35),
                 ),
               ),
+            ],
             if (item.title.trim().isNotEmpty)
               Positioned(
                 left: 20.w,
