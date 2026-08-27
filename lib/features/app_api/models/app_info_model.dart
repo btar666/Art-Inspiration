@@ -1,3 +1,5 @@
+import '../../../core/utils/placeholder_text.dart';
+
 /// معلومات التطبيق من api/info
 class AppInfoModel {
   const AppInfoModel({
@@ -34,7 +36,7 @@ class AppInfoModel {
       email: json['email']?.toString() ?? '',
       phone: json['phone']?.toString() ?? '',
       address: json['address']?.toString() ?? '',
-      about: json['about']?.toString() ?? '',
+      about: cleanText(json['about']),
       copyright: json['copyright']?.toString() ?? '',
       instagram: json['instagram']?.toString() ?? '',
       facebook: json['facebook']?.toString() ?? '',

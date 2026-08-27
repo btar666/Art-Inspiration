@@ -1,3 +1,5 @@
+import '../../../core/utils/placeholder_text.dart';
+
 /// بند سياسة من api/return_policy
 class ReturnPolicyItem {
   const ReturnPolicyItem({
@@ -13,15 +15,12 @@ class ReturnPolicyItem {
   bool get hasContent => title.trim().isNotEmpty || details.trim().isNotEmpty;
 
   factory ReturnPolicyItem.fromJson(Map<String, dynamic> json) {
-    final rawDetails = (json['details'] ??
-            json['content'] ??
-            json['text'] ??
-            json['body'] ??
-            '')
-        .toString();
+    final rawDetails = cleanText(
+      json['details'] ?? json['content'] ?? json['text'] ?? json['body'],
+    );
     return ReturnPolicyItem(
       id: _asInt(json['id']) ?? 0,
-      title: (json['title'] ?? json['name'] ?? '').toString().trim(),
+      title: cleanText(json['title'] ?? json['name']),
       details: _stripHtml(rawDetails),
     );
   }
