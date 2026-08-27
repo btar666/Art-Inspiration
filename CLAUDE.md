@@ -136,16 +136,37 @@ in dark mode flashed a **black** window before Flutter painted white. The
 app has no dark theme — `AppColors.background` is white and there is no
 `darkTheme` — so both night styles are Light now.
 
-## Android does not build on this machine
+## Android builds again — two faults, one hiding the other
 
-`flutter build apk` dies at configuration with `* What went wrong: 25.0.2`.
-That is the JDK version, not a code error: Java 25 against Gradle 8.14,
-which tops out at Java 24. It fails the same way on a clean checkout, so it
-blocks nobody's change but it blocks every Android build. Fix it by
-pointing Flutter at a Java 21 JDK (`flutter config --jdk-dir …`) or by
-moving the wrapper to Gradle 9. Until then, validate Android resource edits
-with `aapt2 compile <file> -o <dir>`, which runs in a second and catches
-real XML errors.
+`flutter build apk` used to die at configuration with `* What went wrong:
+25.0.2`. That was the JDK: Java 25 against Gradle 8.14, which tops out at 24.
+Homebrew's `openjdk` and Android Studio's bundled JBR were **both** 25, so
+there was nothing to fall back to.
+
+Fixed by installing a supported JDK and pointing Flutter at it. AGP 8.11
+requires 17+, so 21 is the comfortable choice:
+
+```bash
+brew install openjdk@21
+flutter config --jdk-dir /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
+```
+
+🚩 That setting is **machine-wide, not repo-wide**, like the CocoaPods one
+above. A new machine has to run it.
+
+Clearing the JDK error exposed a second failure that had been invisible behind
+it — `:app:mergeDebugResources` → `drawable-mdpi 80: Error: Invalid resource
+directory name`. Five empty directories with a space in the name
+(`drawable-mdpi 80`, `drawable-hdpi 120`, `drawable-xhdpi 160`,
+`drawable-xxhdpi 240`, `drawable-xxxhdpi 320`) sat next to the real ones, left
+by a shell loop during the launch-screen work that read `mdpi 80` as one
+argument. Git does not track empty directories, so they never appeared in
+`git status` and never reached anyone else's clone. Deleted.
+
+🚩 The older note here said Android "fails the same way on a clean checkout".
+That was true of the JDK and false of the directories. If an Android build
+fails on one machine only, look for untracked local junk before blaming the
+config.
 
 ## Home screen performance — what was measured
 
@@ -427,6 +448,142 @@ primary button below the fold is still a bug, even when reachable.
 
 Measure, do not eyeball: the Flutter log prints the exact overflow, and
 `0 overflowed` in a full run is the test.
+
+## The product page and the number pad
+
+Three separate reports about the same screen, 2026-08-28.
+
+**The number pad had no exit.** The quantity field asks for
+`TextInputType.number`, and iOS draws that as a bare 0-9 pad — no return key,
+no Done. `onSubmitted` therefore never fires, so once the pad was up the only
+way out was to leave the screen. It now closes on `onTapOutside`, which routes
+through `_onFocusChange` → `commitIfEditing`, so the typed quantity is kept.
+
+**The add-to-cart button sat under the pad.** `_PriceQuantityBar` rode up on
+`MediaQuery.viewInsetsOf`, `_AddToCartBar` did not — so the customer typed a
+quantity and then could not reach the button that uses it. Both rows now come
+from `addToCartBottom`, which swaps the safe-area inset for the keyboard inset,
+and `priceRowBottom` is defined in terms of it, so the two can never drift
+apart again.
+
+**Swipe-back worked from one edge only.** Flutter's `CupertinoPageRoute` puts
+its back-gesture strip on the *start* edge — in this RTL app the **right** —
+and makes it 20pt wide. Measured on an iPhone 17 Pro: a drag from x=396 went
+back, a drag from x=6 did nothing. Correct iOS behaviour for Arabic, but the
+habit of swiping from the left is real, so the owner asked for both
+(2026-08-28). `_LeftEdgeBack` in `app_swipe_page.dart` adds a matching 20pt
+strip on the physical left. It pops on drag end rather than tracking the finger
+— reimplementing Flutter's interactive `_CupertinoBackGestureDetector` is ~150
+lines of framework internals for an edge most users reach by habit, not by
+feel. `HitTestBehavior.translucent` lets taps through, and the wrapping `Stack`
+uses `StackFit.expand` so the page still gets the tight constraints a route
+child normally has. Both edges verified by screenshot.
+
+🚩 **The simulator will not show the software keyboard**, so neither keyboard
+fix could be photographed. `test/product_details_bottom_bar_metrics_test.dart`
+pins the geometry instead: reverting `addToCartBottom` fails it with
+`Expected: a value greater than <291.0> Actual: <45.2>` — the button 45pt up
+the screen with a 291pt keyboard over it.
+
+The toggle lives in the Simulator app's I/O → Keyboard → Connect Hardware
+Keyboard (⌘K), and it is written to
+`~/Library/Preferences/com.apple.iphonesimulator.plist` under
+`DevicePreferences:<UDID>:ConnectHardwareKeyboard`. Setting it while the
+Simulator is **running** is useless — the app overwrites the file on quit. Set
+it with the Simulator closed and it survives, though on iOS 26 the pad still
+did not appear here. `osascript` cannot send ⌘K without Accessibility
+permission. Confirm both fixes by hand on a device.
+
+## The ERP customer had no address, and could never get one
+
+Reported 2026-08-28: a user registered in the app, ordered, and the customer
+record in Aman ERP had `address: null`. The ERP schema does carry the field —
+`GET /customers/202` returns `name`, `phone`, `email`, `address`, `notes` — and
+the app knew the address the whole time. It just never sent it.
+
+Two faults stacked:
+
+1. `_createCustomer` posted `name`, `phone`, `type`, `price_policy`,
+   `is_active`. No `address` key at all.
+2. **The customer is created at login, not at checkout.** `fetchPricePolicy`
+   calls `resolve` with `createIfMissing` defaulting to true, and
+   `_enrichUserFromErp` / `syncPricePolicyFromErp` run it on login, app start
+   and pull-to-refresh — long before the customer picks a delivery address.
+   From then on `resolve` returns early from the stored `id_erp`, so
+   `_createCustomer` is never reached again.
+
+So fixing only the create path would have fixed nothing for any real account.
+`ErpPartyResolver.syncAddress` now runs from `createInvoice` **after** the
+invoice is created, and PATCHes `address` only when the ERP record has none —
+a staff member may have corrected it there. `_createCustomer` sends it too, for
+the rarer case where the first ERP contact really is the order.
+
+The address is `draft.selectedAddress?.fullAddress`, falling back to the user's
+`city` — registration collects the governorate and nothing finer, so that is
+the best available for a pickup-at-company order.
+
+🚩 The sync is wrapped in `try/catch` and runs after the invoice on purpose.
+Recording an address is an administrative convenience; it must never drop an
+order.
+
+🚩 **Not verified end to end.** Confirming it means placing a real order, which
+writes a real sales invoice into the owner's live ERP. `PATCH /customers/{id}`
+was confirmed available (`Allow: GET,HEAD,PUT,PATCH,DELETE`) and a bodyless
+PATCH left customer 202 untouched, `updated_at` unchanged. Everything past that
+is code review. Place one test order and check the customer record.
+
+## Why push never arrived on a real iPhone
+
+The iOS setup is correct and was not the problem: `aps-environment` is
+`development` in `Runner.entitlements` and `production` in
+`RunnerRelease.entitlements`, both wired per build config;
+`UIBackgroundModes` has `remote-notification`; `GoogleService-Info.plist` is in
+the Resources build phase and its `BUNDLE_ID` matches `com.artinspiration.app`.
+
+The bug is in `PushNotifications.initialize`. It called
+
+```dart
+final token = await messaging.getToken();
+```
+
+with no `try`/`catch`, and before any APNs token existed. On a real device the
+APNs token arrives asynchronously after registration with Apple, and `getToken`
+throws `apns-token-not-set` until it does. That threw out of `initialize()` at
+that line — **before `subscribeToTopic('notification-public')`**.
+
+That is fatal here, because **the app sends its FCM token to no backend at
+all**; it only `debugPrint`s it. Every notification this app receives comes
+through that one topic. No subscription, no notifications. And `_initialized`
+is set true at the top of the method, so nothing retries for the rest of the
+session.
+
+The simulator returns an APNs token immediately, which is exactly why it looked
+healthy there and dead on a phone.
+
+`_awaitApnsToken` now polls `getAPNSToken()` ten times at 500 ms on iOS before
+`getToken` runs, `getToken` is wrapped, and the topic subscription no longer
+depends on it.
+
+🚩 **Diagnosed from the code, not reproduced on a device** — there is no iPhone
+on this machine. If push is still dead after this, the remaining suspects are
+all on Apple's side and none are visible from the repo: the APNs auth key
+uploaded to the Firebase project, the Push Notifications capability on the App
+ID, and whether the user granted permission. Check those next.
+
+## Page pushes use Cupertino's own timing again
+
+The owner called the product-page open-and-back "messy" (2026-08-28).
+`_FastCupertinoPageRoute` was overriding the push at **180ms** forward and
+160ms back. `CupertinoPageRoute.kTransitionDuration` is **500ms**. The slide,
+the parallax on the page behind it, and the shadow down its leading edge were
+all being crushed into a third of the time they are designed for, which reads
+as a jump rather than a transition. The overrides are gone; the route uses its
+own duration.
+
+🚩 `AppPageTransition` (180/160) still exists and is still correct — it drives
+the **fade between bottom-nav tabs**, where a switch should feel instant. Do
+not "unify" the two: a tab change and a page push are different gestures with
+different expectations.
 
 ## Tests
 
