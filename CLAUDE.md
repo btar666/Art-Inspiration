@@ -234,27 +234,87 @@ fast to catch even with the disk cache cleared. Both fixes are geometry
 verified against a real screenshot (hero bottom at 303pt, header at 160pt),
 not seen. Confirm them by hand on a device.
 
+### The banner was cropped on iPhone and not on Android
+
+Reported by the owner and confirmed on an iPhone 17 Pro simulator: the home
+banner lost words off both sides. `منتجات` read `تجات`; `تليق بزبائنك` read `يق بزبائنك`.
+
+Every slider image is about **1.67:1** (786×470, 884×529, 1032×617 on
+2026-08-27). The hero is full-screen wide and `topInset + headerRowHeight() +
+175.h` tall, so `topInset` — the notch — is the only term that differs between
+platforms, and it decides how much `BoxFit.cover` throws away:
+
+| | hero box | aspect | of the image width `cover` keeps |
+|---|---|---|---|
+| iPhone 17 Pro (402×874, inset 62) | 402×303 | 1.33 | **79%** |
+| a 412×892 Android (inset 24) | 412×270 | 1.53 | **91%** |
+
+Nine percent off the edges clears the text. Twenty-one percent does not. Same
+code, same images, different notch.
+
+The banner now draws **twice**: `cover` behind, `fitWidth` with
+`Alignment.bottomCenter` in front. The front copy is the one the customer
+reads — full width, no crop, on any device. The back copy exists only for the
+strip above it, because `fitWidth` leaves `heroHeight − width/aspect` unpainted
+and a flat `homeBannerBg` there put the white system clock on `#E8EBFF`. The
+seam was measured at exactly **63.0pt** down the right-hand column, matching
+303 − 402/1.672 to a tenth of a point. All four slides were then photographed
+whole.
+
+🚩 That is one extra opaque quad per visible slide — no `saveLayer`, no
+blur, and both copies share one cache entry and one decode. It has **not** been
+put on the timeline. If home raster ever regresses, look here, but this is a
+different order of cost from the blur stack above.
+
+🚩 The video path still uses `FittedBox(BoxFit.cover)` and still crops.
+Left alone on purpose: `api/slider` serves four images and no video today, and
+a letterboxed video is a worse default than a cropped one.
+
+🚩 `memCacheHeight` was removed and must not come back. Passing it
+alongside `memCacheWidth` decodes to both numbers literally, without preserving
+the aspect ratio — `ResizeImagePolicy.exact`, which is `BoxFit.fill`. Today's
+images are smaller than the target so both values clamp back to the original
+size and the bug never fires; a banner larger than the screen would have been
+squashed. Width alone always keeps the ratio.
+
 ## The backend sends the STRING "null"
 
 `api/slider` returns `"title":"null"` — four characters, not a JSON null — and
 the app painted the word **null** in white over a banner image on the home
-screen. Checked against the live endpoint on 2026-08-27, three of four slides
-carried junk titles:
+screen. `(json['title'] ?? '').toString()` catches a JSON null and nothing
+else, so the word reached the screen. `SliderItemModel` **already had** the
+right helper: `_firstNonEmpty` rejected `'null'`, and `url` / `image` /
+`video` / `erp_name` / `erp_id` all used it. Only `title` skipped it.
 
-| slide | title |
-|---|---|
-| 11 (the blue delivery banner) | `"null"` |
-| 6 | `"."` |
-| 5 | `"null"` |
-| 1 | `""` — correct |
+### The slide title is gone, and that is the fix
 
-`(json['title'] ?? '').toString()` catches a JSON null and nothing else.
-`SliderItemModel` **already had** the right helper — `_firstNonEmpty` rejected
-`'null'`, and `url` / `image` / `video` / `erp_name` / `erp_id` all used it.
-Only `title` skipped it. The fix was to route `title` through the same helper
-and widen it to `{'null', 'undefined'}`, case-insensitively. `test/
-slider_item_model_test.dart` pins it — reverting the one-line change makes it
-fail with `Expected: '' Actual: 'null'`.
+The title field was watched for one day and served junk every time:
+
+| slide | morning | evening |
+|---|---|---|
+| 11 (GUARANTEED) | `"null"` | `"null"` |
+| 6 (the app promo) | `"."` | `"العنوان"` |
+| 5 (delivery) | `"null"` | `"null"` |
+| 1 (الاكثر مبيعاً) | `""` | `""` |
+
+Three shapes of junk in one day: a machine placeholder, a typed dot, and the
+field's own label typed into the field. A parser guard caught the first, a
+punctuation rule caught the second, and nothing catches the third — `العنوان`
+is a real Arabic word.
+
+So the owner's call (2026-08-27) was to **stop drawing the title at all**. The
+`Positioned` `Text` is deleted from `_SliderSlide`, and with it the `title`
+field on `SliderItemModel`; the overlay was its only reader. Every banner is a
+finished piece of artwork with its own headline baked in — the app was painting
+white text on top of somebody else's design, and that is what produced three
+separate bugs.
+
+🚩 Do not add it back to make an admin field "work". If a title is ever wanted,
+it is a design change to the banner, not a `Text` over the image.
+
+`_firstNonEmpty` and `_placeholderTexts` stay — they still guard `url`,
+`image`, `video` and `erp_name`, which is what
+`test/slider_item_model_test.dart` now pins.
 
 🚩 **Scope, measured before widening it.** The same defect class exists in
 other parsers (`ErpProductMapper` line 49 turns a `"description": "null"` into
@@ -272,38 +332,59 @@ The check, in one command:
 curl -s https://art-inspiration.com/api/slider | grep -o '"title":"[^"]*"'
 ```
 
-🚩 The `"."` title on slide 6 is the same symptom and is NOT fixed — it is a
-human placeholder, not a machine one, and stripping punctuation-only titles is
-a judgement call for the owner, not a parser rule. The real repair for both is
-on the backend: stop writing a blank title as text.
+The real repair on the backend is still worth having: stop writing a blank
+title as the text "null". It just no longer reaches a customer.
 
-### `api/privacy_policy` returns an empty list
+### The privacy policy now has its own screen, and it still says "Test"
 
-Noticed while checking the other endpoints, not fixed: `{"data":[]}`. The
-privacy-policy screen therefore has nothing to show, and the App Store
-requires a reachable privacy policy. Worth resolving before the next
-submission.
+Two separate problems, one fixed and one not.
 
-## Open decisions, waiting on the owner (2026-08-27)
+**Fixed: it had no reachable screen, and the parser read the wrong key.**
+`fetchPrivacyPolicy` looked for `content` / `text` / `body`; the endpoint sends
+**`details`**, so the call returned `''` no matter what staff typed. The only
+thing that rendered it was `_PrivacyPolicySection` at the bottom of
+`HelpPage` — and nothing in the app navigates to `HelpPage`, so the policy was
+unreachable twice over.
 
-Three questions were put to the owner at the end of the 2026-08-27 session and
-are NOT answered. Do not decide them alone.
+`api/privacy_policy` and `api/return_policy` return the same shape,
+`data: [{id, title, details}]`, so both now go through one `_fetchPolicies`
+helper and `ReturnPolicyItem`, which already reads `details`, strips HTML and
+rejects placeholder text. `privacyPolicyProvider` is a
+`List<ReturnPolicyItem>`; the dead section in `HelpPage` was deleted rather
+than ported. `PrivacyPolicyPage` is a settings menu item under «عن التطبيق»,
+with `assets/images/privacy.png` — a lock glyph drawn onto the same badge the
+other settings icons use, so it matches without a hand-made asset.
 
-1. **Three more placeholder holes.** A 40-agent audit found `"null"` could
-   reach the screen through `ReturnPolicyItem.title` (which renders inside the
-   checkout consent checkbox — `أقر بأنني قرأت «null» وأوافق عليها` on the box
-   a customer must tick to order), `ReturnPolicyItem.details`, and
-   `AppInfoModel.about`. Both endpoints are CLEAN today, checked live. But the
-   app already carries this defence elsewhere (`app_api_service.dart:339`
-   strips `'#'` and `'null'`; `contact_us_page.dart:71,81` strip `'#'`), so
-   these are holes in an existing pattern, not speculation. Recommended: patch
-   all three through one shared helper, ~10 lines.
-2. **The `"."` slide title.** Slide 6 of `api/slider` has `"title":"."`, which
-   paints a stray dot on the banner. Left alone: a punctuation-only title is a
-   human placeholder, and stripping it is a product decision, not a parser rule.
-3. **Nothing from that session was committed.** The working tree carries the
-   launch screen, the export-compliance key, the home-screen performance pass
-   and the slider fix.
+Verified on the simulator: three sections rendered with their titles, HTML
+gone, paragraph breaks kept, no overflow and no exception.
+
+**Not fixed: the content is placeholder prose.** The endpoint served
+`{"data":[]}` in the morning, `title: "test"` at midday, and three rows titled
+`Test 1/2/3` holding a short story about a lamp by evening. Someone is editing
+it live. None of it is a privacy policy, and the App Store requires a real one,
+so this still blocks submission. Backend content, not app code.
+
+### The other three placeholder holes are closed
+
+`"null"` could also reach the screen through `ReturnPolicyItem.title` (which
+renders inside the checkout consent checkbox — `أقر بأنني قرأت «null» وأوافق
+عليها` on the box a customer must tick before ordering),
+`ReturnPolicyItem.details` and `AppInfoModel.about`. All three now go through
+`cleanText` in `lib/core/utils/placeholder_text.dart`, which rejects `null`,
+`undefined` and `#`, case-insensitively.
+
+`api/return_policy` is clean today. `api/info` is not: `"about"` is `"<br>"`,
+which the about page was already stripping to empty and replacing with its
+hardcoded fallback. The guard matters the day a staff member leaves that field
+blank and the backend writes the string.
+
+`test/placeholder_text_test.dart` pins it — reverting the `title` line makes it
+fail with `Expected: '' Actual: 'null'`. Verified.
+
+🚩 The older copies of this guard were left alone. `_firstNonEmpty` is
+duplicated in `slider_item_model`, `erp_media_url`, `erp_product_fields` and
+`erp_order_mapper`; they work, and rewriting four parsers to share one helper
+buys nothing today.
 
 ## Locked decisions
 
@@ -349,9 +430,11 @@ Measure, do not eyeball: the Flutter log prints the exact overflow, and
 
 ## Tests
 
-There is exactly one: `test/slider_item_model_test.dart`, which pins the
-"backend sends the string null" bug described above. It was added because a
-screenshot only proves today's data — the test proves the parser. The working check is: build → run in
+There are two, and both pin the "backend sends the string null" bug described
+above: `test/slider_item_model_test.dart` for the slide's media url and link
+name, and `test/placeholder_text_test.dart` for the return-policy and about-us
+text. They exist because a screenshot only proves today's data — a test proves
+the parser. The working check is: build → run in
 the simulator in Arabic → read the log for `overflowed` and
 `EXCEPTION CAUGHT` → screenshot. `flutter analyze` currently reports 87
 pre-existing infos/warnings; do not treat a clean global analyze as the
