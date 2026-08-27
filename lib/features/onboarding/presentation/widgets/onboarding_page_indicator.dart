@@ -17,6 +17,9 @@ class OnboardingPageIndicator extends StatelessWidget {
   final int count;
   final ValueChanged<int>? onDotClicked;
 
+  /// ارتفاع النقاط — تقرأه صفحة الـ Onboarding لتحسب المساحة الباقية.
+  static double get height => 8.h;
+
   @override
   Widget build(BuildContext context) {
     return AnimatedSmoothIndicator(
@@ -25,7 +28,7 @@ class OnboardingPageIndicator extends StatelessWidget {
       effect: ExpandingDotsEffect(
         activeDotColor: AppColors.primary,
         dotColor: AppColors.dotInactive,
-        dotHeight: 8.h,
+        dotHeight: height,
         dotWidth: 8.w,
         expansionFactor: 4,
         spacing: 8.w,

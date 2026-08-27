@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -69,82 +71,114 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               child: SparkleIcon(size: 12.w, filled: false, delay: 500.ms),
             ),
             SafeArea(
-              child: Column(
-                children: [
-                  SizedBox(height: 80.h),
-                  SizedBox(
-                    height: 196.h,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 32.w),
-                      child: Column(
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // ponytail: بقية الصفحة ارتفاعها ثابت، فالكاروسيل وحده هو
+                  // الذي يعيد المساحة حين تكون الشاشة أقصر من التصميم.
+                  final topGap = 80.h;
+                  final textBlock = 196.h;
+                  final gapAfterText = 12.h;
+                  final gapAfterCarousel = 24.h;
+                  // أصغر فراغ مسموح بين النقاط وشريط الأزرار. على الشاشات
+                  // الطويلة يبتلعه الـ Spacer فلا يتغيّر شيء.
+                  final gapBeforeActions = 12.h;
+                  final bottomPadding = 24.h;
+
+                  final fixedHeight = topGap +
+                      textBlock +
+                      gapAfterText +
+                      gapAfterCarousel +
+                      OnboardingPageIndicator.height +
+                      gapBeforeActions +
+                      OnboardingActionBar.height +
+                      bottomPadding;
+
+                  final carouselHeight = math.min(
+                    OnboardingCarousel.designHeight,
+                    math.max(0.0, constraints.maxHeight - fixedHeight),
+                  );
+
+                  return Column(
+                    children: [
+                      SizedBox(height: topGap),
+                      SizedBox(
+                        height: textBlock,
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 32.w),
+                          child: Column(
                             children: [
-                              Expanded(
-                                child: Text(
-                                  item.title,
-                                  style: AppTextStyles.onboardingTitle(),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                ),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      item.title,
+                                      style: AppTextStyles.onboardingTitle(),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                    ),
+                                  ),
+                                  SparkleIcon(size: 16.w, delay: 100.ms),
+                                ],
                               ),
-                              SparkleIcon(size: 16.w, delay: 100.ms),
+                              SizedBox(height: 12.h),
+                              Text(
+                                item.description,
+                                style: AppTextStyles.onboardingBody(),
+                                textAlign: TextAlign.center,
+                                maxLines: 4,
+                              ),
                             ],
-                          ),
-                          SizedBox(height: 12.h),
-                          Text(
-                            item.description,
-                            style: AppTextStyles.onboardingBody(),
-                            textAlign: TextAlign.center,
-                            maxLines: 4,
-                          ),
-                        ],
-                      )
-                          .animate(key: ValueKey('text_$currentIndex'))
-                          .fadeIn(duration: 400.ms)
-                          .slideY(
-                            begin: 0.15,
-                            end: 0,
-                            duration: 400.ms,
-                            curve: Curves.easeOutCubic,
-                          ),
-                    ),
-                  ),
-                  SizedBox(height: 12.h),
-                  OnboardingCarousel(
-                    carouselController: _carouselController,
-                    onPageChanged: (index) {
-                      ref.read(onboardingPageIndexProvider.notifier).state =
-                          index;
-                    },
-                  ),
-                  SizedBox(height: 24.h),
-                  OnboardingPageIndicator(
-                    activeIndex: currentIndex,
-                    count: OnboardingContent.items.length,
-                    onDotClicked: (index) =>
-                        _carouselController.animateToPage(index),
-                  ),
-                  const Spacer(),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h),
-                    child: OnboardingActionBar(
-                      nextLabel: isLast ? 'ابدأ الآن' : 'التالي',
-                      onNext: _onNext,
-                      onSkip: _completeOnboarding,
-                    ),
-                  )
-                      .animate()
-                      .fadeIn(duration: 500.ms, delay: 200.ms)
-                      .slideY(
-                        begin: 0.2,
-                        end: 0,
-                        duration: 500.ms,
-                        delay: 200.ms,
+                          )
+                              .animate(key: ValueKey('text_$currentIndex'))
+                              .fadeIn(duration: 400.ms)
+                              .slideY(
+                                begin: 0.15,
+                                end: 0,
+                                duration: 400.ms,
+                                curve: Curves.easeOutCubic,
+                              ),
+                        ),
                       ),
-                ],
+                      SizedBox(height: gapAfterText),
+                      OnboardingCarousel(
+                        carouselController: _carouselController,
+                        height: carouselHeight,
+                        onPageChanged: (index) {
+                          ref.read(onboardingPageIndexProvider.notifier).state =
+                              index;
+                        },
+                      ),
+                      SizedBox(height: gapAfterCarousel),
+                      OnboardingPageIndicator(
+                        activeIndex: currentIndex,
+                        count: OnboardingContent.items.length,
+                        onDotClicked: (index) =>
+                            _carouselController.animateToPage(index),
+                      ),
+                      SizedBox(height: gapBeforeActions),
+                      const Spacer(),
+                      Padding(
+                        padding:
+                            EdgeInsets.fromLTRB(24.w, 0, 24.w, bottomPadding),
+                        child: OnboardingActionBar(
+                          nextLabel: isLast ? 'ابدأ الآن' : 'التالي',
+                          onNext: _onNext,
+                          onSkip: _completeOnboarding,
+                        ),
+                      )
+                          .animate()
+                          .fadeIn(duration: 500.ms, delay: 200.ms)
+                          .slideY(
+                            begin: 0.2,
+                            end: 0,
+                            duration: 500.ms,
+                            delay: 200.ms,
+                          ),
+                    ],
+                  );
+                },
               ),
             ),
           ],

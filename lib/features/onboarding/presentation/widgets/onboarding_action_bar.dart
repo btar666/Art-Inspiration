@@ -22,10 +22,13 @@ class OnboardingActionBar extends StatelessWidget {
   static const Color _barBackground = Color(0xFFEAECFC);
   static const Color _nextBackground = Color(0xFF0000FF);
 
+  /// ارتفاع الشريط — تقرأه صفحة الـ Onboarding لتحسب المساحة الباقية.
+  static double get height => 52.h;
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 52.h,
+      height: height,
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: _barBackground,
@@ -45,7 +48,7 @@ class OnboardingActionBar extends StatelessWidget {
                     onTap: onNext,
                     borderRadius: BorderRadius.circular(21.r),
                     child: SizedBox(
-                      height: 52.h,
+                      height: height,
                       child: Center(
                         child: Text(
                           nextLabel,
@@ -65,7 +68,7 @@ class OnboardingActionBar extends StatelessWidget {
                   child: InkWell(
                     onTap: onSkip,
                     child: SizedBox(
-                      height: 52.h,
+                      height: height,
                       child: Center(
                         child: Text(
                           secondaryLabel,

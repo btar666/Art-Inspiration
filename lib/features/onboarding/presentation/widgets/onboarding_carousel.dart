@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -13,23 +15,36 @@ class OnboardingCarousel extends StatelessWidget {
     super.key,
     required this.carouselController,
     required this.onPageChanged,
+    required this.height,
   });
 
   final CarouselSliderController carouselController;
   final ValueChanged<int> onPageChanged;
 
-  static double get _cardWidth => 280.w;
-  static double get _cardHeight => _cardWidth * (4 / 3);
+  /// المساحة المتاحة للكاروسيل — تصغر على الشاشات القصيرة.
+  final double height;
+
+  /// الفراغ الذي يحتاجه enlargeCenterPage فوق البطاقة وتحتها.
+  static double get _gutter => 24.h;
+
+  static double get _designCardHeight => 280.w * (4 / 3);
+
+  /// الارتفاع المرسوم في التصميم — السقف الذي لا يتجاوزه الكاروسيل.
+  static double get designHeight => _designCardHeight + _gutter;
 
   @override
   Widget build(BuildContext context) {
+    // البطاقة تحافظ على نسبة 3:4 مهما ضاقت المساحة.
+    final cardHeight = math.max(0.0, height - _gutter);
+    final cardWidth = cardHeight * (3 / 4);
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: CarouselSlider.builder(
         carouselController: carouselController,
         itemCount: OnboardingContent.items.length,
         options: CarouselOptions(
-          height: _cardHeight + 24.h,
+          height: height,
           viewportFraction: 0.72,
           enlargeCenterPage: true,
           enlargeFactor: 0.18,
@@ -42,8 +57,8 @@ class OnboardingCarousel extends StatelessWidget {
           return Center(
             child: _CarouselCard(
               item: OnboardingContent.items[index],
-              width: _cardWidth,
-              height: _cardHeight,
+              width: cardWidth,
+              height: cardHeight,
             ),
           );
         },
@@ -114,10 +129,7 @@ class _CarouselCard extends StatelessWidget {
                 ),
               ),
       ),
-    )
-        .animate(key: ValueKey(item.title))
-        .fadeIn(duration: 500.ms)
-        .scale(
+    ).animate(key: ValueKey(item.title)).fadeIn(duration: 500.ms).scale(
           begin: const Offset(0.9, 0.9),
           end: const Offset(1, 1),
           duration: 500.ms,
