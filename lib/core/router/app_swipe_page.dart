@@ -1,12 +1,16 @@
 import 'package:flutter/cupertino.dart';
 
-/// مدة انتقال الصفحات — أسرع من الافتراضي (~400ms)
+/// مدة تلاشي تبويبات الشريط السفلي
+///
+/// للتبويبات فقط. تبديل تبويب حركة فورية في iOS، فالسرعة هنا صحيحة.
+/// أما دفع صفحة (منتج، إعدادات، سلة) فيتركها لـ `CupertinoPageRoute`
+/// بمدتها الأصلية — انظر `_FastCupertinoPageRoute`.
 abstract final class AppPageTransition {
   static const Duration duration = Duration(milliseconds: 180);
   static const Duration reverseDuration = Duration(milliseconds: 160);
 }
 
-/// صفحة بانتقال سريع مع إمكانية السحب من الحافة للرجوع
+/// صفحة بانتقال iOS القياسي مع إمكانية السحب من الحافة للرجوع
 class AppSwipePage<T> extends Page<T> {
   const AppSwipePage({
     required this.child,
@@ -24,15 +28,17 @@ class AppSwipePage<T> extends Page<T> {
   }
 }
 
+/// ‏🚩 لا تُعِد تقصير المدة هنا.
+///
+/// كانت الصفحة تُدفع في 180ms وترجع في 160ms، أي أقل من ثلث مدة
+/// `CupertinoPageRoute` الأصلية (500ms). انزلاق الصفحة، وحركة الصفحة
+/// السابقة خلفها، والظل على حافتها، كلها تُضغط في تلك الفترة فتبدو نطّة
+/// لا انتقالاً. المدة الافتراضية هي سلوك iOS القياسي، فنتركها.
+///
+/// التلاشي السريع للتبويبات شيء آخر ولم يتغيّر.
 class _FastCupertinoPageRoute<T> extends CupertinoPageRoute<T> {
   _FastCupertinoPageRoute({
     required super.builder,
     super.settings,
   });
-
-  @override
-  Duration get transitionDuration => AppPageTransition.duration;
-
-  @override
-  Duration get reverseTransitionDuration => AppPageTransition.reverseDuration;
 }
