@@ -494,6 +494,63 @@ it with the Simulator closed and it survives, though on iOS 26 the pad still
 did not appear here. `osascript` cannot send ⌘K without Accessibility
 permission. Confirm both fixes by hand on a device.
 
+## The Arabic keyboard types ٠١٢٣, and nothing read it
+
+An Arabic keyboard produces Arabic-Indic digits (U+0660–0669), and Persian
+layouts produce the extended set (U+06F0–06F9). Neither is a digit to Dart:
+`int.parse('٢٥')` throws, and the backend stores the characters verbatim. The
+quantity field was worse than that — `FilteringTextInputFormatter.digitsOnly`
+denies everything outside `[0-9]`, so an Arabic digit was **deleted as it was
+typed**. The customer pressed ٢٥ and watched the field stay empty.
+
+`lib/core/utils/arabic_digits.dart` holds one converter and one formatter:
+
+- `toEnglishDigits` — 20 `replaceAll` passes over a short string. Boring on
+  purpose; a `codeUnit & 0xF` trick works for both ranges and reads as noise.
+- `ArabicDigitsInputFormatter` — runs the converter on every keystroke. The
+  conversion is one code unit for one code unit, so the caret needs no fixing.
+- `phoneInputFormatters` — the converter, then `digitsOnly`, then
+  `LengthLimitingTextInputFormatter(11)`.
+
+🚩 **Order is the whole fix.** `digitsOnly` must run *after* the converter. Put
+it first and it strips the Arabic digits before anything can convert them —
+which is the original bug, restored.
+
+Applied to the four phone fields (register, checkout ×2, edit profile), the
+login field (email *or* phone, so conversion only — no `digitsOnly`, no length
+cap), and the product quantity field. `AppTextField` gained an
+`inputFormatters` parameter to carry them.
+
+Phone fields now take **11 digits and no more**, matching the `^07\d{9}$` that
+`register_page` already validated against.
+
+### Both behaviours were photographed on the simulator
+
+Typing Arabic digits is impossible here — there is no software keyboard (see
+the number-pad section), and the injected-text path drops anything outside
+printable ASCII. The pasteboard gets around both:
+
+```bash
+printf '٠٧٧٠١٢٣٤٥٦٧٨٩' | LANG=en_US.UTF-8 xcrun simctl pbcopy <udid>
+```
+
+🚩 `LANG` is not optional. Without it `simctl pbcopy` decodes stdin as
+**MacRoman**, and ٢٥ lands on the pasteboard as `Ÿ¢Ÿ•`. That looks exactly like
+a broken formatter — the field rejects the junk and stays unchanged — and cost
+half an hour of chasing the wrong thing.
+
+Then long-press the field and tap Paste:
+
+| field | pasted | shown |
+|---|---|---|
+| product quantity (held `1`) | `٢٥` | **125** |
+| checkout second phone (empty) | `٠٧٧٠١٢٣٤٥٦٧٨٩` (13) | **07701234567** |
+
+The second row is both halves at once: converted, and truncated to 11.
+
+`test/arabic_digits_test.dart` pins the converter, the phone chain and the
+quantity chain by feeding characters through `formatEditUpdate` one at a time.
+
 ## The ERP customer had no address, and could never get one
 
 Reported 2026-08-28: a user registered in the app, ordered, and the customer
