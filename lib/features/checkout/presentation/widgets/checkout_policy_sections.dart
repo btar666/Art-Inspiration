@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,18 +30,55 @@ class CheckoutPolicySections extends ConsumerStatefulWidget {
       CheckoutPolicySectionsState();
 }
 
-class CheckoutPolicySectionsState extends ConsumerState<CheckoutPolicySections> {
+class CheckoutPolicySectionsState extends ConsumerState<CheckoutPolicySections>
+    with SingleTickerProviderStateMixin {
   final Set<int> _expandedIndexes = {};
+  final Set<int> _glowIndexes = {};
+  final Map<int, GlobalKey> _tileKeys = {};
 
-  /// يفتح الكروت غير الموافَق عليها لقراءة المحتوى
-  void openPendingPolicies() {
+  late final AnimationController _glow = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1600),
+  );
+
+  @override
+  void dispose() {
+    _glow.dispose();
+    super.dispose();
+  }
+
+  /// يفتح الكروت غير الموافَق عليها، يمرّر الشاشة إليها، ثم يُضيئها
+  Future<void> revealPending() async {
+    final pending = <int>[
+      for (var i = 0; i < widget.acceptedFlags.length; i++)
+        if (!widget.acceptedFlags[i]) i,
+    ];
+    if (pending.isEmpty) return;
+
     setState(() {
-      for (var i = 0; i < widget.acceptedFlags.length; i++) {
-        if (!widget.acceptedFlags[i]) {
-          _expandedIndexes.add(i);
-        }
-      }
+      _expandedIndexes.addAll(pending);
+      _glowIndexes
+        ..clear()
+        ..addAll(pending);
     });
+
+    // ننتظر انتهاء حركة الفتح قبل قياس مكان الكرت
+    await Future<void>.delayed(const Duration(milliseconds: 240));
+    if (!mounted) return;
+
+    // نمرّر إلى أول كرت غير موافَق عليه، لا إلى أول كرت دائماً
+    final target = _tileKeys[pending.first]?.currentContext ?? context;
+    if (!target.mounted) return;
+
+    await Scrollable.ensureVisible(
+      target,
+      alignment: 0,
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutCubic,
+    );
+    if (!mounted) return;
+
+    _glow.forward(from: 0);
   }
 
   Future<void> _openWhatsApp() async {
@@ -131,41 +170,99 @@ class CheckoutPolicySectionsState extends ConsumerState<CheckoutPolicySections> 
       children: [
         for (var i = 0; i < sections.length; i++) ...[
           if (i > 0) SizedBox(height: 10.h),
-          _PolicyTile(
-            title: sections[i].title,
-            expanded: _expandedIndexes.contains(i),
-            accepted: i < widget.acceptedFlags.length
-                ? widget.acceptedFlags[i]
-                : false,
-            onAcceptedChanged: (value) => widget.onAcceptedChanged(i, value),
-            acceptLabel: sections[i].acceptLabel,
-            onTap: () => setState(() {
-              if (_expandedIndexes.contains(i)) {
-                _expandedIndexes.remove(i);
-              } else {
-                _expandedIndexes.add(i);
-              }
-            }),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (sections[i].showGuaranteeBadge) ...[
-                  Center(
-                    child: Image.asset(
-                      AppAssets.productGuaranteeBadge,
-                      width: 88.w,
-                      height: 88.w,
-                      fit: BoxFit.contain,
+          _GlowRing(
+            key: _tileKeys.putIfAbsent(i, GlobalKey.new),
+            animation: _glow,
+            active: _glowIndexes.contains(i),
+            child: _PolicyTile(
+              title: sections[i].title,
+              expanded: _expandedIndexes.contains(i),
+              accepted: i < widget.acceptedFlags.length
+                  ? widget.acceptedFlags[i]
+                  : false,
+              onAcceptedChanged: (value) => widget.onAcceptedChanged(i, value),
+              acceptLabel: sections[i].acceptLabel,
+              onTap: () => setState(() {
+                if (_expandedIndexes.contains(i)) {
+                  _expandedIndexes.remove(i);
+                } else {
+                  _expandedIndexes.add(i);
+                }
+              }),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (sections[i].showGuaranteeBadge) ...[
+                    Center(
+                      child: Image.asset(
+                        AppAssets.productGuaranteeBadge,
+                        width: 88.w,
+                        height: 88.w,
+                        fit: BoxFit.contain,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 12.h),
+                    SizedBox(height: 12.h),
+                  ],
+                  sections[i].body,
                 ],
-                sections[i].body,
-              ],
+              ),
             ),
           ),
         ],
       ],
+    );
+  }
+}
+
+/// هالة نابضة حول الكرت — تلفت النظر إلى الموافقة المطلوبة ثم تختفي
+class _GlowRing extends StatelessWidget {
+  const _GlowRing({
+    super.key,
+    required this.animation,
+    required this.active,
+    required this.child,
+  });
+
+  final Animation<double> animation;
+  final bool active;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!active) return child;
+
+    final radius = BorderRadius.circular(16.r);
+
+    return AnimatedBuilder(
+      animation: animation,
+      // الكرت نفسه لا يُعاد بناؤه مع كل إطار، الهالة فقط
+      child: child,
+      builder: (context, child) {
+        final v = animation.value;
+        // ثلاث نبضات ناعمة تبدأ وتنتهي عند الصفر، وتخفت مع الوقت
+        final pulse = (1 - math.cos(v * math.pi * 6)) / 2 * (1 - v * 0.45);
+
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.40 * pulse),
+                blurRadius: 26.r * pulse,
+                spreadRadius: 2.r * pulse,
+              ),
+            ],
+          ),
+          foregroundDecoration: BoxDecoration(
+            borderRadius: radius,
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.70 * pulse),
+              width: 1.6,
+            ),
+          ),
+          child: child,
+        );
+      },
     );
   }
 }

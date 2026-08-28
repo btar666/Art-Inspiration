@@ -60,11 +60,11 @@ class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
     if (_submitting) return;
 
     if (!_policiesAccepted) {
-      _policySectionsKey.currentState?.openPendingPolicies();
+      _policySectionsKey.currentState?.revealPending();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'يرجى فتح السياسات وقراءتها والموافقة عليها قبل تأكيد الطلب',
+            'يرجى قراءة السياسات والموافقة عليها لإتمام الطلب',
             style: AppTextStyles.ordersDetailLabel().copyWith(
               color: AppColors.background,
               fontSize: 13.sp,
@@ -186,119 +186,125 @@ class _CheckoutReviewPageState extends ConsumerState<CheckoutReviewPage> {
                   onBack: () => context.pop(),
                 ),
                 Expanded(
-                  child: ListView(
+                  // ponytail: قائمة عادية لا كسولة. المنتجات كلها داخل كرت
+                  // واحد فالكسل لا يوفّر شيئاً، وكان يمنع بناء كروت السياسات
+                  // فلا يجدها زر التأكيد. لو صار الطلب مئات الأسطر أعِد النظر.
+                  child: SingleChildScrollView(
                     padding: EdgeInsets.fromLTRB(
                       16.w,
                       0,
                       16.w,
                       CheckoutReviewOverlayMetrics.scrollBottomInset(context),
                     ),
-                    children: [
-                      _InfoCard(
-                        children: [
-                          _InlineInfoRow(
-                            label: 'اسم الزبون :',
-                            value: draft.customerName,
-                          ),
-                          _InlineInfoRow(
-                            label: 'رقم الهاتف :',
-                            value: draft.phone,
-                          ),
-                          _InlineInfoRow(
-                            label: 'رقم هاتف آخر :',
-                            value: draft.secondPhone.isEmpty
-                                ? 'لا يوجد'
-                                : draft.secondPhone,
-                          ),
-                          _InlineInfoRow(
-                            label: 'طريقة الاستلام :',
-                            value: draft.deliveryMethod.label,
-                            isLast: !draft.requiresAddress,
-                          ),
-                          if (draft.requiresAddress)
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _InfoCard(
+                          children: [
                             _InlineInfoRow(
-                              label: 'عنوان التوصيل :',
-                              value: addressLabel,
-                              isLast: true,
+                              label: 'اسم الزبون :',
+                              value: draft.customerName,
                             ),
-                        ],
-                      ),
-                      SizedBox(height: 12.h),
-                      _InfoCard(
-                        padding: EdgeInsets.fromLTRB(0, 16.h, 18.w, 16.h),
-                        children: [
-                          _OrderDateRow(date: formattedDate),
-                        ],
-                      ),
-                      SizedBox(height: 20.h),
-                      Text(
-                        'المنتجات المطلوبة ( ${draft.totalQuantity} )',
-                        style: AppTextStyles.ordersSectionTitle(),
-                      ),
-                      SizedBox(height: 12.h),
-                      _InfoCard(
-                        children: [
-                          for (var i = 0; i < draft.items.length; i++) ...[
-                            if (i > 0) ...[
-                              SizedBox(height: 12.h),
-                              Center(
-                                child: Container(
-                                  width: 168.w,
-                                  height: 1.h,
-                                  color: AppColors.dotGrid.withValues(
-                                    alpha: 0.5,
+                            _InlineInfoRow(
+                              label: 'رقم الهاتف :',
+                              value: draft.phone,
+                            ),
+                            _InlineInfoRow(
+                              label: 'رقم هاتف آخر :',
+                              value: draft.secondPhone.isEmpty
+                                  ? 'لا يوجد'
+                                  : draft.secondPhone,
+                            ),
+                            _InlineInfoRow(
+                              label: 'طريقة الاستلام :',
+                              value: draft.deliveryMethod.label,
+                              isLast: !draft.requiresAddress,
+                            ),
+                            if (draft.requiresAddress)
+                              _InlineInfoRow(
+                                label: 'عنوان التوصيل :',
+                                value: addressLabel,
+                                isLast: true,
+                              ),
+                          ],
+                        ),
+                        SizedBox(height: 12.h),
+                        _InfoCard(
+                          padding: EdgeInsets.fromLTRB(0, 16.h, 18.w, 16.h),
+                          children: [
+                            _OrderDateRow(date: formattedDate),
+                          ],
+                        ),
+                        SizedBox(height: 20.h),
+                        Text(
+                          'المنتجات المطلوبة ( ${draft.totalQuantity} )',
+                          style: AppTextStyles.ordersSectionTitle(),
+                        ),
+                        SizedBox(height: 12.h),
+                        _InfoCard(
+                          children: [
+                            for (var i = 0; i < draft.items.length; i++) ...[
+                              if (i > 0) ...[
+                                SizedBox(height: 12.h),
+                                Center(
+                                  child: Container(
+                                    width: 168.w,
+                                    height: 1.h,
+                                    color: AppColors.dotGrid.withValues(
+                                      alpha: 0.5,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              SizedBox(height: 12.h),
+                                SizedBox(height: 12.h),
+                              ],
+                              _CheckoutLineItemRow(item: draft.items[i]),
                             ],
-                            _CheckoutLineItemRow(item: draft.items[i]),
                           ],
-                        ],
-                      ),
-                      SizedBox(height: 20.h),
-                      Text(
-                        'تفاصيل السعر',
-                        style: AppTextStyles.ordersSectionTitle(),
-                      ),
-                      SizedBox(height: 12.h),
-                      _InfoCard(
-                        children: [
-                          _InfoRow(
-                            label: 'السعر الكلي :',
-                            value: formatIraqiPrice(draft.subtotal),
-                            valueColor: AppColors.orderTotalPrice,
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 20.h),
-                      Builder(
-                        builder: (context) {
-                          final policiesAsync =
-                              ref.watch(returnPoliciesProvider);
-                          final count = policiesAsync.maybeWhen(
-                            data: (items) =>
-                                items.isEmpty ? 2 : items.length,
-                            orElse: () => 2,
-                          );
-                          _syncPolicyAcceptedLength(count);
-                          return CheckoutPolicySections(
-                            key: _policySectionsKey,
-                            acceptedFlags: _policyAccepted,
-                            onAcceptedChanged: (index, value) {
-                              setState(() {
-                                if (index < 0 ||
-                                    index >= _policyAccepted.length) {
-                                  return;
-                                }
-                                _policyAccepted = [..._policyAccepted]
-                                  ..[index] = value;
-                              });
-                            },
-                          );
-                        },
-                      ),
-                    ],
+                        ),
+                        SizedBox(height: 20.h),
+                        Text(
+                          'تفاصيل السعر',
+                          style: AppTextStyles.ordersSectionTitle(),
+                        ),
+                        SizedBox(height: 12.h),
+                        _InfoCard(
+                          children: [
+                            _InfoRow(
+                              label: 'السعر الكلي :',
+                              value: formatIraqiPrice(draft.subtotal),
+                              valueColor: AppColors.orderTotalPrice,
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 20.h),
+                        Builder(
+                          builder: (context) {
+                            final policiesAsync =
+                                ref.watch(returnPoliciesProvider);
+                            final count = policiesAsync.maybeWhen(
+                              data: (items) =>
+                                  items.isEmpty ? 2 : items.length,
+                              orElse: () => 2,
+                            );
+                            _syncPolicyAcceptedLength(count);
+                            return CheckoutPolicySections(
+                              key: _policySectionsKey,
+                              acceptedFlags: _policyAccepted,
+                              onAcceptedChanged: (index, value) {
+                                setState(() {
+                                  if (index < 0 ||
+                                      index >= _policyAccepted.length) {
+                                    return;
+                                  }
+                                  _policyAccepted = [..._policyAccepted]
+                                    ..[index] = value;
+                                });
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
