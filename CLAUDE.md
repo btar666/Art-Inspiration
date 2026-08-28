@@ -670,11 +670,69 @@ healthy there and dead on a phone.
 `getToken` runs, `getToken` is wrapped, and the topic subscription no longer
 depends on it.
 
-🚩 **Diagnosed from the code, not reproduced on a device** — there is no iPhone
-on this machine. If push is still dead after this, the remaining suspects are
-all on Apple's side and none are visible from the repo: the APNs auth key
-uploaded to the Firebase project, the Push Notifications capability on the App
-ID, and whether the user granted permission. Check those next.
+That fix was correct and is not the whole story. The app half now works and
+was measured working on 2026-08-28: the simulator logs `FCM token: …` and
+`FCM subscribed to topic: notification-public`.
+
+### The real cause: Firebase cannot authenticate with Apple
+
+Sending one FCM v1 message to that live token returns, verbatim:
+
+```json
+{"error":{"code":401,"message":"Invalid APNs credential.",
+ "status":"UNAUTHENTICATED",
+ "details":[{"errorCode":"THIRD_PARTY_AUTH_ERROR"}]}}
+```
+
+`THIRD_PARTY_AUTH_ERROR` is FCM saying it has no working APNs key for this app.
+Nothing in the repo can fix it — the key is uploaded in the Firebase console.
+
+🚩 **The project holds TWO iOS apps, and the APNs setup went to the wrong
+one.** `GET /v1beta1/projects/art-inspiration-6d593/iosApps`:
+
+| displayName | bundleId | teamId |
+|---|---|---|
+| `artinspiration` ← **the shipped app** | `com.artinspiration.app` | **absent** |
+| `art_inspiration_app (ios)` | `com.example.artInspirationApp` | `427DBVF8F9` |
+
+The `com.example…` pair is `flutter create` scaffolding from before the bundle
+was renamed. It carries the Team ID; the real app carries none. There is a
+matching junk Android app (`com.example.art_inspiration_app`). Android never
+noticed because Android does not go through APNs — which is exactly why this
+reads as "iOS-only".
+
+**Fixed the same day.** The owner uploaded the APNs Authentication Key (`.p8`
+from developer.apple.com → Keys) onto the **`artinspiration`** app under
+Project settings → Cloud Messaging → Apple app configuration, with its Key ID
+and Team ID `427DBVF8F9`. `iosApps` now reports `teamId` on both entries, and
+the same curl to the same token returns
+`projects/art-inspiration-6d593/messages/7579edd7-…` instead of the 401.
+Nothing in the app changed between the two replies.
+
+⚠️ The two `com.example…` apps (one iOS, one Android) are still ACTIVE. They
+are the trap that caused this: the next person to configure push can pick the
+wrong row again. Delete them when convenient.
+
+🚩 The APNs credential cannot be read or written through the Firebase
+Management API — `iosApps` exposes `teamId` and nothing about keys. Do not go
+looking for an API for it. The retest is scriptable, though, and is the only
+honest proof the upload worked:
+
+```bash
+# 1. read the token the app logs on launch
+flutter run -d <udid> | grep "FCM token:"
+# 2. send to THAT TOKEN ONLY — never to the topic, it reaches every customer
+curl -s -X POST "https://fcm.googleapis.com/v1/projects/art-inspiration-6d593/messages:send" \
+  -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+  -H "Content-Type: application/json" \
+  -d '{"message":{"token":"<token>","notification":{"title":"اختبار","body":"فحص"}}}'
+```
+
+A `name: projects/…/messages/…` reply means Apple accepted it.
+
+🚩 An Apple Silicon simulator gets a real APNs token and a real FCM token,
+so it reproduces this end to end. The old note here said push could not be
+tested without a phone. It can.
 
 ## Page pushes use Cupertino's own timing again
 
