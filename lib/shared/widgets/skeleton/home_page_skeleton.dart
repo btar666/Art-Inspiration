@@ -22,7 +22,10 @@ class HomePageSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final cardWidth = HomeProductCardMetrics.width();
     final cardHeight = HomeProductCardMetrics.height();
-    final heroHeight = HomeScrollMetrics.heroHeight(topInset);
+    final heroHeight = HomeScrollMetrics.heroHeight(
+      topInset,
+      MediaQuery.sizeOf(context),
+    );
     final headerTop = topInset + 8.h;
 
     return SkeletonShimmer(

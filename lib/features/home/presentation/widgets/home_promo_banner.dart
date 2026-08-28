@@ -164,17 +164,14 @@ class _SliderSlide extends StatelessWidget {
   final bool isActive;
   final VoidCallback? onTap;
 
-  /// صور البانر عريضة (‏1.67:1) والهيرو أقرب إلى المربّع، فـ `cover` كان
-  /// يقصّ جانبيه. الفارق بين الأجهزة هو `topInset` وحده: قصّة الآيفون ‏21%‏
-  /// من العرض مقابل ‏9%‏ على أندرويد، فضاعت كلمات من نص البانر على الآيفون.
+  /// صور البانر عريضة (‏1.67:1‏) والهيرو الآن بنفس النسبة تماماً
+  /// ([HomeScrollMetrics.bannerAspect])، فـ `fitWidth` يملأ الهيرو كاملاً:
+  /// البانر كله بلا قص جانبي وبلا شريط فارغ فوقه.
   ///
-  /// لذلك تُرسم الصورة مرّتين:
-  /// - `cover` في الخلف لتملأ الهيرو حتى أعلى الشاشة. بدونها يبقى شريط
-  ///   `homeBannerBg` الفاتح خلف شريط الحالة، وساعة النظام بيضاء فتختفي.
-  /// - `fitWidth` بمحاذاة سفلية في الأمام، وهي النسخة التي يراها الزبون:
-  ///   عرض البانر كاملاً بلا قص على أي جهاز.
-  ///
-  /// النسختان تقرآن نفس رابط الصورة، فالتحميل والفك مرّة واحدة من الكاش.
+  /// كان يُرسم مرّتين — نسخة `cover` مكبّرة خلف نسخة `fitWidth` — لتغطية
+  /// الشريط الذي يتركه `fitWidth` أعلى الهيرو. المالك رأى النسخة الخلفية
+  /// كأنها انعكاس للصورة (‏2026-08-28‏)، وهي كذلك: نفس الرسمة مكبّرة. ضبط
+  /// ارتفاع الهيرو حذف الشريط والنسخة معاً.
   ///
   /// 🚩 لا تُعِد `memCacheHeight`. تمريره مع `memCacheWidth` معاً يفكّ الصورة
   /// بالمقاسين حرفياً بلا حفاظ على النسبة — أي `BoxFit.fill`. صور اليوم أصغر
@@ -217,10 +214,6 @@ class _SliderSlide extends StatelessWidget {
             if (item.isVideo)
               _SliderVideoPlayer(url: item.mediaUrl, isActive: isActive)
             else ...[
-              _bannerImage(
-                cacheWidth: (screenWidth * dpr).round().clamp(1, 2048),
-                fit: BoxFit.cover,
-              ),
               _bannerImage(
                 cacheWidth: (screenWidth * dpr).round().clamp(1, 2048),
                 fit: BoxFit.fitWidth,

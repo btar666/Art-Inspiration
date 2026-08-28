@@ -70,7 +70,10 @@ class _HomeCompactHeaderOverlayState extends State<HomeCompactHeaderOverlay>
   void _openSearch() => context.go(AppRoutes.search);
 
   void _syncVisibility() {
-    final hideStart = HomeScrollMetrics.logoHideStartOffset();
+    final hideStart = HomeScrollMetrics.logoHideStartOffset(
+      MediaQuery.paddingOf(context).top,
+      MediaQuery.sizeOf(context),
+    );
     final hideRange = HomeScrollMetrics.logoHideAnimationRange();
     final offset = widget.scrollOffsetListenable.value;
     final shouldShow = offset >= hideStart + hideRange * 0.2;

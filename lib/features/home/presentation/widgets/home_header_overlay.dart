@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
-import '../../../../shared/widgets/pinned_blur_gradient_background.dart';
 import 'home_scroll_metrics.dart';
 import 'home_top_section.dart';
 
@@ -22,7 +21,10 @@ class HomeHeaderOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;
-    final hideStart = HomeScrollMetrics.logoHideStartOffset();
+    final hideStart = HomeScrollMetrics.logoHideStartOffset(
+      topInset,
+      MediaQuery.sizeOf(context),
+    );
     final hideRange = HomeScrollMetrics.logoHideAnimationRange();
     final headerHeight =
         topInset + HomeScrollMetrics.headerRowHeight() + 36.h;
@@ -36,10 +38,25 @@ class HomeHeaderOverlay extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            const Positioned.fill(
+            // لا شريط ملوّن فوق البانر (طلب المالك). يبقى ظل رقيق بعلو شريط
+            // الحالة وحده، لأن ساعة النظام بيضاء وتختفي فوق البانرات الفاتحة.
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: topInset,
               child: IgnorePointer(
-                child: PinnedBlurGradientBackground(
-                  fadeStops: PinnedBlurHeaderStyle.homeFadeStops,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.32),
+                        Colors.black.withValues(alpha: 0),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),

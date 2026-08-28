@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_notification_icon_button.dart';
 import '../../../../shared/widgets/search_hint_typewriter.dart';
@@ -112,9 +113,24 @@ class HomeSearchBar extends ConsumerWidget {
           ),
           if (onNotificationTap != null) ...[
             SizedBox(width: 8.w),
-            AppNotificationIconButton(
-              onTap: onNotificationTap,
-              size: 32.w,
+            // دائرة بيضاء مثل شريط البحث: الجرس أزرق وكان يختفي فوق البانر الأزرق
+            Container(
+              padding: EdgeInsets.all(6.w),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: AppNotificationIconButton(
+                onTap: onNotificationTap,
+                size: 32.w,
+              ),
             ),
           ],
         ],

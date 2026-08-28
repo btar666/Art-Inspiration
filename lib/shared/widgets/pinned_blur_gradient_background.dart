@@ -87,10 +87,12 @@ class PinnedBlurGradientBackground extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-            child: const ColoredBox(color: Color(0x01FFFFFF)),
-          ),
+          // سيغما صفر = بلا تغويش إطلاقاً، لا [BackdropFilter] أصلاً
+          if (blurSigma > 0)
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+              child: const ColoredBox(color: Color(0x01FFFFFF)),
+            ),
           DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(

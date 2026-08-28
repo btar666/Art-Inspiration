@@ -188,6 +188,22 @@ It is now one blur and one saveLayer per header.
 | raster avg | 1.91 ms | **1.39 ms** |
 | worst raster frame | 11.81 ms | **8.96 ms** |
 
+🚩 **The tall home header no longer draws a band at all** (owner, 2026-08-28).
+He asked for the frosted strip above the slider to go. Removing only the blur
+changed nothing on screen — it sat under a gradient that is 92% opaque, the same
+trap as the masked layer above — so the whole `PinnedBlurGradientBackground` is
+gone from `home_header_overlay.dart`. Two things replaced it, because the band
+was carrying contrast, not decoration:
+
+- The bell is blue and vanished over the blue slide, so it now sits on a white
+  circle in `HomeSearchBar`, matching the search pill beside it.
+- The system clock is white and vanished over the pale slides, so a 32%
+  black-to-transparent scrim covers the status-bar strip **only**
+  (`height: topInset`). Photographed on all four slides.
+
+The **compact** header keeps its blur. It floats over a scrolling list and has
+no artwork of its own to show off.
+
 🚩 **A `BackdropFilter` can never be cached.** It samples what is behind it,
 and behind it is a scrolling list, so it re-runs every frame no matter what
 `RepaintBoundary` or `const` you wrap it in. The only lever is fewer of them,
@@ -282,10 +298,43 @@ seam was measured at exactly **63.0pt** down the right-hand column, matching
 303 − 402/1.672 to a tenth of a point. All four slides were then photographed
 whole.
 
-🚩 That is one extra opaque quad per visible slide — no `saveLayer`, no
-blur, and both copies share one cache entry and one decode. It has **not** been
-put on the timeline. If home raster ever regresses, look here, but this is a
-different order of cost from the blur stack above.
+### The banner box is 12:11, and the artwork must match it
+
+The owner saw the `cover` copy the day the header band came off and called it
+"mirroring" (2026-08-28). He was right — it is the same artwork, zoomed, and on
+a symmetric sunburst the top strip reads as a reflection. The band had been
+hiding it. Then he asked for the banner to be **taller**, and for the exact
+export size to hand his designer.
+
+Both answers are the same number. `HomeScrollMetrics.heroHeight` now returns
+`screenWidth / bannerAspect` with `bannerAspect = 12 / 11`, so:
+
+- the box takes its height from the **width alone** — same shape on every phone,
+  which is what killed the old iPhone-crops-Android-doesn't bug at the root: the
+  notch no longer decides the box ratio;
+- artwork exported at **1200 × 1100 px** fills it exactly — no crop, no strip,
+  and the `cover` copy is deleted;
+- 368pt tall on an iPhone 17 Pro, 42% of the screen, which is what the owner
+  drew on his screenshot.
+
+`heroMaxScreenFraction = 0.46` caps it, because `width / aspect` on a short
+360×640 phone is 52% of the screen. Above the cap the top of the image is cut —
+the strip the floating header covers anyway.
+
+🚩 **Today's four banners are still 1.67:1 and do NOT fill the new box.**
+`fitWidth` + `bottomCenter` puts the shortfall at the top: measured 6pt of bare
+`homeBannerBg` above the artwork on an iPhone 17 Pro, because the header covers
+123.5 of the 128pt gap. On a small-notch Android the same arithmetic leaves
+about 46pt visible. It closes itself the day the new slides are uploaded.
+
+🚩 The safe zone the designer was given, as fractions of the image so they
+survive a resize: **top 35%** is under the status bar and the floating search
+row (33.5% on the worst device, plus the short-phone crop); **bottom 80px of
+1100** holds the page dots. Sides are never cropped.
+
+🚩 `sliderVisualHeight` and `logoHideStartOffset` derive from the hero, so the
+header still starts fading when the categories reach it. All three take
+`(topInset, Size screen)`.
 
 🚩 The video path still uses `FittedBox(BoxFit.cover)` and still crops.
 Left alone on purpose: `api/slider` serves four images and no video today, and
@@ -641,6 +690,37 @@ own duration.
 the **fade between bottom-nav tabs**, where a switch should feel instant. Do
 not "unify" the two: a tab change and a page push are different gestures with
 different expectations.
+
+## The consent checkboxes now come to the customer
+
+Reported 2026-08-28: with a long order, tapping «تأكيد الطلب» only showed a red
+snack bar. The two policy consents sit at the very bottom, and the customer had
+no idea where to look.
+
+`revealPending()` in `checkout_policy_sections.dart` replaces
+`openPendingPolicies()`: it expands every un-accepted card, scrolls the **first**
+un-accepted one to the top of the viewport (`Scrollable.ensureVisible`), then
+pulses a blue halo around it — `_GlowRing`, one `AnimationController` and
+`(1 - cos(v·6π)) / 2 · (1 - 0.45v)`, three soft pulses that fade out. The child
+is the `AnimatedBuilder`'s `child:`, so only the halo repaints.
+
+🚩 **The old call did nothing at all, and the lazy `ListView` was why.** Policy
+cards are the list's LAST child, so at the top of the page they are not built —
+`GlobalKey.currentState` is null and the tap fell through to the snack bar
+alone. Scrolling first exposed a second fault: **`maxScrollExtent` is an
+estimate** while children are unbuilt, and it does not grow when a card expands,
+so `ensureVisible` clamped to the stale value and refused to move
+(`px=609 max=609 delta=525`, measured). The page uses a
+`SingleChildScrollView` + `Column` now. Nothing is lost: all order lines already
+lived inside ONE `_InfoCard`, so the laziness never applied to them.
+
+🚩 A `GlobalKey` into a lazily-built list is null until the target scrolls into
+range. Do not reach into one from a button that lives somewhere else.
+
+Verified on an iPhone 17 Pro from a cold start: one tap moved the page from the
+top to the first policy card, both cards open, checkbox on screen. The halo was
+photographed by pinning the pulse at 1.0 — at real speed it is 1.6s and a
+screenshot cannot catch it.
 
 ## Tests
 

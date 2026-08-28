@@ -88,9 +88,12 @@ class _HomeContentState extends ConsumerState<HomeContent> {
     ]);
   }
 
-  Widget _buildHeroSection({required double topInset}) {
+  Widget _buildHeroSection({
+    required double topInset,
+    required Size screen,
+  }) {
     return SizedBox(
-      height: HomeScrollMetrics.heroHeight(topInset),
+      height: HomeScrollMetrics.heroHeight(topInset, screen),
       width: double.infinity,
       child: const HomePromoBanner(),
     );
@@ -104,7 +107,10 @@ class _HomeContentState extends ConsumerState<HomeContent> {
     final products = catalog.products;
     return [
             SliverToBoxAdapter(
-              child: _buildHeroSection(topInset: topInset),
+              child: _buildHeroSection(
+                topInset: topInset,
+                screen: MediaQuery.sizeOf(context),
+              ),
             ),
             SliverToBoxAdapter(
               child: Column(
@@ -198,6 +204,7 @@ class _HomeContentState extends ConsumerState<HomeContent> {
   @override
   Widget build(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;
+    final screen = MediaQuery.sizeOf(context);
     final catalogAsync = ref.watch(catalogProvider);
     // الهيدر يطفو فوق هذه القائمة، فمؤشر السحب للتحديث يبدأ تحته لا خلفه
     final refreshOffset = topInset + HomeScrollMetrics.headerRowHeight();
@@ -226,7 +233,7 @@ class _HomeContentState extends ConsumerState<HomeContent> {
           slivers: [
             SliverToBoxAdapter(
               child: SizedBox(
-                height: HomeScrollMetrics.heroHeight(topInset),
+                height: HomeScrollMetrics.heroHeight(topInset, screen),
               ),
             ),
             const SliverFillRemaining(child: SizedBox.shrink()),

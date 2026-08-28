@@ -48,16 +48,21 @@ class _HomePageState extends ConsumerState<HomePage> {
     _scrollController.addListener(_onScroll);
   }
 
+  /// ارتفاع الهيرو يعتمد على عرض الشاشة، فيُقرأ من الـ context لا ثابتاً
+  double _hideStart() => HomeScrollMetrics.logoHideStartOffset(
+        MediaQuery.paddingOf(context).top,
+        MediaQuery.sizeOf(context),
+      );
+
   void _onScroll() {
     final offset = _scrollController.offset;
     // ValueNotifier لا يُبلّغ إلا عند تغيّر القيمة فعلاً
     _showScrollToTop.value =
-        offset > HomeScrollMetrics.logoHideStartOffset() + 80;
+        offset > _hideStart() + 80;
 
     if ((offset - _scrollOffset.value).abs() < 3) return;
 
-    final hideEnd = HomeScrollMetrics.logoHideStartOffset() +
-        HomeScrollMetrics.logoHideAnimationRange();
+    final hideEnd = _hideStart() + HomeScrollMetrics.logoHideAnimationRange();
 
     // بعد اختفاء الهيدر بالكامل لا نحدّث الـ overlay أثناء السكرول السريع
     if (offset >= hideEnd) {
