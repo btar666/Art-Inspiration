@@ -168,6 +168,57 @@ That was true of the JDK and false of the directories. If an Android build
 fails on one machine only, look for untracked local junk before blaming the
 config.
 
+## Releasing to Google Play, and the signing key that is not here
+
+🚩 **A release build signs itself with the DEBUG key when the signing config
+is missing, and says nothing about it.** `android/app/build.gradle.kts:56-60`
+falls back to `signingConfigs.getByName("debug")` when `key.properties` does
+not exist. The build succeeds, the `.aab` looks finished, and Play rejects it
+at upload with a certificate error that names none of this. Until 2026-08-28
+this project had no key at all, so every Android release build it ever
+produced was debug-signed.
+
+Two files make it work, and **neither is in git**, on purpose:
+
+| file | what it is |
+|---|---|
+| `android/upload-keystore.jks` | the upload key. PKCS12, alias `upload`, valid to 2054 |
+| `android/key.properties` | the four lines gradle reads: `storePassword`, `keyPassword`, `keyAlias`, `storeFile` |
+
+`storeFile` is `../upload-keystore.jks`, which resolves against the **module**
+directory `android/app/`, not the repo root — `file()` inside the `android {}`
+block always does. So the path lands on `android/upload-keystore.jks`.
+`android/.gitignore:12` and `:14` keep both out.
+
+🚩 **A fresh clone cannot build for Play, and will not tell you why.** It gets
+no `key.properties`, takes the debug fallback, and produces an `.aab` that
+fails only at upload. Copy both files in by hand first. They exist on the
+owner's Mac and nowhere else; the passwords are not written down in this repo
+and never should be.
+
+Check which key actually signed a bundle before uploading, rather than
+trusting the build:
+
+```bash
+unzip -p build/app/outputs/bundle/release/app-release.aab META-INF/UPLOAD.RSA \
+  | keytool -printcert | grep Owner
+```
+
+`CN=ART INSPIRATION` is right. `CN=Android Debug` means the fallback fired.
+
+🚩 **`assets/images/` is declared as a whole directory** (`pubspec.yaml:72`),
+so any file left in that folder ships to every customer whether or not code
+names it. 31 MB of dead images rode along that way until 2026-08-28 — two
+stock JPEGs and the three onboarding PNGs that SVGs had already replaced.
+Grep the whole repo before deleting an asset, not just `lib/`:
+`assets/icons/appiconartins.png` is named by no Dart file because it is the
+`flutter_launcher_icons` source at `pubspec.yaml:64`.
+
+🚩 The `.aab` is much bigger than what anyone downloads. Of the 76 MB file,
+Play strips the debug symbols and ProGuard map, then sends one CPU
+architecture: about 24 MB of arm64 libraries, 8 MB of assets, 5 MB of dex and
+resources. Most of what is left is the Flutter engine, not this app.
+
 ## Home screen performance — what was measured
 
 Numbers below are from the iOS simulator in **debug** mode with identical
