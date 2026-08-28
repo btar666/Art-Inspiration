@@ -28,21 +28,21 @@ class AuthApiService {
   }
 
   Future<AuthSession> register({
-    required String firstName,
-    required String lastName,
-    required String email,
+    required String name,
     required String phone,
     required String password,
     required String shopName,
     required String governorate,
-  }) async {
-    final name = '$firstName $lastName'.trim();
+    required String address,
+  }) {
+    final trimmed = name.trim();
     return _appApi.register(
-      name: name.isEmpty ? shopName : name,
+      name: trimmed.isEmpty ? shopName : trimmed,
       phone: phone,
       password: password,
       city: governorate,
       cosmeticName: shopName,
+      address: address,
     );
   }
 
@@ -58,6 +58,7 @@ class AuthApiService {
     required String password,
     required String city,
     required String cosmeticName,
+    required String address,
   }) =>
       _appApi.editAccount(
         name: name,
@@ -65,6 +66,7 @@ class AuthApiService {
         password: password,
         city: city,
         cosmeticName: cosmeticName,
+        address: address,
       );
 
   Future<void> deleteAccount() => _appApi.deleteAccount();

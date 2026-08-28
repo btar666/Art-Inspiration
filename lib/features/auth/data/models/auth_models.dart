@@ -1,4 +1,5 @@
 import '../../../../core/network/models/erp_price_policy.dart';
+import '../../../../core/utils/placeholder_text.dart';
 
 /// توكنات المصادقة
 class AuthTokens {
@@ -34,6 +35,7 @@ class AuthUser {
     this.email,
     this.phone,
     this.city,
+    this.address,
     this.cosmeticName,
     this.erpId,
     this.uuid,
@@ -45,6 +47,7 @@ class AuthUser {
   final String? email;
   final String? phone;
   final String? city;
+  final String? address;
   final String? cosmeticName;
   final String? erpId;
   final String? uuid;
@@ -58,6 +61,7 @@ class AuthUser {
     final name = (json['name'] ?? json['user_name'] ?? combinedName)
         .toString()
         .trim();
+    final address = cleanText(json['address']);
 
     return AuthUser(
       id: (json['id'] ?? json['user_id'] ?? json['uuid'] ?? '').toString(),
@@ -65,6 +69,7 @@ class AuthUser {
       email: json['email']?.toString() ?? json['user_email']?.toString(),
       phone: json['phone']?.toString(),
       city: json['city']?.toString(),
+      address: address.isEmpty ? null : address,
       cosmeticName: json['cosmetic_name']?.toString(),
       erpId: json['id_erp']?.toString(),
       uuid: json['uuid']?.toString(),
@@ -81,6 +86,7 @@ class AuthUser {
         'email': email,
         'phone': phone,
         'city': city,
+        'address': address,
         'cosmetic_name': cosmeticName,
         'id_erp': erpId,
         'uuid': uuid,
@@ -110,6 +116,7 @@ class AuthUser {
     String? email,
     String? phone,
     String? city,
+    String? address,
     String? cosmeticName,
     String? erpId,
     String? uuid,
@@ -121,6 +128,7 @@ class AuthUser {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       city: city ?? this.city,
+      address: address ?? this.address,
       cosmeticName: cosmeticName ?? this.cosmeticName,
       erpId: erpId ?? this.erpId,
       uuid: uuid ?? this.uuid,

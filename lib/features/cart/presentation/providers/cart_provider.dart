@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/models/erp_price_policy.dart';
+import '../../../../core/storage/user_cache_key_provider.dart';
 import '../../../home/data/models/product_model.dart';
 import '../../data/cart_storage.dart';
 import '../../data/models/cart_item_model.dart';
@@ -9,11 +10,14 @@ import '../../data/models/cart_item_model.dart';
 class CartNotifier extends Notifier<List<CartItemModel>> {
   @override
   List<CartItemModel> build() {
-    return ref.read(cartStorageProvider).loadItems();
+    final userKey = ref.watch(activeUserCacheKeyProvider);
+    return ref.read(cartStorageProvider).loadItems(userKey);
   }
 
-  Future<void> _persist() =>
-      ref.read(cartStorageProvider).saveItems(state);
+  Future<void> _persist() => ref.read(cartStorageProvider).saveItems(
+        ref.read(activeUserCacheKeyProvider),
+        state,
+      );
 
   int quantityOf(String productId) {
     for (final item in state) {
@@ -83,7 +87,7 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
 
   void clearAll() {
     state = [];
-    ref.read(cartStorageProvider).clear();
+    ref.read(cartStorageProvider).clear(ref.read(activeUserCacheKeyProvider));
   }
 
   /// استبدال محتوى السلة بالكامل — إعادة الطلب
@@ -118,7 +122,9 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
   }
 
   Future<void> reload() async {
-    state = ref.read(cartStorageProvider).loadItems();
+    state = ref
+        .read(cartStorageProvider)
+        .loadItems(ref.read(activeUserCacheKeyProvider));
   }
 
   /// تحديث أسعار السلة عند تغيّر سياسة التسعير من أمان ERP

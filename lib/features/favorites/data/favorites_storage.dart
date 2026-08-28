@@ -5,16 +5,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/storage/onboarding_storage.dart';
+import '../../../core/storage/user_scoped_keys.dart';
 import '../../home/data/models/product_model.dart';
 
-/// تخزين المفضلات محلياً
+/// تخزين المفضلات محلياً — مفصول لكل حساب
 class FavoritesStorage {
   FavoritesStorage(this._prefs);
 
   final SharedPreferences _prefs;
 
-  List<ProductModel> loadProducts() {
-    final raw = _prefs.getString(AppConstants.favoritesKey);
+  List<ProductModel> loadProducts(String userKey) {
+    final raw = UserScopedPrefs.readString(
+      _prefs,
+      baseKey: AppConstants.favoritesKey,
+      userKey: userKey,
+    );
     if (raw == null || raw.isEmpty) return [];
 
     try {
@@ -27,12 +32,24 @@ class FavoritesStorage {
     }
   }
 
-  Future<void> saveProducts(List<ProductModel> products) async {
+  Future<void> saveProducts(
+    String userKey,
+    List<ProductModel> products,
+  ) async {
     final encoded = jsonEncode(products.map((e) => e.toJson()).toList());
-    await _prefs.setString(AppConstants.favoritesKey, encoded);
+    await UserScopedPrefs.writeString(
+      _prefs,
+      baseKey: AppConstants.favoritesKey,
+      userKey: userKey,
+      value: encoded,
+    );
   }
 
-  Future<void> clear() => _prefs.remove(AppConstants.favoritesKey);
+  Future<void> clear(String userKey) => UserScopedPrefs.remove(
+        _prefs,
+        baseKey: AppConstants.favoritesKey,
+        userKey: userKey,
+      );
 }
 
 final favoritesStorageProvider = Provider<FavoritesStorage>((ref) {

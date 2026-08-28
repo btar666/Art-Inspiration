@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/storage/user_cache_key_provider.dart';
 import '../../../home/data/models/product_model.dart';
 import '../../data/favorites_storage.dart';
 
@@ -7,11 +8,14 @@ import '../../data/favorites_storage.dart';
 class FavoritesNotifier extends Notifier<List<ProductModel>> {
   @override
   List<ProductModel> build() {
-    return ref.read(favoritesStorageProvider).loadProducts();
+    final userKey = ref.watch(activeUserCacheKeyProvider);
+    return ref.read(favoritesStorageProvider).loadProducts(userKey);
   }
 
-  Future<void> _persist() =>
-      ref.read(favoritesStorageProvider).saveProducts(state);
+  Future<void> _persist() => ref.read(favoritesStorageProvider).saveProducts(
+        ref.read(activeUserCacheKeyProvider),
+        state,
+      );
 
   bool isFavorite(String productId) =>
       state.any((product) => product.id == productId);
@@ -32,7 +36,9 @@ class FavoritesNotifier extends Notifier<List<ProductModel>> {
   }
 
   Future<void> reload() async {
-    state = ref.read(favoritesStorageProvider).loadProducts();
+    state = ref
+        .read(favoritesStorageProvider)
+        .loadProducts(ref.read(activeUserCacheKeyProvider));
   }
 }
 

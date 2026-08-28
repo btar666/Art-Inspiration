@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../core/storage/user_cache_key_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_refresh_scroll_view.dart';
@@ -52,7 +53,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   @override
   void initState() {
     super.initState();
-    _history = ref.read(searchHistoryStorageProvider).load();
+    _history = ref
+        .read(searchHistoryStorageProvider)
+        .load(ref.read(activeUserCacheKeyProvider));
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _consumePendingAppliedFilter();
@@ -102,7 +105,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   Future<void> _persistHistory() {
-    return ref.read(searchHistoryStorageProvider).save(_history);
+    return ref.read(searchHistoryStorageProvider).save(
+          ref.read(activeUserCacheKeyProvider),
+          _history,
+        );
   }
 
   SearchFilterState _filter = const SearchFilterState();
@@ -315,6 +321,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String>(activeUserCacheKeyProvider, (previous, next) {
+      if (previous == next) return;
+      setState(() {
+        _history = ref.read(searchHistoryStorageProvider).load(next);
+      });
+    });
+
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final showCancel = _isShowingResults ||
         _query.trim().isNotEmpty ||

@@ -1,17 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/storage/user_cache_key_provider.dart';
 import '../../data/models/delivery_address_model.dart';
 import '../../data/saved_addresses_storage.dart';
 
-/// حالة عناوين التوصيل المحفوظة
+/// حالة عناوين التوصيل المحفوظة — مفصولة لكل حساب
 class SavedAddressesNotifier extends Notifier<List<DeliveryAddressModel>> {
   @override
   List<DeliveryAddressModel> build() {
-    return ref.read(savedAddressesStorageProvider).loadAddresses();
+    final userKey = ref.watch(activeUserCacheKeyProvider);
+    return ref.read(savedAddressesStorageProvider).loadAddresses(userKey);
   }
 
   Future<void> _persist() =>
-      ref.read(savedAddressesStorageProvider).saveAddresses(state);
+      ref.read(savedAddressesStorageProvider).saveAddresses(
+            ref.read(activeUserCacheKeyProvider),
+            state,
+          );
 
   void addAddress(AddressFormResult result) {
     final isFirst = state.isEmpty;

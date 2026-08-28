@@ -5,16 +5,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/storage/onboarding_storage.dart';
+import '../../../core/storage/user_scoped_keys.dart';
 import 'models/cart_item_model.dart';
 
-/// تخزين السلة محلياً
+/// تخزين السلة محلياً — مفصول لكل حساب
 class CartStorage {
   CartStorage(this._prefs);
 
   final SharedPreferences _prefs;
 
-  List<CartItemModel> loadItems() {
-    final raw = _prefs.getString(AppConstants.cartItemsKey);
+  List<CartItemModel> loadItems(String userKey) {
+    final raw = UserScopedPrefs.readString(
+      _prefs,
+      baseKey: AppConstants.cartItemsKey,
+      userKey: userKey,
+    );
     if (raw == null || raw.isEmpty) return [];
 
     try {
@@ -27,12 +32,21 @@ class CartStorage {
     }
   }
 
-  Future<void> saveItems(List<CartItemModel> items) async {
+  Future<void> saveItems(String userKey, List<CartItemModel> items) async {
     final encoded = jsonEncode(items.map((e) => e.toJson()).toList());
-    await _prefs.setString(AppConstants.cartItemsKey, encoded);
+    await UserScopedPrefs.writeString(
+      _prefs,
+      baseKey: AppConstants.cartItemsKey,
+      userKey: userKey,
+      value: encoded,
+    );
   }
 
-  Future<void> clear() => _prefs.remove(AppConstants.cartItemsKey);
+  Future<void> clear(String userKey) => UserScopedPrefs.remove(
+        _prefs,
+        baseKey: AppConstants.cartItemsKey,
+        userKey: userKey,
+      );
 }
 
 final cartStorageProvider = Provider<CartStorage>((ref) {

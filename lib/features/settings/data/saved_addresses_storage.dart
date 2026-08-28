@@ -5,16 +5,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/storage/onboarding_storage.dart';
+import '../../../core/storage/user_scoped_keys.dart';
 import 'models/delivery_address_model.dart';
 
-/// تخزين عناوين التوصيل محلياً
+/// تخزين عناوين التوصيل محلياً — مفصول لكل حساب
 class SavedAddressesStorage {
   SavedAddressesStorage(this._prefs);
 
   final SharedPreferences _prefs;
 
-  List<DeliveryAddressModel> loadAddresses() {
-    final raw = _prefs.getString(AppConstants.savedAddressesKey);
+  List<DeliveryAddressModel> loadAddresses(String userKey) {
+    final raw = UserScopedPrefs.readString(
+      _prefs,
+      baseKey: AppConstants.savedAddressesKey,
+      userKey: userKey,
+    );
     if (raw == null || raw.isEmpty) return [];
 
     try {
@@ -27,12 +32,24 @@ class SavedAddressesStorage {
     }
   }
 
-  Future<void> saveAddresses(List<DeliveryAddressModel> addresses) async {
+  Future<void> saveAddresses(
+    String userKey,
+    List<DeliveryAddressModel> addresses,
+  ) async {
     final encoded = jsonEncode(addresses.map((e) => e.toJson()).toList());
-    await _prefs.setString(AppConstants.savedAddressesKey, encoded);
+    await UserScopedPrefs.writeString(
+      _prefs,
+      baseKey: AppConstants.savedAddressesKey,
+      userKey: userKey,
+      value: encoded,
+    );
   }
 
-  Future<void> clear() => _prefs.remove(AppConstants.savedAddressesKey);
+  Future<void> clear(String userKey) => UserScopedPrefs.remove(
+        _prefs,
+        baseKey: AppConstants.savedAddressesKey,
+        userKey: userKey,
+      );
 }
 
 final savedAddressesStorageProvider = Provider<SavedAddressesStorage>((ref) {

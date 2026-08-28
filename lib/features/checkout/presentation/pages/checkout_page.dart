@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_router.dart';
+import '../../../../core/storage/user_cache_key_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/arabic_digits.dart';
@@ -59,7 +60,9 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
     }
 
     final user = ref.read(authNotifierProvider).user;
-    final saved = ref.read(checkoutCustomerStorageProvider).load();
+    final saved = ref
+        .read(checkoutCustomerStorageProvider)
+        .load(ref.read(activeUserCacheKeyProvider));
     final userName = user?.name.trim() ?? '';
     final userPhone = (user?.phone ?? '').trim();
 
@@ -168,6 +171,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
         );
 
     ref.read(checkoutCustomerStorageProvider).save(
+          userKey: ref.read(activeUserCacheKeyProvider),
           name: _nameController.text.trim(),
           phone: _phoneController.text.trim(),
           secondPhone: _secondPhoneController.text.trim(),

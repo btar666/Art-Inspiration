@@ -2,6 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/connectivity_service.dart';
+import '../../../../core/storage/onboarding_storage.dart';
+import '../../../../core/storage/user_cache_key_provider.dart';
+import '../../../../core/storage/user_scoped_keys.dart';
 import '../../data/auth_api_service.dart';
 import '../../data/auth_storage.dart';
 import '../../../notifications/data/notifications_storage.dart';
@@ -54,21 +57,16 @@ class AuthRepository {
     required String password,
     required String shopName,
     required String governorate,
-  }) async {
-    final parts = fullName.trim().split(RegExp(r'\s+'));
-    final firstName = parts.first;
-    final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : firstName;
-    final email = '${phone.replaceAll(RegExp(r'\D'), '')}@customer.art-inspiration.app';
-
+    required String address,
+  }) {
     // طلب انضمام — لا نحفظ الجلسة حتى تتم الموافقة وتسجيل الدخول
     return _api.register(
-      firstName: firstName,
-      lastName: lastName,
-      email: email,
+      name: fullName.trim(),
       phone: phone.trim(),
       password: password,
       shopName: shopName.trim(),
       governorate: governorate,
+      address: address.trim(),
     );
   }
 
@@ -119,7 +117,10 @@ class AuthNotifier extends Notifier<AuthState> {
               .onUserSessionStarted(userKey),
         );
       }
-      Future.microtask(syncPricePolicyFromErp);
+      Future.microtask(() async {
+        await _activateUserCache(user);
+        await syncPricePolicyFromErp();
+      });
     }
     return AuthState(
       isLoggedIn: storage.isLoggedIn,
@@ -128,6 +129,21 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   AuthRepository get _repo => ref.read(authRepositoryProvider);
+
+  Future<void> _activateUserCache(AuthUser? user) async {
+    final key = user?.notificationUserKey.trim() ?? '';
+    if (key.isNotEmpty) {
+      await UserScopedPrefs.migrateLegacyForUser(
+        ref.read(sharedPreferencesProvider),
+        key,
+      );
+    }
+    ref.read(activeUserCacheKeyProvider.notifier).state = key;
+  }
+
+  Future<void> _clearUserCache() async {
+    ref.read(activeUserCacheKeyProvider.notifier).state = '';
+  }
 
   Future<AuthUser?> _enrichUserFromErp(AuthUser? user) async {
     if (user == null) return null;
@@ -177,6 +193,7 @@ class AuthNotifier extends Notifier<AuthState> {
       user = await _enrichUserFromErp(user);
       if (user != null) {
         await ref.read(authStorageProvider).saveUser(user);
+        await _activateUserCache(user);
         ref
             .read(cartNotifierProvider.notifier)
             .repriceForPolicy(user.pricePolicy);
@@ -210,6 +227,7 @@ class AuthNotifier extends Notifier<AuthState> {
     required String password,
     required String shopName,
     required String governorate,
+    required String address,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -219,6 +237,7 @@ class AuthNotifier extends Notifier<AuthState> {
         password: password,
         shopName: shopName,
         governorate: governorate,
+        address: address,
       );
       state = const AuthState();
       return true;
@@ -237,6 +256,7 @@ class AuthNotifier extends Notifier<AuthState> {
   Future<void> logout() async {
     await _repo.logout();
     await ref.read(productsRepositoryProvider).clearCache();
+    await _clearUserCache();
     state = const AuthState();
   }
 
@@ -246,6 +266,7 @@ class AuthNotifier extends Notifier<AuthState> {
     required String password,
     required String city,
     required String cosmeticName,
+    required String address,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -256,6 +277,7 @@ class AuthNotifier extends Notifier<AuthState> {
               password: password,
               city: city,
               cosmeticName: cosmeticName,
+              address: address,
             ),
       );
       if (user == null) return false;
@@ -292,6 +314,7 @@ class AuthNotifier extends Notifier<AuthState> {
       await ref.read(authApiServiceProvider).deleteAccount();
       await _repo.logout();
       await ref.read(productsRepositoryProvider).clearCache();
+      await _clearUserCache();
       state = const AuthState();
       return true;
     } on ApiException catch (e) {

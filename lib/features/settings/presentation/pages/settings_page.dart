@@ -8,6 +8,7 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../checkout/data/checkout_provider.dart';
 import '../../../orders/presentation/widgets/orders_page_header.dart';
 import '../../data/settings_content.dart';
 import '../widgets/edit_profile_bottom_sheet.dart';
@@ -143,6 +144,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Future<void> _logout() async {
     await ref.read(authNotifierProvider.notifier).logout();
+    ref.read(checkoutDraftProvider.notifier).clear();
     if (!mounted) return;
     context.go(AppRoutes.login);
   }
@@ -151,6 +153,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final ok = await ref.read(authNotifierProvider.notifier).deleteAccount();
     if (!mounted) return;
     if (ok) {
+      ref.read(checkoutDraftProvider.notifier).clear();
       context.go(AppRoutes.login);
       return;
     }

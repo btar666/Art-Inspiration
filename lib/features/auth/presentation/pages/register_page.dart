@@ -32,17 +32,20 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _shopController = TextEditingController();
+  final _addressController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _selectedGovernorate;
   int _nameShakeTick = 0;
   int _phoneShakeTick = 0;
   int _governorateShakeTick = 0;
   int _shopShakeTick = 0;
+  int _addressShakeTick = 0;
   int _passwordShakeTick = 0;
   int _logoShakeTick = 0;
   String? _nameError;
   String? _phoneError;
   String? _shopError;
+  String? _addressError;
   String? _passwordError;
 
   @override
@@ -50,6 +53,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _nameController.dispose();
     _phoneController.dispose();
     _shopController.dispose();
+    _addressController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -71,12 +75,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   bool _isShopInvalid() => _shopController.text.trim().isEmpty;
 
+  bool _isAddressInvalid() => _addressController.text.trim().isEmpty;
+
   bool _isPasswordInvalid() => _passwordController.text.length < 5;
 
   void _clearErrors() {
     _nameError = null;
     _phoneError = null;
     _shopError = null;
+    _addressError = null;
     _passwordError = null;
   }
 
@@ -107,12 +114,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final phoneInvalid = _isPhoneInvalid();
     final governorateInvalid = _isGovernorateInvalid();
     final shopInvalid = _isShopInvalid();
+    final addressInvalid = _isAddressInvalid();
     final passwordInvalid = _isPasswordInvalid();
 
     if (nameInvalid ||
         phoneInvalid ||
         governorateInvalid ||
         shopInvalid ||
+        addressInvalid ||
         passwordInvalid) {
       setState(() {
         _clearErrors();
@@ -127,6 +136,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         if (shopInvalid) {
           _shopError = 'يرجى إدخال اسم المتجر';
           _shopShakeTick++;
+        }
+        if (addressInvalid) {
+          _addressError = 'يرجى إدخال العنوان';
+          _addressShakeTick++;
         }
         if (passwordInvalid) {
           _passwordError = 'كلمة المرور يجب أن تكون 5 أحرف على الأقل';
@@ -150,6 +163,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           password: _passwordController.text,
           shopName: _shopController.text.trim(),
           governorate: _selectedGovernorate!,
+          address: _addressController.text.trim(),
         );
 
     if (!mounted) return;
@@ -274,6 +288,24 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     ),
                     SizedBox(height: 14.h),
                     FormErrorAnimator(
+                      tick: _addressShakeTick,
+                      child: AppTextField(
+                        hint: 'العنوان',
+                        controller: _addressController,
+                        icon: Icons.location_on_outlined,
+                        errorText: _addressError,
+                        onChanged: (_) {
+                          if (_addressError != null) {
+                            setState(() => _addressError = null);
+                          }
+                        },
+                      )
+                          .animate()
+                          .fadeIn(duration: 350.ms, delay: 300.ms)
+                          .slideX(begin: 0.08, end: 0),
+                    ),
+                    SizedBox(height: 14.h),
+                    FormErrorAnimator(
                       tick: _passwordShakeTick,
                       child: AppTextField(
                         hint: 'كلمة المرور',
@@ -288,7 +320,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         },
                       )
                           .animate()
-                          .fadeIn(duration: 350.ms, delay: 320.ms)
+                          .fadeIn(duration: 350.ms, delay: 340.ms)
                           .slideX(begin: 0.08, end: 0),
                     ),
                     SizedBox(height: 28.h),
@@ -298,7 +330,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       onPressed: isLoading ? null : _onSubmit,
                     )
                         .animate()
-                        .fadeIn(duration: 400.ms, delay: 380.ms)
+                        .fadeIn(duration: 400.ms, delay: 400.ms)
                         .slideY(begin: 0.12, end: 0),
                     AuthFooterLink(
                       prefix: 'لديك حساب ؟',

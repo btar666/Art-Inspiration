@@ -37,6 +37,7 @@ class _EditProfileBottomSheetState
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
   late final TextEditingController _shopController;
+  late final TextEditingController _addressController;
   late final TextEditingController _passwordController;
   String? _selectedCity;
   bool _saving = false;
@@ -48,6 +49,7 @@ class _EditProfileBottomSheetState
     _nameController = TextEditingController(text: user?.name ?? '');
     _phoneController = TextEditingController(text: user?.phone ?? '');
     _shopController = TextEditingController(text: user?.cosmeticName ?? '');
+    _addressController = TextEditingController(text: user?.address ?? '');
     _passwordController = TextEditingController();
     final city = user?.city?.trim() ?? '';
     if (city.isNotEmpty) {
@@ -68,6 +70,7 @@ class _EditProfileBottomSheetState
     _nameController.dispose();
     _phoneController.dispose();
     _shopController.dispose();
+    _addressController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -88,6 +91,7 @@ class _EditProfileBottomSheetState
           password: _passwordController.text,
           city: _selectedCity!,
           cosmeticName: _shopController.text.trim(),
+          address: _addressController.text.trim(),
         );
     if (!mounted) return;
     setState(() => _saving = false);
@@ -190,6 +194,15 @@ class _EditProfileBottomSheetState
                   icon: Icons.storefront_outlined,
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? 'أدخل اسم المحل'
+                      : null,
+                ),
+                SizedBox(height: 12.h),
+                AppTextField(
+                  hint: 'العنوان',
+                  controller: _addressController,
+                  icon: Icons.location_on_outlined,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'أدخل العنوان'
                       : null,
                 ),
                 SizedBox(height: 12.h),

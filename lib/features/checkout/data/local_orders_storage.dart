@@ -6,17 +6,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/storage/onboarding_storage.dart';
+import '../../../core/storage/user_cache_key_provider.dart';
+import '../../../core/storage/user_scoped_keys.dart';
 import '../../orders/data/models/order_model.dart';
 import '../../orders/data/models/order_status.dart';
 
-/// تخزين الطلبات محلياً
+/// تخزين الطلبات محلياً — مفصول لكل حساب
 class LocalOrdersStorage {
   LocalOrdersStorage(this._prefs);
 
   final SharedPreferences _prefs;
 
-  List<OrderDetailModel> loadOrders() {
-    final raw = _prefs.getString(AppConstants.localOrdersKey);
+  List<OrderDetailModel> loadOrders(String userKey) {
+    final raw = UserScopedPrefs.readString(
+      _prefs,
+      baseKey: AppConstants.localOrdersKey,
+      userKey: userKey,
+    );
     if (raw == null || raw.isEmpty) return [];
 
     try {
@@ -29,9 +35,17 @@ class LocalOrdersStorage {
     }
   }
 
-  Future<void> saveOrders(List<OrderDetailModel> orders) async {
+  Future<void> saveOrders(
+    String userKey,
+    List<OrderDetailModel> orders,
+  ) async {
     final encoded = jsonEncode(orders.map((e) => e.toJson()).toList());
-    await _prefs.setString(AppConstants.localOrdersKey, encoded);
+    await UserScopedPrefs.writeString(
+      _prefs,
+      baseKey: AppConstants.localOrdersKey,
+      userKey: userKey,
+      value: encoded,
+    );
   }
 }
 
@@ -42,11 +56,14 @@ final localOrdersStorageProvider = Provider<LocalOrdersStorage>((ref) {
 class LocalOrdersNotifier extends Notifier<List<OrderDetailModel>> {
   @override
   List<OrderDetailModel> build() {
-    return ref.read(localOrdersStorageProvider).loadOrders();
+    final userKey = ref.watch(activeUserCacheKeyProvider);
+    return ref.read(localOrdersStorageProvider).loadOrders(userKey);
   }
 
-  Future<void> _persist() =>
-      ref.read(localOrdersStorageProvider).saveOrders(state);
+  Future<void> _persist() => ref.read(localOrdersStorageProvider).saveOrders(
+        ref.read(activeUserCacheKeyProvider),
+        state,
+      );
 
   Future<void> addOrder(OrderDetailModel order) async {
     state = [order, ...state];

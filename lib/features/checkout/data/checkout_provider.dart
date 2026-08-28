@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/storage/onboarding_storage.dart';
+import '../../../core/storage/user_cache_key_provider.dart';
+import '../../../core/storage/user_scoped_keys.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../cart/data/models/cart_item_model.dart';
 import '../../settings/data/models/delivery_address_model.dart';
@@ -106,7 +108,9 @@ class CheckoutNotifier extends Notifier<CheckoutDraft?> {
     final user = ref.read(authNotifierProvider).user;
     final addresses = ref.read(savedAddressesNotifierProvider);
     final currentAddress = DeliveryAddressModel.currentFrom(addresses);
-    final saved = ref.read(checkoutCustomerStorageProvider).load();
+    final saved = ref
+        .read(checkoutCustomerStorageProvider)
+        .load(ref.read(activeUserCacheKeyProvider));
     final isDelivery =
         state!.deliveryMethod == CheckoutDeliveryMethod.delivery;
 
@@ -174,30 +178,57 @@ String formatIraqiPrice(int value) {
   return '$formatted د.ع';
 }
 
-/// حفظ بيانات الزبون للطلبات التالية
+/// حفظ بيانات الزبون للطلبات التالية — مفصول لكل حساب
 class CheckoutCustomerStorage {
   CheckoutCustomerStorage(this._prefs);
 
   final SharedPreferences _prefs;
 
-  static const _nameKey = 'checkout_customer_name';
-  static const _phoneKey = 'checkout_customer_phone';
-  static const _secondPhoneKey = 'checkout_customer_second_phone';
-
-  ({String name, String phone, String secondPhone}) load() => (
-        name: _prefs.getString(_nameKey) ?? '',
-        phone: _prefs.getString(_phoneKey) ?? '',
-        secondPhone: _prefs.getString(_secondPhoneKey) ?? '',
+  ({String name, String phone, String secondPhone}) load(String userKey) => (
+        name: UserScopedPrefs.readString(
+              _prefs,
+              baseKey: UserScopedPrefs.checkoutCustomerNameKey,
+              userKey: userKey,
+            ) ??
+            '',
+        phone: UserScopedPrefs.readString(
+              _prefs,
+              baseKey: UserScopedPrefs.checkoutCustomerPhoneKey,
+              userKey: userKey,
+            ) ??
+            '',
+        secondPhone: UserScopedPrefs.readString(
+              _prefs,
+              baseKey: UserScopedPrefs.checkoutCustomerSecondPhoneKey,
+              userKey: userKey,
+            ) ??
+            '',
       );
 
   Future<void> save({
+    required String userKey,
     required String name,
     required String phone,
     String secondPhone = '',
   }) async {
-    await _prefs.setString(_nameKey, name);
-    await _prefs.setString(_phoneKey, phone);
-    await _prefs.setString(_secondPhoneKey, secondPhone);
+    await UserScopedPrefs.writeString(
+      _prefs,
+      baseKey: UserScopedPrefs.checkoutCustomerNameKey,
+      userKey: userKey,
+      value: name,
+    );
+    await UserScopedPrefs.writeString(
+      _prefs,
+      baseKey: UserScopedPrefs.checkoutCustomerPhoneKey,
+      userKey: userKey,
+      value: phone,
+    );
+    await UserScopedPrefs.writeString(
+      _prefs,
+      baseKey: UserScopedPrefs.checkoutCustomerSecondPhoneKey,
+      userKey: userKey,
+      value: secondPhone,
+    );
   }
 }
 

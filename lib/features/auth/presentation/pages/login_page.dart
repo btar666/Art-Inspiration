@@ -104,7 +104,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       setState(() {
         _clearErrors();
         if (usernameInvalid) {
-          _usernameError = 'يرجى إدخال البريد الإلكتروني أو رقم الهاتف';
+          _usernameError = 'يرجى إدخال رقم الهاتف';
           _usernameShakeTick++;
         }
         if (passwordInvalid) {
@@ -199,7 +199,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   FormErrorAnimator(
                     tick: _usernameShakeTick,
                     child: AppTextField(
-                      hint: 'البريد أو رقم الهاتف',
+                      hint: 'رقم الهاتف',
                       controller: _usernameController,
                       icon: Icons.phone_android_outlined,
                       keyboardType: TextInputType.text,

@@ -100,6 +100,7 @@ class AppApiService {
     required String password,
     required String city,
     required String cosmeticName,
+    required String address,
   }) async {
     final form = FormData.fromMap({
       'name': name.trim(),
@@ -107,6 +108,7 @@ class AppApiService {
       'password': password,
       'city': city.trim(),
       'cosmetic_name': cosmeticName.trim(),
+      'address': address.trim(),
     });
 
     final response = await safeRequest(
@@ -142,6 +144,7 @@ class AppApiService {
     required String password,
     required String city,
     required String cosmeticName,
+    required String address,
   }) async {
     final form = FormData.fromMap({
       'name': name.trim(),
@@ -149,6 +152,7 @@ class AppApiService {
       'password': password,
       'city': city.trim(),
       'cosmetic_name': cosmeticName.trim(),
+      'address': address.trim(),
     });
 
     final response = await safeRequest(
