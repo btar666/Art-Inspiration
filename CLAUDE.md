@@ -730,6 +730,14 @@ name, and `test/placeholder_text_test.dart` for the return-policy and about-us
 text. They exist because a screenshot only proves today's data — a test proves
 the parser. The working check is: build → run in
 the simulator in Arabic → read the log for `overflowed` and
-`EXCEPTION CAUGHT` → screenshot. `flutter analyze` currently reports 87
-pre-existing infos/warnings; do not treat a clean global analyze as the
-bar, check the files you touched.
+`EXCEPTION CAUGHT` → screenshot. `flutter analyze` reports 7 pre-existing
+infos (four `cacheExtent` deprecations, two getter/setter style notes, one
+async-gap context) and zero errors.
+
+🚩 If it ever reports errors again, read the file paths first. On
+2026-08-28 the IDE refused to launch with «Errors exist in your project» and
+all 79 errors were in `build/ios/SourcePackages/firebase_messaging-16.5.0/` —
+the plugin's own example app and tests, importing a `firebase_options.dart`
+and a `mockito` this repo does not have. A stale SwiftPM checkout from the
+abandoned SwiftPM attempt; the build uses CocoaPods, so `rm -rf
+build/ios/SourcePackages` (268 MB) fixed it and it does not come back.
